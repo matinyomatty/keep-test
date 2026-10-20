@@ -1,7 +1,8 @@
-// Matinyo POS — keeps the app opening when the internet is down.
+// Keep till — keeps the app opening when the internet is down.
 // Sales themselves are stored offline by Firebase; this file only caches the app's own files.
-const CACHE = 'keep-app-v27';
-const SHELL = ['./', './index.html', './icon-192.png', './icon-512.png', '../lang.js', '../lang-sw.js', '../env.js'];
+const CACHE = 'keep-app-v28';
+const PARTS = ['core', 'login', 'sell', 'stock', 'money', 'deliveries', 'reports-centre', 'returns', 'scanner', 'customers', 'closing', 'account', 'excel-labels', 'boot'];
+const SHELL = ['./', './index.html', './app.css', ...PARTS.map(p => './js/' + p + '.js'), './icon-192.png', './icon-512.png', '../lang.js', '../lang-sw.js', '../env.js'];
 
 self.addEventListener('install', e => {
     e.waitUntil(caches.open(CACHE).then(c => c.addAll(SHELL)).then(() => self.skipWaiting()));
@@ -20,11 +21,12 @@ self.addEventListener('fetch', e => {
     // Never cache Firebase traffic — Firebase handles its own offline storage.
     if (url.hostname.includes('googleapis.com') || url.hostname.includes('firebaseio.com')) return;
 
-    // The app page: try the network first so updates arrive, fall back to the saved copy.
-    if (req.mode === 'navigate' || url.pathname.endsWith('.html') || /\/(lang(-\w+)?|env)\.js$/.test(url.pathname)) {
-        e.respondWith(fetch(req)
-            .then(res => { const copy = res.clone(); caches.open(CACHE).then(c => c.put(req, copy)); return res; })
-            .catch(() => caches.match(req).then(r => r || caches.match('./index.html'))));
+    // Keep's own files (page, styles, the till's parts, language, settings): always ask the server
+    // first, so every part comes from the same version; use the saved copy only when offline.
+    if (req.mode === 'navigate' || url.origin === location.origin) {
+        e.respondWith(fetch(req, { cache: 'no-cache' })
+            .then(res => { if (res.ok) { const copy = res.clone(); caches.open(CACHE).then(c => c.put(req, copy)); } return res; })
+            .catch(() => caches.match(req, { ignoreSearch: true }).then(r => r || (req.mode === 'navigate' ? caches.match('./index.html') : Response.error()))));
         return;
     }
 

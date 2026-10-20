@@ -1,0 +1,383 @@
+// Keep till — Owner dashboard and the point of sale.
+// Part of app/index.html; the parts load in order and share one global scope.
+//  DASHBOARD
+// ════════════════════════════════════════════════
+function renderDashboard() {
+    if (!isAdmin() || !$('page-dashboard').classList.contains('active')) return;
+    const today = dayStr();
+    const t = dayFig(today), y = dayFig(shiftDay(today, -1));
+    $('daySales').textContent = fmt(t.sales);
+    $('heroSalesTrend').innerHTML = trendBadge(t.sales, y.sales, 'vs yesterday');
+    const target = Number((S.tenantInfo.settings || {}).dailyTarget) || 0;
+    $('targetWrap').innerHTML = target ? `<div class="target-bar"><div style="width:${Math.min(100, Math.round(t.sales / target * 100))}%"></div></div>
+        <div style="font-size:0.55rem;color:rgba(255,255,255,0.5);margin-top:3px;">${Math.round(t.sales / target * 100)}% of ${n0(target)} target</div>` : '';
+    $('todayTx').textContent = `${t.tx} POS sale${t.tx === 1 ? '' : 's'} today`;
+    const b = S.balances;
+    $('balCash').textContent = fmt(b.cash); $('balMobile').textContent = fmt(b.mobile);
+    $('balBank').textContent = fmt(b.bank); $('balSavings').textContent = fmt(b.savings);
+
+    const m = today.slice(0, 7), f = monthFig(m), mon = monthShort(m);
+    $('lblMSales').textContent = 'Sales · ' + mon; $('mSales').textContent = fmt(f.sales);
+    $('lblMStock').textContent = 'Stock bought · ' + mon; $('mStock').textContent = fmt(f.supplier);
+    $('lblMExp').textContent = 'Expenses · ' + mon; $('mExp').textContent = fmt(f.expense);
+    $('lblMProfit').textContent = 'Profit · ' + mon; $('mProfit').textContent = fmt(f.profit);
+    $('mProfit').style.color = f.profit >= 0 ? 'var(--green)' : 'var(--red)';
+    renderMonthBanner();
+    renderHistory();
+}
+
+function renderMonthBanner() {
+    const now = new Date(), m = dayStr().slice(0, 7);
+    const dim = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+    const f = monthFig(m), pm = prevMonth(m), pf = monthFig(pm);
+    let prev = '';
+    if (pf.hasData) {
+        const closed = S.months[pm] && S.months[pm].closed;
+        prev = closed
+            ? `<div onclick="openMonth('${pm}')" style="cursor:pointer;margin-top:8px;background:rgba(74,222,128,0.12);border:1px solid rgba(74,222,128,0.35);border-radius:12px;padding:9px 12px;font-size:0.74rem;color:#bbf7d0;">
+                ✅ <strong>${monthName(pm)} closed</strong> · Profit ${n0(pf.profit)} · Saved ${n0(S.months[pm].saved)} TZS</div>`
+            : `<div onclick="openMonth('${pm}')" style="cursor:pointer;margin-top:8px;background:rgba(245,158,11,0.15);border:1px solid rgba(245,158,11,0.5);border-radius:12px;padding:9px 12px;font-size:0.74rem;color:#fde68a;display:flex;justify-content:space-between;align-items:center;gap:8px;">
+                <span>⚠️ <strong>${monthName(pm)} not closed</strong> · Profit ${n0(pf.profit)} TZS</span>
+                <span style="background:var(--amber);color:var(--ink);font-weight:800;border-radius:8px;padding:4px 9px;white-space:nowrap;">CLOSE ›</span></div>`;
+    }
+    $('monthBanner').innerHTML = `
+        <div style="background:rgba(255,199,44,0.08);border:1px solid rgba(255,199,44,0.35);border-radius:14px;padding:10px 12px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+                <div>
+                    <div style="font-family:'Syne',sans-serif;font-size:0.95rem;color:var(--yellow);letter-spacing:1px;">${monthName(m).toUpperCase()}</div>
+                    <div style="font-size:0.6rem;color:rgba(255,255,255,0.5);margin-top:1px;">Day ${now.getDate()} of ${dim}</div>
+                </div>
+                <div style="text-align:right;">
+                    <div style="font-size:0.5rem;color:var(--yellow);text-transform:uppercase;letter-spacing:.8px;">Profit so far</div>
+                    <div style="font-size:1.05rem;font-weight:800;color:${f.profit >= 0 ? '#4ade80' : '#f87171'};">${n0(f.profit)} <span style="font-size:0.6rem;">TZS</span></div>
+                </div>
+            </div>
+            <div style="height:4px;background:rgba(255,255,255,0.1);border-radius:3px;margin-top:8px;overflow:hidden;">
+                <div style="height:100%;width:${Math.round(now.getDate() / dim * 100)}%;background:var(--yellow);"></div>
+            </div>${prev}
+        </div>`;
+}
+
+function toggleHistory() { S.historyAll = !S.historyAll; S.historyLimit = 7; renderHistory(); }
+function renderHistory() {
+    const today = dayStr(), m = today.slice(0, 7);
+    const keys = Object.keys(S.days).filter(d => S.historyAll || d.slice(0, 7) === m).sort().reverse();
+    $('historyLabel').textContent = S.historyAll ? 'Days · last 12 months' : 'Days · ' + monthName(m);
+    $('historyToggle').textContent = S.historyAll ? 'This month only' : 'Show all months';
+    const list = $('historyList');
+    if (!keys.length) {
+        list.innerHTML = `<div class="empty-state"><div class="icon">🗓️</div>Nothing recorded in ${monthName(m)} yet.<br><span style="font-size:0.75rem;">Sales from the POS appear here automatically.</span></div>`;
+        $('historyMore').classList.add('hidden');
+        return;
+    }
+    list.innerHTML = keys.slice(0, S.historyLimit).map(d => {
+        const x = dayFig(d), p = dayFig(shiftDay(d, -1));
+        const spent = x.supplier + x.expense, banked = x.bankIn - x.bankOut;
+        return `<div class="entry-item ${d === today ? 'is-today' : ''}" onclick="openDay('${d}')">
+            <div style="min-width:0;flex:1;">
+                <div class="entry-date">${shortDay(d)}${d === today ? '<span class="tag tag-today">TODAY</span>' : ''}${x.closing ? '<span class="tag tag-closed">🔒 CLOSED</span>' : ''}${afterClose(x) ? '<span class="tag tag-open">+' + n0(afterClose(x)) + ' AFTER CLOSE</span>' : ''}</div>
+                <div class="entry-meta">🛒 ${n0(x.sales)} TZS${x.tx ? ` · ${x.tx} sale${x.tx === 1 ? '' : 's'}` : ''}${spent ? ` · 💸 ${n0(spent)}` : ''}${banked ? ` · 🏦 ${n0(banked)}` : ''}</div>
+                ${p.sales ? `<div style="margin-top:4px;">${trendBadge(x.sales, p.sales, 'vs day before')}</div>` : ''}
+            </div>
+            <div class="btn-circle">›</div>
+        </div>`;
+    }).join('');
+    $('historyMore').classList.toggle('hidden', keys.length <= S.historyLimit);
+}
+
+// ════════════════════════════════════════════════
+//  POINT OF SALE
+// ════════════════════════════════════════════════
+function renderPosStrip() {
+    const live = S.todaySales.filter(s => !s.voided && s.kind !== 'repay');
+    const pos = live.filter(s => s.kind !== 'manual' && s.kind !== 'return');
+    const mine = pos.filter(s => S.me && s.staffUid === S.me.uid);
+    $('posStrip').innerHTML = `Today: <b>${pos.length}</b> sale${pos.length === 1 ? '' : 's'}` +
+        (isAdmin() ? ` · <b>${fmt(live.reduce((a, s) => a + (s.kind === 'return' ? -1 : 1) * (s.total || 0), 0))}</b>` : '') +
+        (mine.length !== pos.length ? ` · you: <b>${mine.length}</b>` : '');
+}
+
+function renderPOS() {
+    if (!S.me) return;
+    const q = ($('posSearch').value || '').toLowerCase().trim();
+    const cats = ['All', ...new Set(S.products.map(p => p.category || 'General'))];
+    if (!cats.includes(S.activeCat)) S.activeCat = 'All';
+    $('catFilter').innerHTML = cats.map(c => `<button class="cat-chip ${c === S.activeCat ? 'active' : ''}" data-cat="${esc(c)}" onclick="setCat(this.dataset.cat)">${esc(c)}</button>`).join('');
+    const words = q ? q.split(/\s+/) : [];
+    const list = S.products.filter(p => {
+        if (S.activeCat !== 'All' && (p.category || 'General') !== S.activeCat) return false;
+        const hay = [p.name, p.category, p.sellPrice, p.barcode].join(' ').toLowerCase();
+        return words.every(w => hay.includes(w));
+    });
+    const empty = $('posEmpty');
+    if (!list.length) {
+        $('posGrid').innerHTML = '';
+        empty.classList.remove('hidden');
+        empty.innerHTML = S.products.length
+            ? '<div class="icon">🔍</div>No items match your search.'
+            : `<div class="icon">📦</div>No items yet.<br><span style="font-size:0.78rem;">${isAdmin() ? 'Go to <b>Stock → + ADD ITEM</b> to add your products.' : 'Ask the shop owner to add products.'}</span>`;
+    } else {
+        empty.classList.add('hidden');
+        $('posGrid').innerHTML = list.map(p => {
+            const qty = S.cart[p.id] || 0, stock = Number(p.stock) || 0;
+            const out = stock <= 0, low = !out && stock <= (Number(p.reorderLevel) || 5);
+            return `<button class="item-card ${qty ? 'in-cart' : ''} ${out ? 'out' : ''}" ${out ? 'disabled' : ''} onclick="addToCart('${p.id}')">
+                ${low ? '<span class="ic-low">LOW</span>' : ''}
+                <span class="ic-badge">${q3(qty)}</span>
+                <span class="ic-emoji">${esc(p.emoji || '📦')}</span>
+                <div class="ic-name">${esc(p.name)}</div>
+                <div class="ic-price">${n0(p.sellPrice)} TZS${perUnit(p)}</div>
+                <div class="ic-stock">${out ? '❌ Out of stock' : stockTxt(p)}${p.trackSerial ? ' · 🔢' : ''}${p.warrantyMonths ? ' · 🛡️' : ''}</div>
+            </button>`;
+        }).join('');
+    }
+    updateCartBar();
+}
+function setCat(c) { S.activeCat = c; renderPOS(); }
+
+// ── Units ─────────────────────────────────────────────
+const UNITS = [['pc', 'Piece', 'pc'], ['m', 'Metre', 'm'], ['ft', 'Foot', 'ft'], ['kg', 'Kilogram', 'kg'], ['l', 'Litre', 'L'],
+    ['box', 'Box', 'box'], ['pack', 'Pack', 'pack'], ['carton', 'Carton', 'ctn'], ['set', 'Set', 'set'], ['pair', 'Pair', 'pair'],
+    ['roll', 'Roll', 'roll'], ['bag', 'Bag', 'bag'], ['sheet', 'Sheet', 'sheet'], ['length', 'Length', 'length']];
+const PART_UNITS = ['m', 'ft', 'kg', 'l'];
+const unitOf = p => (p && p.unit) || 'pc';
+const unitShort = p => (UNITS.find(u => u[0] === unitOf(p)) || UNITS[0])[2];
+const unitName = p => (UNITS.find(u => u[0] === unitOf(p)) || UNITS[0])[1].toLowerCase();
+const partOk = p => !!(p && (p.partQty === true || (p.partQty === undefined && PART_UNITS.includes(unitOf(p)))));
+const q3 = v => Math.round((Number(v) || 0) * 1000) / 1000;
+const qtyTxt = (q, p) => `${q3(q).toLocaleString('en-US', { maximumFractionDigits: 3 })}${unitOf(p) === 'pc' ? '' : ' ' + unitShort(p)}`;
+const stockTxt = p => `${qtyTxt(p.stock || 0, p)}${unitOf(p) === 'pc' ? '' : ''} left`;
+const perUnit = p => unitOf(p) === 'pc' ? '' : '/' + unitShort(p);
+
+// ── Cart state ────────────────────────────────────────
+// S.cart[id] = quantity · S.lineMeta[id] = { price, serials[] }
+S.lineMeta = {}; S.saleDisc = null; S.saleCustomer = null;
+const meta = id => (S.lineMeta[id] = S.lineMeta[id] || { serials: [] });
+const linePrice = id => { const m = S.lineMeta[id], p = productById(id); return m && m.price != null ? m.price : Number((p || {}).sellPrice) || 0; };
+const lineSub = id => Math.round(linePrice(id) * (S.cart[id] || 0));
+const cartList = () => Object.entries(S.cart).reduce((s, [id, q]) => s + (Number((productById(id) || {}).sellPrice) || 0) * q, 0);
+const cartGross = () => Object.keys(S.cart).reduce((s, id) => s + lineSub(id), 0);
+function cartDiscount() {
+    const d = S.saleDisc, g = cartGross();
+    if (!d) return 0;
+    return Math.min(g, Math.round(d.type === 'pct' ? g * d.value / 100 : d.value));
+}
+const cartTotal = () => Math.max(0, cartGross() - cartDiscount());
+const cartCount = () => Object.keys(S.cart).length;
+const maxDiscPct = () => { const v = (S.tenantInfo.settings || {}).maxDiscount; return v === undefined || v === null || v === '' ? 10 : Number(v) || 0; };
+const creditAllowed = () => isAdmin() || !!(S.tenantInfo.settings || {}).cashierCredit;
+
+function addToCart(id) {
+    const p = productById(id); if (!p) return;
+    const q = S.cart[id] || 0, stock = Number(p.stock) || 0;
+    const step = partOk(p) ? Math.min(1, q3(stock - q)) : 1;
+    if (step <= 0 || q + step > stock + 1e-9) { toast(`⚠️ Only ${qtyTxt(stock, p)} ${p.name} in stock`, 'err'); return; }
+    S.cart[id] = q3(q + step);
+    navigator.vibrate?.(25);
+    renderPOS();
+    if ($('sheetCart').classList.contains('active')) renderCart();
+}
+function removeFromCart(id) {
+    if (!S.cart[id]) return;
+    const p = productById(id), q = S.cart[id];
+    const next = partOk(p) && q % 1 ? Math.floor(q) : q - 1;
+    if (next <= 0) { delete S.cart[id]; delete S.lineMeta[id]; } else S.cart[id] = q3(next);
+    renderPOS(); renderCart();
+}
+function setQty(id, v) {
+    const p = productById(id); if (!p) return;
+    let q = num(v);
+    if (!partOk(p)) q = Math.round(q);
+    q = q3(q);
+    if (q <= 0) { delete S.cart[id]; delete S.lineMeta[id]; }
+    else if (q > (Number(p.stock) || 0) + 1e-9) { toast(`⚠️ Only ${qtyTxt(p.stock, p)} in stock`, 'err'); }
+    else S.cart[id] = q;
+    setTimeout(() => { renderPOS(); renderCart(); }, 0);
+}
+async function editLinePrice(id) {
+    const p = productById(id); if (!p) return;
+    const lim = isAdmin() ? '' : `<br><span style="font-size:.72rem;color:#6b7280;">You can go down to ${n0(p.sellPrice * (1 - maxDiscPct() / 100))} (${maxDiscPct()}% off).</span>`;
+    const v = await askValue(`Price for <b>${esc(p.name)}</b>${perUnit(p)}<br><span style="font-size:.75rem;color:#6b7280;">Normal price ${n0(p.sellPrice)}</span>${lim}`, 'New price', 'Set price', { value: String(linePrice(id)) });
+    if (v === null || v === '') return;
+    const n = num(v);
+    if (!(n >= 0)) return toast('⚠️ Enter a price.', 'err');
+    if (!isAdmin() && n < p.sellPrice * (1 - maxDiscPct() / 100) - 0.5) return toast(`⚠️ The lowest you can sell at is ${n0(p.sellPrice * (1 - maxDiscPct() / 100))}. Ask the owner.`, 'err');
+    meta(id).price = Math.abs(n - p.sellPrice) < 0.5 ? null : n;
+    S.payTouched = false; renderPOS(); renderCart();
+}
+async function askDiscount() {
+    if (!Object.keys(S.cart).length) return toast('Add items first.');
+    const v = await askValue(`Discount on the whole sale<br><span style="font-size:.75rem;color:#6b7280;">Type an amount (e.g. 5000) or a percent (e.g. 10%). Empty = no discount.${isAdmin() ? '' : `<br>Your limit: ${maxDiscPct()}%`}</span>`, 'e.g. 5000 or 10%', 'Apply', { type: 'text', value: S.saleDisc ? (S.saleDisc.type === 'pct' ? S.saleDisc.value + '%' : String(S.saleDisc.value)) : '' });
+    if (v === null) return;
+    const t = v.replace(/\s/g, '');
+    if (!t) S.saleDisc = null;
+    else if (t.endsWith('%')) S.saleDisc = { type: 'pct', value: Math.min(100, num(t)) };
+    else S.saleDisc = { type: 'amt', value: num(t) };
+    if (S.saleDisc && !(S.saleDisc.value > 0)) S.saleDisc = null;
+    S.payTouched = false; renderCart();
+    if (!isAdmin() && discPctNow() > maxDiscPct() + 0.01) toast(`⚠️ That is ${discPctNow().toFixed(1)}% off — above your ${maxDiscPct()}% limit. The owner can give bigger discounts.`, 'err');
+}
+const discPctNow = () => { const l = cartList(); return l ? (l - cartTotal()) / l * 100 : 0; };
+function clearCart() { S.cart = {}; S.lineMeta = {}; S.saleDisc = null; S.saleCustomer = null; S.payTouched = false; renderPOS(); renderCart(); }
+
+function updateCartBar() {
+    const n = Object.keys(S.cart).length;
+    $('cartCount').textContent = n;
+    $('cartBarTotal').textContent = fmt(cartTotal());
+    const ids = Object.keys(S.cart);
+    const names = ids.slice(0, 2).map(id => (productById(id) || {}).name || '').map(x => x.split(' ')[0]);
+    $('cartSummary').textContent = n ? names.join(', ') + (ids.length > 2 ? ` +${ids.length - 2} more` : '') : 'No items';
+    $('cartBar').classList.toggle('show', n > 0);
+    if ($('sheetCart').classList.contains('docked')) renderCart();
+}
+
+function openCart() { S.payTouched = false; renderCart(); openSheet('sheetCart'); }
+function renderCart() {
+    if (S._renderingCart) return;
+    S._renderingCart = true;
+    try { renderCartInner(); } finally { S._renderingCart = false; }
+}
+function renderCartInner() {
+    const lines = Object.entries(S.cart);
+    $('cartLines').innerHTML = lines.length ? lines.map(([id, q]) => {
+        const p = productById(id); if (!p) return '';
+        const price = linePrice(id), changed = Math.abs(price - p.sellPrice) >= 0.5;
+        const onShelf = p.trackSerial ? inStockSerials(id) : [];
+        const serials = p.trackSerial && q === Math.round(q) ? `<datalist id="sl-${id}">${onShelf.map(x => `<option value="${esc(x.serial)}">`).join('')}</datalist>`
+            + Array.from({ length: Math.min(q, 20) }, (_, n) =>
+            `<input class="serial-in" list="sl-${id}" data-id="${id}" data-n="${n}" oninput="meta('${id}').serials[${n}]=this.value.trim()" placeholder="Serial / IMEI #${n + 1}${onShelf.length ? ' — tap to pick' : ''}" value="${esc((meta(id).serials || [])[n] || '')}">`).join('')
+            + `<button class="cl-edit" style="padding:4px 0;" onclick="scanCartSerial('${id}')">📷 scan serial</button>${onShelf.length ? ` <span class="cl-price">${onShelf.length} on the shelf</span>` : ''}` : '';
+        return `<div class="cart-line" style="align-items:flex-start;">
+            <span class="cl-emoji">${esc(p.emoji || '📦')}</span>
+            <div style="flex:1;min-width:0;"><div class="cl-name">${esc(p.name)}</div>
+                <div class="cl-price">${changed ? `<s>${n0(p.sellPrice)}</s> ` : ''}<b style="color:${changed ? 'var(--amber)' : 'inherit'};">${n0(price)}</b>${perUnit(p)} × ${qtyTxt(q, p)} = <b>${n0(lineSub(id))}</b>
+                    <button class="cl-edit" onclick="editLinePrice('${id}')">✏️ price</button></div>
+                ${p.warrantyMonths ? `<div class="cl-price">🛡️ ${p.warrantyMonths}-month warranty</div>` : ''}
+                ${serials}
+            </div>
+            <div class="qty-ctrl">
+                <button class="qty-btn qty-minus" onclick="removeFromCart('${id}')">−</button>
+                <input class="qty-in" type="number" inputmode="decimal" step="${partOk(p) ? '0.1' : '1'}" value="${q3(q)}" onchange="setQty('${id}', this.value)">
+                <button class="qty-btn qty-plus" onclick="addToCart('${id}')">+</button>
+            </div></div>`;
+    }).join('') : '<div class="empty-state"><div class="icon">🛒</div>Cart is empty.' + (S.dockCart ? '<br><span style="font-size:.72rem;">Tap items or scan a barcode.</span>' : '') + '</div>';
+    const list = cartList(), gross = cartGross(), disc = cartDiscount(), total = cartTotal();
+    const saved = list - total;
+    $('cartSums').innerHTML = saved >= 1 ? `
+        <div class="sum-line"><span>Normal price</span><span>${fmt(list)}</span></div>
+        ${list - gross >= 1 ? `<div class="sum-line"><span>Price changes</span><span>−${n0(list - gross)}</span></div>` : ''}
+        ${disc ? `<div class="sum-line"><span>Discount${S.saleDisc.type === 'pct' ? ' ' + S.saleDisc.value + '%' : ''}</span><span>−${n0(disc)}</span></div>` : ''}
+        <div class="sum-line" style="color:${!isAdmin() && discPctNow() > maxDiscPct() + 0.01 ? 'var(--red)' : 'var(--amber)'};font-weight:800;"><span>Customer saves</span><span>${n0(saved)} (${discPctNow().toFixed(1)}%)</span></div>` : '';
+    $('cartModalTotal').textContent = fmt(total);
+    // customer + discount buttons
+    const c = S.saleCustomer;
+    $('custBtn').innerHTML = c ? `👤 ${esc(c.name)}${c.balance ? ` · owes ${n0(c.balance)}` : ''} <span onclick="event.stopPropagation();S.saleCustomer=null;S.payTouched=false;renderCart();" style="margin-left:4px;color:var(--red);">✕</span>` : '👤 Add customer';
+    $('custBtn').classList.toggle('set', !!c);
+    $('discBtn').innerHTML = S.saleDisc ? `🏷️ −${S.saleDisc.type === 'pct' ? S.saleDisc.value + '%' : n0(S.saleDisc.value)} <span onclick="event.stopPropagation();S.saleDisc=null;S.payTouched=false;renderCart();" style="margin-left:4px;color:var(--red);">✕</span>` : '🏷️ Discount';
+    $('discBtn').classList.toggle('set', !!S.saleDisc);
+    const credit = !!c && creditAllowed();
+    $('payCreditWrap').classList.toggle('hidden', !credit);
+    $('payAllCredit').classList.toggle('hidden', !credit);
+    if (!credit) $('payCredit').value = 0;
+    if (!S.payTouched) { $('payCash').value = total; $('payMobile').value = 0; $('payCredit').value = 0; }
+    checkPay();
+}
+function setPay(mode) {
+    const t = cartTotal();
+    $('payCash').value = mode === 'cash' ? t : 0;
+    $('payMobile').value = mode === 'mobile' ? t : 0;
+    $('payCredit').value = mode === 'credit' ? t : 0;
+    S.payTouched = true; checkPay();
+}
+function checkPay() {
+    const ok = Math.abs(num($('payCash').value) + num($('payMobile').value) + num($('payCredit').value) - cartTotal()) < 1;
+    $('payWarn').style.display = ok || !Object.keys(S.cart).length ? 'none' : 'block';
+    return ok;
+}
+
+async function confirmSale() {
+    if (S.saving) return;
+    // Serials not on the shelf list: make sure they weren't already sold (e.g. on another till)
+    const unknown = [];
+    Object.keys(S.cart).forEach(id => { const p = productById(id); if (p && p.trackSerial) (meta(id).serials || []).forEach(sn => { sn = (sn || '').trim(); if (sn && !S.serialsIn[serialId(sn)]) unknown.push(sn); }); });
+    if (unknown.length) {
+        S.saving = true;
+        try {
+            for (const sn of unknown) {
+                const d = await Promise.race([col('serials').doc(serialId(sn)).get().then(x => x.exists ? x.data() : null).catch(() => null), new Promise(r => setTimeout(() => r(null), 2500))]);
+                if (d && d.status === 'sold') return toast(`⚠️ ${sn} was already sold${d.soldAt && tms(d.soldAt) ? ' on ' + new Date(tms(d.soldAt)).toLocaleDateString('en-GB') : ''}${d.soldBy ? ' by ' + d.soldBy : ''}. Check the number.`, 'err');
+            }
+        } finally { S.saving = false; }
+    }
+    const lines = Object.entries(S.cart);
+    if (!lines.length) return toast('Cart is empty');
+    if (!checkPay()) return toast('⚠️ The payment must add up to the total.', 'err');
+    if (!isAdmin() && discPctNow() > maxDiscPct() + 0.01) return toast(`⚠️ Discount is ${discPctNow().toFixed(1)}% — your limit is ${maxDiscPct()}%. Ask the owner.`, 'err');
+    const credit = num($('payCredit').value);
+    if (credit > 0 && !S.saleCustomer) return toast('⚠️ Add the customer before selling on credit.', 'err');
+    if (credit > 0 && !creditAllowed()) return toast('⚠️ Only the owner can sell on credit.', 'err');
+    const items = [], allSerials = [];
+    const gross = cartGross(), disc = cartDiscount();
+    for (const [id, qty] of lines) {
+        const p = productById(id);
+        if (!p) return toast('An item was removed from stock. Check the cart.', 'err');
+        if ((Number(p.stock) || 0) < qty - 1e-9) return toast(`⚠️ Only ${qtyTxt(p.stock, p)} ${p.name} left`, 'err');
+        let serials = [];
+        if (p.trackSerial) {
+            serials = (meta(id).serials || []).slice(0, qty).map(x => (x || '').trim());
+            if (serials.length < qty || serials.some(x => !x)) return toast(`⚠️ Enter the serial / IMEI for each ${p.name}.`, 'err');
+            if (new Set(serials).size !== serials.length) return toast(`⚠️ The same serial is entered twice for ${p.name}.`, 'err');
+            const shelf = inStockSerials(id);
+            for (const sn of serials) {
+                const r = S.serialsIn[serialId(sn)];
+                if (r && r.productId !== id) return toast(`⚠️ Serial ${sn} belongs to ${r.name}, not ${p.name}.`, 'err');
+                // Items that have serials registered must be sold from that list (catches typos and double-selling)
+                if (!r && shelf.length) return toast(`⚠️ Serial ${sn} is not on the shelf list for ${p.name}. Check the number — it may already be sold.`, 'err');
+            }
+            allSerials.push(...serials);
+        }
+        const unitPrice = linePrice(id);
+        items.push({ productId: id, name: p.name, emoji: p.emoji || '📦', unit: unitOf(p), qty: q3(qty), listPrice: Number(p.sellPrice) || 0, unitPrice,
+            subtotal: lineSub(id), serials, warrantyMonths: Number(p.warrantyMonths) || 0 });
+    }
+    const total = cartTotal(), list = Math.round(cartList());
+    const cash = num($('payCash').value), mobile = num($('payMobile').value);
+    const day = dayStr(), month = day.slice(0, 7);
+    const ref = col('sales').doc();
+    const receiptNo = 'R' + day.slice(2).replace(/-/g, '') + '-' + ref.id.slice(0, 4).toUpperCase();
+    const cust = S.saleCustomer ? { id: S.saleCustomer.id, name: S.saleCustomer.name, phone: S.saleCustomer.phone || '' } : null;
+    const lineOf = {}; items.forEach((i, ix) => { lineOf[i.productId] = ix; });
+    const sale = {
+        kind: 'pos', appV: APP_VERSION, items, lineOf, subtotal: list, discount: Math.max(0, list - total), saleDiscount: disc, total, cash, mobile, credit,
+        customer: cust, serials: allSerials, receiptNo, day, month, voided: false, staffUid: S.me.uid, staffName: S.me.name, createdAt: now()
+    };
+    const b = db.batch();
+    b.set(ref, sale);
+    const why = src('sales', ref.id);
+    items.forEach(i => b.update(col('products').doc(i.productId), { stock: inc(-i.qty), src: why, updatedAt: now() }));
+    const dayUp = { day, month, sales: inc(total), cash: inc(cash), mobile: inc(mobile), txCount: inc(1), src: why, updatedAt: now() };
+    if (credit) dayUp.credit = inc(credit);
+    if (sale.discount) dayUp.discount = inc(sale.discount);
+    b.set(col('days').doc(day), dayUp, { merge: true });
+    b.set(col('meta').doc('balances'), { cash: inc(cash), mobile: inc(mobile), src: why, updatedAt: now() }, { merge: true });
+    if (cust) b.update(col('customers').doc(cust.id), { balance: inc(credit), totalBought: inc(total), lastSaleAt: now(), src: why, updatedAt: now() });
+    items.forEach(i => (i.serials || []).forEach(sn => b.set(col('serials').doc(serialId(sn)), {
+        serial: sn, productId: i.productId, name: i.name, status: 'sold', saleId: ref.id, soldAt: now(), soldBy: S.me.name,
+        customerName: cust ? cust.name : null, updatedAt: now() }, { merge: true })));
+    b.update(tRef(), { txnCount: inc(1), lastSaleAt: now() });
+
+    closeModals();
+    S.lastSale = { ...sale, id: ref.id, createdAt: { toDate: () => new Date(), toMillis: () => Date.now() } };
+    clearCart();
+    renderLastSale();
+    navigator.vibrate?.(80);
+    commit(b, `✅ Sale recorded · ${fmt(total)}`, { label: `Sale ${receiptNo} · ${fmt(total)} · ${items.map(i => qtyTxt(i.qty, { unit: i.unit }) + ' × ' + i.name).join(', ')}${credit ? ' · credit ' + n0(credit) + ' to ' + cust.name : ''}` });
+}
+function renderLastSale() {
+    const s = S.lastSale, bar = $('lastSaleBar');
+    if (!s) { bar.classList.add('hidden'); return; }
+    bar.classList.remove('hidden');
+    bar.innerHTML = `<span>✅ ${esc(s.receiptNo)} · ${fmt(s.total)}${s.customer ? ' · ' + esc(s.customer.name) : ''}${s.credit ? ` · 📒 ${n0(s.credit)} on credit` : ''}</span><button onclick="receiptMenu(S.lastSale)">🧾 Receipt</button>`;
+}
+
+// ════════════════════════════════════════════════
