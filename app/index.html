@@ -172,6 +172,7 @@
                 <button class="btn-sec" style="border-color:var(--yellow);" onclick="openCashups()">🧾 CASH-UPS<span class="badge hidden" id="cuBadge">0</span></button>
                 <button class="btn-sec" style="border-color:var(--red);color:var(--red);" onclick="openCloseDay()">🔒 CLOSE DAY</button>
             </div>
+            <button class="btn-sec wide shop-svc hidden" style="border-color:var(--ink);" onclick="openStaffPay()">✂️ STAFF PAY &amp; CLIENTS</button>
             <button class="btn-sec wide" style="border-color:var(--amber);" onclick="openCustomers('manage')">📒 CUSTOMERS & CREDIT <span id="dashOwed" style="color:var(--red);"></span></button>
             <button class="btn-sec wide" style="border-color:var(--blue);color:var(--blue);margin-bottom:18px;" onclick="openMonth()">📅 MONTHLY PROFIT & CLOSE MONTH</button>
 
@@ -295,30 +296,49 @@
         <div class="field-group"><span class="field-label">Icon</span><div class="emoji-row" id="emojiPicker"></div></div>
         <div class="field-group"><span class="field-label">Item name</span><input type="text" id="itemName" placeholder="e.g. Samsung 25W charger, Bosch drill, Cement 50kg"></div>
         <div class="field-group"><span class="field-label">Category</span><input type="text" id="itemCat" placeholder="e.g. Phones, Accessories, Power tools, Paint..." list="catList"><datalist id="catList"></datalist></div>
-        <div class="form-row">
+        <label class="check" style="padding-top:0;"><input type="checkbox" id="itemService" onchange="serviceChanged()"><span>✂️ This is a service (haircut, shave, repair…) — no stock</span></label>
+        <div class="field-group svc-only hidden"><span class="field-label">Staff member gets per service (TZS, optional)</span><input type="number" id="itemStaffPay" inputmode="numeric" placeholder="Only for staff paid per service"></div>
+        <div class="form-row goods-only">
             <div class="field-group"><span class="field-label">Sold by</span><select id="itemUnit" onchange="unitChanged()"></select></div>
             <div class="field-group"><span class="field-label">Pack size (optional)</span><input type="number" id="itemPack" inputmode="numeric" placeholder="e.g. 12 per box"></div>
         </div>
-        <label class="check" style="padding-top:0;"><input type="checkbox" id="itemPart"><span>Can sell part units (e.g. 2.5 m, 0.5 kg)</span></label>
+        <label class="check goods-only" style="padding-top:0;"><input type="checkbox" id="itemPart"><span>Can sell part units (e.g. 2.5 m, 0.5 kg)</span></label>
         <div class="form-row">
             <div class="field-group"><span class="field-label" id="lblSell">Sell price / piece (TZS)</span><input type="number" id="itemSell" inputmode="decimal" placeholder="0"></div>
             <div class="field-group"><span class="field-label" id="lblCost">Cost / piece (TZS)</span><input type="number" id="itemCost" inputmode="decimal" placeholder="0"></div>
         </div>
-        <div class="form-row">
+        <div class="form-row goods-only">
             <div class="field-group"><span class="field-label" id="lblStock">In stock</span><input type="number" id="itemStock" inputmode="decimal" placeholder="0"></div>
             <div class="field-group"><span class="field-label">Warn when below</span><input type="number" id="itemReorder" inputmode="decimal" placeholder="5"></div>
         </div>
-        <div class="form-row">
+        <div class="form-row goods-only">
             <div class="field-group"><span class="field-label">Warranty (months)</span><input type="number" id="itemWarranty" inputmode="numeric" placeholder="0 = none"></div>
             <div class="field-group" style="display:flex;align-items:flex-end;"><label class="check" style="padding:0 0 10px;"><input type="checkbox" id="itemSerial"><span>Ask for serial / IMEI when selling</span></label></div>
         </div>
-        <div class="field-group"><span class="field-label">Expiry date (optional) — the soonest on the shelf</span><input type="date" id="itemExpiry"></div>
-        <div class="field-group"><span class="field-label">Barcode (optional)</span><div style="display:flex;gap:6px;"><input type="text" id="itemBarcode" inputmode="numeric" placeholder="Scan or type the code on the pack"><button class="btn-sec" style="flex:none;" onclick="scanItemBarcode()">📷</button></div></div>
+        <div class="field-group goods-only"><span class="field-label">Expiry date (optional) — the soonest on the shelf</span><input type="date" id="itemExpiry"></div>
+        <div class="field-group goods-only"><span class="field-label">Barcode (optional)</span><div style="display:flex;gap:6px;"><input type="text" id="itemBarcode" inputmode="numeric" placeholder="Scan or type the code on the pack"><button class="btn-sec" style="flex:none;" onclick="scanItemBarcode()">📷</button></div></div>
         <div class="save-bar">
             <button class="primary-cta" onclick="saveItem()">SAVE ITEM</button>
             <button class="btn-sec wide ghost" style="color:var(--red);" id="itemDeleteBtn" onclick="deleteItem()">DELETE ITEM</button>
             <button class="btn-sec wide ghost" onclick="closeModals()">CANCEL</button>
         </div>
+    </div>
+</div>
+
+<!-- Staff pay (barbershops, salons, any shop selling services) -->
+<div class="modal-overlay" id="sheetStaffPay" onclick="overlayClose(event)">
+    <div class="modal">
+        <div class="modal-handle"></div>
+        <div class="modal-title">✂️ Staff pay &amp; clients</div>
+        <div class="form-row">
+            <div class="field-group"><span class="field-label">From</span><input type="date" id="spFrom" onchange="loadStaffPay()"></div>
+            <div class="field-group"><span class="field-label">To</span><input type="date" id="spTo" onchange="loadStaffPay()"></div>
+        </div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;">
+            <button class="btn-sec" onclick="spPreset('today')">Today</button><button class="btn-sec" onclick="spPreset('week')">This week</button><button class="btn-sec" onclick="spPreset('month')">This month</button>
+        </div>
+        <div id="spBody"></div>
+        <div class="save-bar"><button class="btn-sec wide ghost" onclick="closeModals()">CLOSE</button></div>
     </div>
 </div>
 
@@ -894,6 +914,7 @@
 <script src="js/closing.js"></script>
 <script src="js/account.js"></script>
 <script src="js/excel-labels.js"></script>
+<script src="js/services.js"></script>
 <script src="js/boot.js"></script>
 </body>
 </html>

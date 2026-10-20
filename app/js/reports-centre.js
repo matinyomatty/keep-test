@@ -142,7 +142,7 @@ async function buildReport(id) {
         return r;
     }
     if (id === 'stockList' || id === 'reorder') {
-        const P = [...S.products].sort((a, b) => (a.category || '').localeCompare(b.category || '') || (a.name || '').localeCompare(b.name || ''));
+        const P = S.products.filter(p => !isService(p)).sort((a, b) => (a.category || '').localeCompare(b.category || '') || (a.name || '').localeCompare(b.name || ''));
         const st = p => (Number(p.stock) || 0) <= 0 ? 'Out of stock' : (Number(p.stock) || 0) <= (Number(p.reorderLevel) || 5) ? 'Low' : 'OK';
         if (id === 'stockList') {
             r.summary = [['Items', P.length], ['Units in stock', q3(sum(P, p => Math.max(0, p.stock)))], ['Value at cost', Math.round(sum(P, p => Math.max(0, p.stock) * (S.costs[p.id] || 0)))], ['Value at selling price', Math.round(sum(P, p => Math.max(0, p.stock) * (p.sellPrice || 0)))], ['Low', P.filter(p => st(p) === 'Low').length], ['Out of stock', P.filter(p => st(p) === 'Out of stock').length]];

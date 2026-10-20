@@ -276,8 +276,8 @@ function confirmCloseDay() {
     const counted = { cash: val('cdCash'), mobile: val('cdMobile'), bank: val('cdBank') };
     const x = dayFig(d), bal = S.balances;
     const profit = x.sales - x.supplier - x.expense;
-    const outItems = S.products.filter(p => (Number(p.stock) || 0) <= 0);
-    const lowItems = S.products.filter(p => p.stock > 0 && p.stock <= (Number(p.reorderLevel) || 5));
+    const outItems = S.products.filter(p => !isService(p) && (Number(p.stock) || 0) <= 0);
+    const lowItems = S.products.filter(p => !isService(p) && p.stock > 0 && p.stock <= (Number(p.reorderLevel) || 5));
     const expItems = expiringItems();
     const isToday = d === dayStr();
 
@@ -589,7 +589,7 @@ async function generatePDF() {
             doc.autoTable({
                 startY: 38, margin: { left: 14, right: 14 },
                 head: [['Item', 'Category', 'Stock', 'Warn at', 'Sell', 'Cost', 'Status']],
-                body: [...S.products].sort((a, b) => (a.stock || 0) - (b.stock || 0)).map(p => {
+                body: S.products.filter(p => !isService(p)).sort((a, b) => (a.stock || 0) - (b.stock || 0)).map(p => {
                     const st = p.stock || 0, status = st <= 0 ? 'OUT' : st <= (p.reorderLevel || 5) ? 'LOW' : 'OK';
                     return [p.name, p.category || '', String(st), String(p.reorderLevel || 5), n0(p.sellPrice), n0(S.costs[p.id] || 0), status];
                 }),
@@ -633,7 +633,7 @@ function openAI() {
     const rhythm = avgWe > avgWd * 1.3 ? 'Weekends are busiest — restock by Friday.'
         : avgWd > avgWe * 1.3 ? 'Weekdays are your peak — keep the till fast in the mornings.'
         : 'Steady trade all week — monthly bulk orders are safe.';
-    const out = S.products.filter(p => (p.stock || 0) <= 0), low = S.products.filter(p => p.stock > 0 && p.stock <= (p.reorderLevel || 5));
+    const out = S.products.filter(p => !isService(p) && (p.stock || 0) <= 0), low = S.products.filter(p => !isService(p) && p.stock > 0 && p.stock <= (p.reorderLevel || 5));
     const inv = (out.length ? `🚨 <b>${out.length} out of stock:</b> ${esc(out.map(p => p.name).join(', '))}<br>` : '')
         + (low.length ? `⚠️ <b>${low.length} running low:</b> ${esc(low.map(p => p.name).join(', '))}` : '') || '✅ All stock levels are healthy.';
     $('aiOut').innerHTML = `

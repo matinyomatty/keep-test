@@ -244,6 +244,7 @@ function openTeam() {
                 <div class="tm-acts">${me ? `<button onclick="openPin()">🔑 Change my PIN</button>` : off
                     ? `<button class="go" data-u="${p.uid}" onclick="toggleStaff(this.dataset.u)">✅ Switch on</button>`
                     : `<button data-u="${p.uid}" onclick="resetStaffPin(this.dataset.u)">🔑 ${byEmail ? 'Email reset' : 'Reset PIN'}</button>
+                       ${isServiceShop() ? `<button data-u="${p.uid}" onclick="setStaffPay(this.dataset.u)">✂️ ${esc(payLabel(p))}</button>` : ''}
                        <button data-u="${p.uid}" onclick="toggleRole(this.dataset.u)">${p.role === 'admin' ? '⬇️ Make seller' : '👑 Make admin'}</button>
                        <button class="stop" data-u="${p.uid}" onclick="toggleStaff(this.dataset.u)">⛔ Switch off</button>`}</div>
             </div>`;
@@ -412,7 +413,6 @@ async function switchBranch() {
     try { localStorage.setItem('keep.branch.' + S.me.uid, pick); } catch (e) {}
     try {
         const t = (await db.collection('tenants').doc(pick).get()).data() || {};
-        if (t.type === 'barbershop') { location.href = '../barber/'; return; }
     } catch (e) {}
     location.reload();
 }

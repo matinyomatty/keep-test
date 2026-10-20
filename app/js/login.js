@@ -221,6 +221,7 @@ function enterApp() {
     startListeners();
     switchTab(isAdmin() ? 'dashboard' : 'pos');
     renderSellerTools();
+    applyServiceMode();
     detectDevice();
     touch();
     prewarmScanner();
@@ -306,6 +307,7 @@ function startListeners() {
     });
     L(col('products'), s => {
         S.products = s.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+        applyServiceMode();
         Object.keys(S.cart).forEach(id => { if (!productById(id)) delete S.cart[id]; });
         renderPOS(); renderInventory(); renderNotices(); if (isAdmin()) renderDashboard();
     });

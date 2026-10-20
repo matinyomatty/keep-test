@@ -1,7 +1,7 @@
 // Keep till — keeps the app opening when the internet is down.
 // Sales themselves are stored offline by Firebase; this file only caches the app's own files.
-const CACHE = 'keep-app-v28';
-const PARTS = ['core', 'login', 'sell', 'stock', 'money', 'deliveries', 'reports-centre', 'returns', 'scanner', 'customers', 'closing', 'account', 'excel-labels', 'boot'];
+const CACHE = 'keep-app-v30';
+const PARTS = ['core', 'login', 'sell', 'stock', 'money', 'deliveries', 'reports-centre', 'returns', 'scanner', 'customers', 'closing', 'account', 'excel-labels', 'services', 'boot'];
 const SHELL = ['./', './index.html', './app.css', ...PARTS.map(p => './js/' + p + '.js'), './icon-192.png', './icon-512.png', '../lang.js', '../lang-sw.js', '../env.js'];
 
 self.addEventListener('install', e => {

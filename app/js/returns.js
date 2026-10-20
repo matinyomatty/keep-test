@@ -71,7 +71,7 @@ function openReturn(saleId) {
                     ${left > 0 && !sers.length ? `<input class="ret-qty" type="number" inputmode="decimal" step="${partOk(p) ? '0.1' : '1'}" min="0" max="${left}" placeholder="0" oninput="retTotal()" title="Quantity to return (max ${left})">` : ''}
                 </div>
                 ${left > 0 && sers.length ? sers.map(x => `<label class="check" style="padding:4px 0;"><input type="checkbox" class="ret-ser" value="${esc(x)}" onchange="retTotal()"><span style="font-family:monospace;">${esc(x)}</span></label>`).join('') : ''}
-                ${left > 0 ? `<select class="ret-where" style="margin-top:6px;padding:8px;font-size:.78rem;"><option value="restock">📦 Put back in stock</option><option value="damaged">🛠️ Damaged / faulty — don't put back</option></select>` : '<div class="cl-price">Fully returned</div>'}
+                ${left > 0 && i.service ? '<select class="ret-where" style="display:none"><option value="damaged"></option></select>' : left > 0 ? `<select class="ret-where" style="margin-top:6px;padding:8px;font-size:.78rem;"><option value="restock">📦 Put back in stock</option><option value="damaged">🛠️ Damaged / faulty — don't put back</option></select>` : '<div class="cl-price">Fully returned</div>'}
             </div>`;
         }).join('')}
         <div class="form-row" style="margin-top:12px;">
@@ -117,6 +117,7 @@ async function confirmReturn() {
     const cash = how === 'cash' ? refund : how === 'debt' ? refund - debt : 0, mobile = how === 'mobile' ? refund : 0;
     const howTxt = [debt ? `<b>${fmt(debt)}</b> off what they owe` : '', cash ? `<b>${fmt(cash)}</b> cash back` : '', mobile ? `<b>${fmt(mobile)}</b> by Lipa kwa Simu` : ''].filter(Boolean).join(' + ');
     if (!await showConfirm(`Return ${picked.map(x => qtyTxt(x.qty, { unit: x.i.unit }) + ' × ' + esc(x.i.name)).join(', ')}?<br><br>Refund ${fmt(refund)}: ${howTxt}.${how === 'debt' && debt < refund ? `<br><span style="font-size:.75rem;color:#6b7280;">They only owed ${fmt(owed)}.</span>` : ''}`, 'Return', 'var(--blue)')) return;
+    picked.forEach(x => { if (x.i.service) x.where = 'damaged'; });   // a service has no stock to put back
     const restockIds = new Set(picked.filter(x => x.where === 'restock' && productById(x.i.productId)).map(x => x.i.productId));
     if (restockIds.size > 10) return toast('⚠️ Put back at most 10 different items per return — do the rest as a second return.', 'err');
     const day = dayStr(), ref = col('sales').doc(), b = db.batch(), why = src('sales', ref.id);

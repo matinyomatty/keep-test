@@ -23,8 +23,9 @@ function renderInventory() {
     if (!S.me) return;
     const P = S.products;
     const expN = expiringItems().length;
-    const low = P.filter(p => p.stock > 0 && p.stock <= (Number(p.reorderLevel) || 5)).length;
-    const out = P.filter(p => (Number(p.stock) || 0) <= 0).length;
+    const G = P.filter(p => !isService(p));
+    const low = G.filter(p => p.stock > 0 && p.stock <= (Number(p.reorderLevel) || 5)).length;
+    const out = G.filter(p => (Number(p.stock) || 0) <= 0).length;
     const value = P.reduce((s, p) => s + (S.costs[p.id] || 0) * Math.max(0, Number(p.stock) || 0), 0);
     $('invStrip').innerHTML = `
         <div class="inv-strip-card"><h4>Items</h4><p>${P.length}</p></div>
@@ -50,16 +51,16 @@ function renderInventory() {
         return;
     }
     box.innerHTML = list.map(p => {
-        const st = Number(p.stock) || 0, isOut = st <= 0, isLow = !isOut && st <= (Number(p.reorderLevel) || 5);
+        const svc = isService(p), st = Number(p.stock) || 0, isOut = !svc && st <= 0, isLow = !svc && !isOut && st <= (Number(p.reorderLevel) || 5);
         return `<div class="inv-row ${isOut ? 'out' : isLow ? 'low' : ''}">
             <span class="inv-emoji">${esc(p.emoji || '📦')}</span>
             <div class="inv-info">
                 <div class="inv-name">${esc(p.name)}</div>
                 <div class="inv-detail">${esc(p.category || 'General')} · Sell ${n0(p.sellPrice)}${perUnit(p)}${isAdmin() ? ' · Cost ' + n0(S.costs[p.id] || 0) : ''}${p.trackSerial ? ` · 🔢 ${inStockSerials(p.id).length} serials` : ''}${p.warrantyMonths ? ' · 🛡️ ' + p.warrantyMonths + 'm' : ''}${p.packSize > 1 ? ' · ' + p.packSize + '/pack' : ''}${(() => { const d = daysToExpiry(p); return d === null ? '' : ` · <span style="color:${d <= 0 ? 'var(--red)' : d <= EXPIRY_WARN_DAYS ? '#b45309' : 'inherit'};font-weight:${d <= EXPIRY_WARN_DAYS ? 800 : 400};">⏳ ${d <= EXPIRY_WARN_DAYS ? esc(expiryTxt(d)) : 'Exp ' + esc(p.expiry)}</span>`; })()}</div>
             </div>
-            <div class="inv-stock"><b class="${isOut ? 'out' : isLow ? 'low' : ''}">${q3(st).toLocaleString('en-US')}</b><small>${unitOf(p) === 'pc' ? 'pcs' : unitShort(p)}</small></div>
+            <div class="inv-stock">${svc ? `<b style="font-size:1rem;">✂️</b><small>${tl('Service')}</small>` : `<b class="${isOut ? 'out' : isLow ? 'low' : ''}">${q3(st).toLocaleString('en-US')}</b><small>${unitOf(p) === 'pc' ? 'pcs' : unitShort(p)}</small>`}</div>
             <div class="inv-actions">
-                <button class="btn-circle" title="Restock" onclick="openRestock('${p.id}')">📥</button>
+                ${svc ? '' : `<button class="btn-circle" title="Restock" onclick="openRestock('${p.id}')">📥</button>`}
                 ${p.trackSerial ? `<button class="btn-circle" title="Serials on the shelf" onclick="openSerials('${p.id}')">🔢</button>` : ''}
                 ${isAdmin() ? `<button class="btn-circle" title="Edit" onclick="openItem('${p.id}')">✏️</button>` : ''}
             </div>
@@ -68,7 +69,7 @@ function renderInventory() {
 }
 
 function buildEmojiPicker() {
-    $('emojiPicker').innerHTML = EMOJIS.map(e => `<button type="button" class="emoji-opt ${e === S.emoji ? 'sel' : ''}" onclick="pickEmoji(this)">${e}</button>`).join('');
+    $('emojiPicker').innerHTML = (isServiceShop() ? ['💈','✂️','💇','💇‍♀️','🧔','🪒','💅','💆','🧖','🪮', ...EMOJIS] : EMOJIS).map(e => `<button type="button" class="emoji-opt ${e === S.emoji ? 'sel' : ''}" onclick="pickEmoji(this)">${e}</button>`).join('');
 }
 function pickEmoji(el) {
     S.emoji = el.textContent;
@@ -88,6 +89,9 @@ function openItem(id) {
     $('itemReorder').value = p ? (p.reorderLevel ?? 5) : '';
     $('itemBarcode').value = p ? (p.barcode || '') : '';
     $('itemExpiry').value = p ? (p.expiry || '') : '';
+    $('itemService').checked = p ? isService(p) : (S.tenantInfo || {}).type === 'barbershop';
+    $('itemStaffPay').value = p && p.staffPay ? p.staffPay : '';
+    serviceChanged();
     $('itemUnit').innerHTML = UNITS.map(([k, l]) => `<option value="${k}">${l}</option>`).join('');
     $('itemUnit').value = p ? unitOf(p) : 'pc';
     $('itemPart').checked = p ? partOk(p) : false;
@@ -109,6 +113,7 @@ function unitChanged(keepPart) {
     $('lblSell').textContent = `Sell price / ${name} (TZS)`;
     $('lblCost').textContent = `Cost / ${name} (TZS)`;
     $('lblStock').textContent = `In stock (${u === 'pc' ? 'pieces' : name + 's'})`;
+    if ($('itemService').checked) { $('lblSell').textContent = 'Price (TZS)'; $('lblCost').textContent = 'Cost to you (TZS, optional)'; }
 }
 function saveItem() {
     const id = $('itemId').value;
@@ -117,6 +122,8 @@ function saveItem() {
     if (S.products.some(p => p.id !== id && (p.name || '').toLowerCase() === name.toLowerCase())) return toast('⚠️ An item with that name already exists.', 'err');
     const sellPrice = num($('itemSell').value), cost = num($('itemCost').value);
     if (sellPrice <= 0) return toast('⚠️ Enter a selling price.', 'err');
+    const svc = $('itemService').checked;
+    if (svc) { $('itemStock').value = '0'; $('itemSerial').checked = false; $('itemPart').checked = false; $('itemPack').value = ''; $('itemWarranty').value = ''; $('itemExpiry').value = ''; }
     const part = $('itemPart').checked, serial = $('itemSerial').checked;
     const roundQ = v => part ? q3(v) : Math.round(v);
     const stock = roundQ(num($('itemStock').value)), reorderLevel = roundQ(num($('itemReorder').value)) || 5;
@@ -132,7 +139,8 @@ function saveItem() {
     if (barcode && S.products.some(p => p.id !== id && p.barcode && normCode(p.barcode) === normCode(barcode))) return toast('⚠️ Another item already uses that barcode.', 'err');
     b.set(ref, { name, emoji: S.emoji, category: $('itemCat').value.trim() || 'General', sellPrice, stock, reorderLevel, barcode,
         unit: $('itemUnit').value, partQty: part, packSize: Math.max(0, Math.round(num($('itemPack').value))) || 0,
-        warrantyMonths: Math.max(0, Math.round(num($('itemWarranty').value))) || 0, trackSerial: serial, expiry: $('itemExpiry').value || '', updatedAt: now() }, { merge: true });
+        warrantyMonths: Math.max(0, Math.round(num($('itemWarranty').value))) || 0, trackSerial: serial, expiry: $('itemExpiry').value || '',
+        service: svc, staffPay: svc ? Math.max(0, Math.round(num($('itemStaffPay').value))) || 0 : 0, updatedAt: now() }, { merge: true });
     b.set(col('costs').doc(ref.id), { costPrice: cost, updatedAt: now() }, { merge: true });
     if (!id) usageAdd(b, 'products', ref.id);
     if (!before || (Number(before.stock) || 0) !== stock) {
@@ -216,7 +224,7 @@ function confirmRestock() {
 
 function openStocktake() {
     $('stkSearch').value = '';
-    $('stkList').innerHTML = S.products.map(p => `
+    $('stkList').innerHTML = S.products.filter(p => !isService(p)).map(p => `
         <div class="stk-line" data-name="${esc((p.name || '').toLowerCase())}">
             <div style="flex:1;min-width:0;">
                 <div style="font-size:0.82rem;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(p.emoji || '📦')} ${esc(p.name)}</div>

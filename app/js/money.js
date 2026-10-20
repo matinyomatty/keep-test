@@ -228,7 +228,7 @@ async function voidSale(id) {
     if (!await showConfirm(msg, 'Void')) return;
     const b = db.batch();
     b.update(col('sales').doc(id), { voided: true, voidedAt: now(), voidedBy: S.me.name });
-    (s.items || []).forEach(i => { if (productById(i.productId)) b.update(col('products').doc(i.productId), { stock: inc(i.qty), updatedAt: now() }); });
+    (s.items || []).forEach(i => { if (!i.service && productById(i.productId)) b.update(col('products').doc(i.productId), { stock: inc(i.qty), updatedAt: now() }); });
     const dayUp = { day: s.day, month: s.day.slice(0, 7), cash: inc(-(s.cash || 0)), mobile: inc(-(s.mobile || 0)), updatedAt: now() };
     if (repay) dayUp.debtPaid = inc(-s.total);
     else {

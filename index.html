@@ -304,7 +304,7 @@ a.btn{display:grid;place-items:center;text-decoration:none}
   const ROUTES = {
     hq:         { name: 'Keep HQ',  path: 'hq/' },
     shop:       { name: 'your shop', path: 'app/' },
-    barbershop: { name: 'your barbershop', path: 'barber/' }
+    barbershop: { name: 'your barbershop', path: 'app/' }
   };
   const firebaseConfig = window.KEEP_ENV.firebaseConfig;   // live or test — see /env.js
   const LIVE = ['keep.co.tz', 'www.keep.co.tz', 'test.keep.co.tz', 'matinyomatty.github.io', 'localhost', '127.0.0.1'].includes(location.hostname);
@@ -438,7 +438,7 @@ a.btn{display:grid;place-items:center;text-decoration:none}
   // Preview only: try 'maternusadriano@gmail.com' for HQ, any phone for a shop
   function previewRoute(id) {
     if (id === VENDOR_EMAIL) return route('hq');
-    if (id.includes('barber')) return { name: 'your barbershop', url: 'barber/' };
+    if (id.includes('barber')) return { name: 'your barbershop', url: 'app/' };
     return route('shop');
   }
 

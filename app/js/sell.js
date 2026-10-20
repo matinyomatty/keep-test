@@ -119,15 +119,15 @@ function renderPOS() {
     } else {
         empty.classList.add('hidden');
         $('posGrid').innerHTML = list.map(p => {
-            const qty = S.cart[p.id] || 0, stock = Number(p.stock) || 0;
-            const out = stock <= 0, low = !out && stock <= (Number(p.reorderLevel) || 5);
+            const qty = S.cart[p.id] || 0, stock = Number(p.stock) || 0, svc = isService(p);
+            const out = !svc && stock <= 0, low = !svc && !out && stock <= (Number(p.reorderLevel) || 5);
             return `<button class="item-card ${qty ? 'in-cart' : ''} ${out ? 'out' : ''}" ${out ? 'disabled' : ''} onclick="addToCart('${p.id}')">
                 ${low ? '<span class="ic-low">LOW</span>' : ''}
                 <span class="ic-badge">${q3(qty)}</span>
                 <span class="ic-emoji">${esc(p.emoji || '📦')}</span>
                 <div class="ic-name">${esc(p.name)}</div>
                 <div class="ic-price">${n0(p.sellPrice)} TZS${perUnit(p)}</div>
-                <div class="ic-stock">${out ? '❌ Out of stock' : stockTxt(p)}${p.trackSerial ? ' · 🔢' : ''}${p.warrantyMonths ? ' · 🛡️' : ''}</div>
+                <div class="ic-stock">${svc ? '✂️ ' + tl('Service') : out ? '❌ Out of stock' : stockTxt(p)}${p.trackSerial ? ' · 🔢' : ''}${p.warrantyMonths ? ' · 🛡️' : ''}</div>
             </button>`;
         }).join('');
     }
@@ -170,9 +170,14 @@ const creditAllowed = () => isAdmin() || !!(S.tenantInfo.settings || {}).cashier
 function addToCart(id) {
     const p = productById(id); if (!p) return;
     const q = S.cart[id] || 0, stock = Number(p.stock) || 0;
-    const step = partOk(p) ? Math.min(1, q3(stock - q)) : 1;
-    if (step <= 0 || q + step > stock + 1e-9) { toast(`⚠️ Only ${qtyTxt(stock, p)} ${p.name} in stock`, 'err'); return; }
-    S.cart[id] = q3(q + step);
+    if (isService(p)) {
+        S.cart[id] = q + 1;
+        if (!meta(id).by && defaultDoer()) meta(id).by = defaultDoer();
+    } else {
+        const step = partOk(p) ? Math.min(1, q3(stock - q)) : 1;
+        if (step <= 0 || q + step > stock + 1e-9) { toast(`⚠️ Only ${qtyTxt(stock, p)} ${p.name} in stock`, 'err'); return; }
+        S.cart[id] = q3(q + step);
+    }
     navigator.vibrate?.(25);
     renderPOS();
     if ($('sheetCart').classList.contains('active')) renderCart();
@@ -190,7 +195,7 @@ function setQty(id, v) {
     if (!partOk(p)) q = Math.round(q);
     q = q3(q);
     if (q <= 0) { delete S.cart[id]; delete S.lineMeta[id]; }
-    else if (q > (Number(p.stock) || 0) + 1e-9) { toast(`⚠️ Only ${qtyTxt(p.stock, p)} in stock`, 'err'); }
+    else if (!isService(p) && q > (Number(p.stock) || 0) + 1e-9) { toast(`⚠️ Only ${qtyTxt(p.stock, p)} in stock`, 'err'); }
     else S.cart[id] = q;
     setTimeout(() => { renderPOS(); renderCart(); }, 0);
 }
@@ -253,6 +258,7 @@ function renderCartInner() {
                 <div class="cl-price">${changed ? `<s>${n0(p.sellPrice)}</s> ` : ''}<b style="color:${changed ? 'var(--amber)' : 'inherit'};">${n0(price)}</b>${perUnit(p)} × ${qtyTxt(q, p)} = <b>${n0(lineSub(id))}</b>
                     <button class="cl-edit" onclick="editLinePrice('${id}')">✏️ price</button></div>
                 ${p.warrantyMonths ? `<div class="cl-price">🛡️ ${p.warrantyMonths}-month warranty</div>` : ''}
+                ${isService(p) ? `<button class="cl-edit" style="padding:4px 0;color:${meta(id).by ? 'inherit' : 'var(--red)'};font-weight:800;" onclick="pickDoer('${id}')">✂️ ${meta(id).by ? esc(tl('Done by') + ' ' + (staffName(meta(id).by) || '…')) : esc(tl('Choose who did it'))}</button>` : ''}
                 ${serials}
             </div>
             <div class="qty-ctrl">
@@ -321,7 +327,8 @@ async function confirmSale() {
     for (const [id, qty] of lines) {
         const p = productById(id);
         if (!p) return toast('An item was removed from stock. Check the cart.', 'err');
-        if ((Number(p.stock) || 0) < qty - 1e-9) return toast(`⚠️ Only ${qtyTxt(p.stock, p)} ${p.name} left`, 'err');
+        if (!isService(p) && (Number(p.stock) || 0) < qty - 1e-9) return toast(`⚠️ Only ${qtyTxt(p.stock, p)} ${p.name} left`, 'err');
+        if (isService(p) && !meta(id).by) { openCart(); return toast(`⚠️ ${tl('Choose who did')} ${p.name}.`, 'err'); }
         let serials = [];
         if (p.trackSerial) {
             serials = (meta(id).serials || []).slice(0, qty).map(x => (x || '').trim());
@@ -338,7 +345,8 @@ async function confirmSale() {
         }
         const unitPrice = linePrice(id);
         items.push({ productId: id, name: p.name, emoji: p.emoji || '📦', unit: unitOf(p), qty: q3(qty), listPrice: Number(p.sellPrice) || 0, unitPrice,
-            subtotal: lineSub(id), serials, warrantyMonths: Number(p.warrantyMonths) || 0 });
+            subtotal: lineSub(id), serials, warrantyMonths: Number(p.warrantyMonths) || 0,
+            ...(isService(p) ? { service: true } : {}), ...(meta(id).by ? { by: meta(id).by, byName: staffName(meta(id).by) } : {}) });
     }
     const total = cartTotal(), list = Math.round(cartList());
     const cash = num($('payCash').value), mobile = num($('payMobile').value);
@@ -354,7 +362,7 @@ async function confirmSale() {
     const b = db.batch();
     b.set(ref, sale);
     const why = src('sales', ref.id);
-    items.forEach(i => b.update(col('products').doc(i.productId), { stock: inc(-i.qty), src: why, updatedAt: now() }));
+    items.forEach(i => { if (!i.service) b.update(col('products').doc(i.productId), { stock: inc(-i.qty), src: why, updatedAt: now() }); });
     const dayUp = { day, month, sales: inc(total), cash: inc(cash), mobile: inc(mobile), txCount: inc(1), src: why, updatedAt: now() };
     if (credit) dayUp.credit = inc(credit);
     if (sale.discount) dayUp.discount = inc(sale.discount);
@@ -371,7 +379,7 @@ async function confirmSale() {
     clearCart();
     renderLastSale();
     navigator.vibrate?.(80);
-    commit(b, `✅ Sale recorded · ${fmt(total)}`, { label: `Sale ${receiptNo} · ${fmt(total)} · ${items.map(i => qtyTxt(i.qty, { unit: i.unit }) + ' × ' + i.name).join(', ')}${credit ? ' · credit ' + n0(credit) + ' to ' + cust.name : ''}` });
+    commit(b, `✅ ${tl('Sale recorded')} · ${fmt(total)}`, { label: `Sale ${receiptNo} · ${fmt(total)} · ${items.map(i => qtyTxt(i.qty, { unit: i.unit }) + ' × ' + i.name).join(', ')}${credit ? ' · credit ' + n0(credit) + ' to ' + cust.name : ''}` });
 }
 function renderLastSale() {
     const s = S.lastSale, bar = $('lastSaleBar');
