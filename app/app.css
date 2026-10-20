@@ -621,3 +621,10 @@
         .db-share { color: var(--pos); }
         .db-total { border-top: 2px solid var(--ink); font-weight: 800; }
         .db-keep { text-align: right; font-size: .8rem; color: var(--gray); margin-top: 4px; }
+        .qs-confirm-title { font-weight: 800; font-size: 1.05rem; text-align: center; margin-bottom: 6px; }
+        .qs-method { text-align: center; font-weight: 800; padding: 12px; border-radius: 12px; margin-bottom: 12px; }
+        .qs-method.cash { background: var(--pos-l); color: var(--pos); }
+        .qs-method.mobile { background: #e8efff; color: #1a56db; }
+        .qs-ok { width: 100%; border: none; border-radius: 14px; padding: 18px; background: var(--pos); color: #fff; font-weight: 800; font-size: 1.05rem; cursor: pointer; }
+        .qs-split { width: 100%; margin-top: 10px; border: 2px solid #d5dbe4; background: #fff; border-radius: 14px; padding: 13px; font-weight: 800; color: var(--ink); cursor: pointer; }
+        .qs-method.split { background: #f3f4f6; color: var(--ink); }

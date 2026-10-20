@@ -5,8 +5,48 @@
 
 const isService = p => !!(p && p.service);
 const isServiceShop = () => (S.tenantInfo || {}).type === 'barbershop' || S.products.some(isService);
-// One rule, set on each service: "Barber gets X". Whoever does that service earns X.
+// "Barber gets X" is set on each service. Each barber has one pay method:
+//   service — earns the "barber gets" amount of every service they do (the default)
+//   percent — earns a % of the money they bring in
+//   salary  — a fixed monthly salary; Keep just counts their clients
+//   rent    — keeps their takings and pays the shop chair rent per day worked
 const shareOf = (p, qty) => Math.round((Number((p || {}).staffPay) || 0) * (Number(qty) || 0));
+const PAY_TYPES = [
+    ['service', 'Per service', 'Gets the "barber gets" amount set on each service'],
+    ['percent', 'Percentage', 'Gets a % of the money they bring in'],
+    ['salary', 'Salary', 'A fixed monthly salary — Keep counts their clients'],
+    ['rent', 'Chair rent', 'Keeps their money and pays the shop rent per day worked']
+];
+const payOf = x => { const p = (x && x.pay) || {}; return PAY_TYPES.some(t => t[0] === p.type) ? { type: p.type, rate: Number(p.rate) || 0 } : { type: 'service', rate: 0 }; };
+const payLabel = x => {
+    const { type, rate } = payOf(x);
+    return type === 'service' ? tl('Per service') + ' · ' + tl('share set on each service') : type === 'percent' ? `${tl('Percentage')} · ${rate}%`
+        : type === 'salary' ? `${tl('Salary')} · ${n0(rate)} / ${tl('month')}` : `${tl('Chair rent')} · ${n0(rate)} / ${tl('day')}`;
+};
+// What a barber earned from some work: money brought in, service shares, days worked, salary months
+function earnedBy(x, w) {
+    const { type, rate } = payOf(x);
+    return Math.round(type === 'service' ? w.shares : type === 'percent' ? w.money * rate / 100 : type === 'salary' ? rate * (w.months || 0) : w.money - rate * (w.days || 0));
+}
+async function setStaffPay(uid) {
+    const x = (S.staffAll || []).find(y => y.uid === uid) || (S.staff || []).find(y => y.uid === uid); if (!x) return;
+    const cur = payOf(x);
+    const type = await choose(`${tl('How is this person paid?')}<br><b class="notr">${esc(x.name)}</b>`, PAY_TYPES.map(([k, l, d]) => [k, `${tl(l)}<br><small style="font-weight:500;opacity:.85;">${tl(d)}</small>`, cur.type === k ? '#0b0d12' : '#1a56db']));
+    if (!type) return;
+    let rate = 0;
+    if (type !== 'service') {
+        const q = { percent: 'Their share (%)', salary: 'Monthly salary (TZS)', rent: 'Chair rent per day worked (TZS)' }[type];
+        const v = await askValue(`<b class="notr">${esc(x.name)}</b><br><span style="font-size:.78rem;color:#6b7280;">${tl(q)}</span>`, type === 'percent' ? 'e.g. 40' : 'e.g. 5000', tl('Save'), { value: cur.type === type && cur.rate ? String(cur.rate) : '' });
+        if (v === null) return;
+        rate = Math.max(0, num(v));
+        if (!(rate > 0)) return toast('⚠️ ' + tl('Enter an amount.'), 'err');
+        if (type === 'percent' && rate > 100) return toast('⚠️ ' + tl('A share cannot be more than 100%.'), 'err');
+    }
+    const b = db.batch();
+    b.set(col('staff').doc(uid), { pay: { type, rate }, updatedAt: now() }, { merge: true });
+    x.pay = { type, rate };
+    await commit(b, '✅ ' + tl('Pay method saved'));
+}
 
 // Labels and buttons that only make sense when the shop sells services
 function applyServiceMode() {
@@ -53,6 +93,7 @@ function serviceChanged() {
     payLbl.textContent = bs ? 'Barber gets from each one (TZS)' : 'Staff member gets from each one (TZS)';
     $('itemStaffPay').placeholder = 'e.g. 2000';
     shopKeeps();
+    if ($('svcPayNote')) $('svcPayNote').classList.toggle('hidden', !bs);
     document.querySelector('#sheetItem .save-bar .primary-cta').textContent = bs ? 'SAVE SERVICE' : 'SAVE ITEM';
     $('itemDeleteBtn').textContent = bs ? 'DELETE SERVICE' : 'DELETE ITEM';
     if (isBarberMode() && svc && !$('itemCat').value) $('itemCat').value = 'Services';
@@ -89,30 +130,37 @@ async function loadStaffPay() {
             loadStaffOnce(true)
         ]);
     } catch (e) { box.innerHTML = `<div class="hint amber">${esc(friendlyErr(e))}</div>`; return; }
-    S.spRows = staffPayRows(sales, entries, staff);
     S.spRange = { from, to };
-    const R = S.spRows.filter(r => r.clients || r.paid);
+    S.spRows = staffPayRows(sales, entries, staff);
+    const R = S.spRows.filter(r => r.clients || r.paid || r.pay.type === 'salary');
     const tot = R.reduce((a, r) => ({ takings: a.takings + r.takings, earned: a.earned + r.earned, paid: a.paid + r.paid }), { takings: 0, earned: 0, paid: 0 });
     const unassigned = sales.filter(s => s.kind === 'pos' && !s.voided).reduce((n, s) => n + (s.items || []).filter(i => i.service && !i.by).length, 0);
-    const noShare = S.products.filter(p => isService(p) && !(Number(p.staffPay) > 0));
-    box.innerHTML = (R.length ? R.map((r, i) => `
+    const noShare = R.some(r => r.pay.type === 'service') ? S.products.filter(p => isService(p) && !(Number(p.staffPay) > 0)) : [];
+    box.innerHTML = (R.length ? R.map((r, i) => {
+        const t = r.pay.type;
+        const earnedLbl = t === 'service' ? 'Their share (from services)' : t === 'percent' ? `${r.pay.rate}% ${tl('of their money')}` : t === 'salary' ? 'Salary for these dates' : 'Their money minus chair rent';
+        return `
         <div class="sum-box" style="margin-bottom:10px;">
-            <div style="margin-bottom:6px;"><b class="notr">${esc(r.p.name)}</b></div>
+            <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:6px;">
+                <div><b class="notr">${esc(r.p.name)}</b><div style="font-size:.7rem;color:var(--gray);">${esc(payLabel(r.p))}</div></div>
+                <button class="tiny-btn" onclick="setStaffPay('${r.p.uid}').then(loadStaffPay)">✏️ ${tl('Change')}</button>
+            </div>
             <div class="sum-row"><span>${tl('Clients')}</span><b>${r.clients}</b></div>
             <div class="sum-row"><span>${tl('Money from their work')}</span><b>${fmt(r.takings)}</b></div>
-            <div class="sum-row"><span>${tl('Their share')}</span><b>${fmt(r.earned)}</b></div>
+            ${t === 'rent' ? `<div class="sum-row"><span>${tl('Chair rent')} · ${r.days.size} ${tl('days')} × ${n0(r.pay.rate)}</span><span>−${n0(r.pay.rate * r.days.size)}</span></div>` : ''}
+            <div class="sum-row"><span>${tl(earnedLbl)}</span><b>${fmt(r.earned)}</b></div>
             <div class="sum-row"><span>${tl('Already paid')}</span><span>${r.paid ? '−' + n0(r.paid) : '0'}</span></div>
-            <div class="sum-row big"><span>${r.owed >= 0 ? tl('Owed to them') : tl('Paid too much')}</span><strong style="color:${r.owed > 0 ? 'var(--red)' : 'var(--green)'};">${fmt(Math.abs(r.owed))}</strong></div>
+            <div class="sum-row big"><span>${r.owed >= 0 ? tl('Owed to them') : t === 'rent' ? tl('They owe the shop') : tl('Paid too much')}</span><strong style="color:${r.owed > 0 ? 'var(--red)' : 'var(--green)'};">${fmt(Math.abs(r.owed))}</strong></div>
             ${r.owed > 0 ? `<button class="btn-sec wide" style="border-color:var(--green);color:var(--green);margin-top:8px;" onclick="payStaff(${i})">💵 ${tl('Pay')} ${n0(r.owed)}</button>` : ''}
-        </div>`).join('') : `<div class="hint gray">${tl('No services recorded in these dates.')}</div>`)
+        </div>`; }).join('') : `<div class="hint gray">${tl('No services recorded in these dates.')}</div>`)
         + (noShare.length ? `<div class="hint amber">⚠️ ${tl('No barber share set on')}: <span class="notr">${noShare.map(p => esc(p.name)).join(', ')}</span>. ${tl('Set it in Services.')}</div>` : '')
         + (unassigned ? `<div class="hint amber">⚠️ ${unassigned} ${tl('services were sold without choosing who did them.')}</div>` : '')
-        + (R.length ? `<div class="sum-box"><div class="sum-row"><span>${tl('Total money from services')}</span><b>${fmt(tot.takings)}</b></div><div class="sum-row"><span>${tl('Barbers\' shares')}</span><b>${fmt(tot.earned)}</b></div><div class="sum-row"><span>${tl('Shop keeps')}</span><b>${fmt(tot.takings - tot.earned)}</b></div><div class="sum-row"><span>${tl('Total paid to staff')}</span><b>${fmt(tot.paid)}</b></div></div>` : '');
+        + (R.length ? `<div class="sum-box"><div class="sum-row"><span>${tl('Total money from services')}</span><b>${fmt(tot.takings)}</b></div><div class="sum-row"><span>${tl('Barbers earned')}</span><b>${fmt(tot.earned)}</b></div><div class="sum-row"><span>${tl('Total paid to staff')}</span><b>${fmt(tot.paid)}</b></div></div>` : '');
 }
 // Works out each person's clients, takings and pay from the sales and payments in the range.
 function staffPayRows(sales, entries, staff) {
     const rows = {};
-    const row = uid => rows[uid] = rows[uid] || { p: staff.find(x => x.uid === uid) || { uid, name: staffName(uid) || '?' }, clients: 0, services: 0, takings: 0, earned: 0, paid: 0 };
+    const row = uid => rows[uid] = rows[uid] || { p: staff.find(x => x.uid === uid) || { uid, name: staffName(uid) || '?' }, clients: 0, services: 0, takings: 0, shares: 0, days: new Set(), months: new Set(), paid: 0 };
     sales.filter(s => s.kind === 'pos' && !s.voided).forEach(s => {
         const items = s.items || [], gross = items.reduce((a, i) => a + (Number(i.subtotal) || 0), 0);
         const part = gross > 0 ? (Number(s.total) || 0) / gross : 1;        // spread the sale discount over the lines
@@ -126,18 +174,25 @@ function staffPayRows(sales, entries, staff) {
             if (i.service) {
                 r.services += q;
                 // the share is kept on the sale, so changing a service's share later doesn't rewrite the past
-                r.earned += (i.share != null ? Number(i.share) || 0 : shareOf(productById(i.productId), qty)) * (q / qty);
+                r.shares += (i.share != null ? Number(i.share) || 0 : shareOf(productById(i.productId), qty)) * (q / qty);
             }
+            r.days.add(s.day);
             if (!seen.has(i.by)) { seen.add(i.by); r.clients++; }
         });
     });
     entries.filter(e => e.payee && e.type === 'expense').forEach(e => { row(e.payee).paid += Number(e.amount) || 0; });
     staff.forEach(p => row(p.uid));
+    const range = S.spRange || {}, months = new Set();
+    if (range.from && range.to) for (let m = range.from.slice(0, 7); m <= range.to.slice(0, 7); m = nextMonth(m)) months.add(m);
     return Object.values(rows).map(r => {
-        r.takings = Math.round(r.takings); r.earned = Math.round(r.earned); r.owed = r.earned - r.paid;
+        r.takings = Math.round(r.takings); r.shares = Math.round(r.shares);
+        r.pay = payOf(r.p);
+        r.earned = earnedBy(r.p, { money: r.takings, shares: r.shares, days: r.days.size, months: months.size });
+        r.owed = r.earned - r.paid;
         return r;
     }).sort((a, b) => b.takings - a.takings || (a.p.name || '').localeCompare(b.p.name || ''));
 }
+const nextMonth = m => { const [y, n] = m.split('-').map(Number); return n === 12 ? `${y + 1}-01` : `${y}-${String(n + 1).padStart(2, '0')}`; };
 async function payStaff(i) {
     const r = S.spRows && S.spRows[i]; if (!r) return;
     const v = await askValue(`${tl('Pay')} <b>${esc(r.p.name)}</b><br><span style="font-size:.78rem;color:#6b7280;">${tl('Owed')}: ${n0(r.owed)}</span>`, String(r.owed), tl('Next'), { value: String(r.owed) });
@@ -219,7 +274,20 @@ function qsPay() {
             <button class="qs-more" data-a="more">➕ ${tl('Add another service')}</button>
             <div class="qs-total"><span>${tl('Total')}</span><b>${fmt(cartTotal())}</b></div>
             <div class="qs-pay"><button data-a="cash" style="background:var(--pos);">💵 ${tl('Cash')}</button><button data-a="mobile" style="background:#1a56db;">📱 ${tl('Mobile money')}</button></div>
+            <button class="qs-split" data-a="split">💵 + 📱 ${tl('Cash + Mobile')}</button>
             <button class="qs-cancel" data-a="cancel">${tl('Cancel')}</button></div>`;
+    };
+    // Check before saving: what was done, by whom, how much, how paid
+    const drawConfirm = () => {
+        const P = S.qsPaid, kind = P.cash && P.mobile ? 'split' : P.cash ? 'cash' : 'mobile';
+        o.innerHTML = `<div class="qs-card">
+            <div class="qs-confirm-title">${tl('Check before saving')}</div>
+            ${Object.keys(S.cart).map(id => { const p = productById(id) || {}, by = meta(id).by; return `<div class="qs-line"><span class="sr-emoji">${esc(p.emoji || '✂️')}</span>
+                <span class="qs-what"><b class="notr">${esc(p.name)}${S.cart[id] > 1 ? ' × ' + S.cart[id] : ''}</b>${by ? `<small>✂️ <span class="notr">${esc(staffName(by))}</span></small>` : ''}</span><b>${n0(lineSub(id))}</b></div>`; }).join('')}
+            <div class="qs-total"><span>${tl('Total')}</span><b>${fmt(cartTotal())}</b></div>
+            <div class="qs-method ${kind}">${kind === 'cash' ? '💵 ' + tl('Paid in cash') : kind === 'mobile' ? '📱 ' + tl('Paid by mobile money') : `💵 ${tl('Cash')} ${n0(P.cash)} + 📱 ${tl('Mobile')} ${n0(P.mobile)}`}</div>
+            <button class="qs-ok" data-a="confirm">✅ ${tl('CONFIRM')}</button>
+            <button class="qs-cancel" data-a="back">← ${tl('Back')}</button></div>`;
     };
     const close = () => { o.remove(); S.qsOpen = false; };
     draw(); document.body.appendChild(o);
@@ -237,9 +305,21 @@ function qsPay() {
             if (k) await qsAdd(k);
             o.style.display = 'flex'; draw(); return;
         }
-        if (a === 'cash' || a === 'mobile') {
+        if (a === 'cash' || a === 'mobile') { const t0 = cartTotal(); S.qsPaid = { cash: a === 'cash' ? t0 : 0, mobile: a === 'mobile' ? t0 : 0 }; drawConfirm(); return; }
+        if (a === 'split') {
             const t0 = cartTotal();
-            $('payCash').value = a === 'cash' ? t0 : 0; $('payMobile').value = a === 'mobile' ? t0 : 0; $('payCredit').value = 0;
+            o.style.display = 'none';
+            const v = await askValue(`${tl('Total')} <b>${fmt(t0)}</b><br><span style="font-size:.8rem;color:#6b7280;">${tl('How much in cash? The rest is mobile money.')}</span>`, '0', tl('Next'));
+            o.style.display = 'flex';
+            if (v === null || v === '') return;
+            const c = Math.round(num(v));
+            if (!(c > 0 && c < t0)) { toast('⚠️ ' + tl('The cash part must be more than 0 and less than the total.'), 'err'); return; }
+            S.qsPaid = { cash: c, mobile: t0 - c }; drawConfirm(); return;
+        }
+        if (a === 'back') { draw(); return; }
+        if (a === 'confirm') {
+            const P = S.qsPaid;
+            $('payCash').value = P.cash; $('payMobile').value = P.mobile; $('payCredit').value = 0;
             close();
             await confirmSale();
             if (Object.keys(S.cart).length) { qsPay(); }   // the sale was stopped (e.g. a price below the limit): keep the client open

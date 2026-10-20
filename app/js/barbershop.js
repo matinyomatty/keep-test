@@ -71,11 +71,19 @@ async function renderBarbersPage() {
         });
         return `<div class="barber-card">
             <div class="bc-top"><span class="bc-av">${esc((x.name || '?').trim()[0] || '?').toUpperCase()}</span>
-                <div style="flex:1;"><b class="notr">${esc(x.name)}</b><small>${tl('Today')}</small></div></div>
-            <div class="bc-stats three"><div><b>${clients}</b><small>${tl('Clients')}</small></div><div><b>${n0(money)}</b><small>${tl('Money')}</small></div><div><b>${n0(earned)}</b><small>${tl('Their share')}</small></div></div>
+                <div style="flex:1;"><b class="notr">${esc(x.name)}</b><small>${esc(payLabel(x))}</small></div>
+                <button class="tiny-btn" onclick="setStaffPay('${x.uid}').then(renderBarbersPage)">✏️ ${tl('Pay method')}</button></div>
+            <div class="bc-stats three"><div><b>${clients}</b><small>${tl('Clients today')}</small></div><div><b>${n0(money)}</b><small>${tl('Money today')}</small></div><div><b>${todayShareTxt(x, { money, shares: earned, clients })}</b><small>${tl('Their share')}</small></div></div>
         </div>`;
     });
-    box.innerHTML = rows.join('') || `<div class="empty-state"><div class="icon">💈</div>${tl('No barbers yet.')}</div>`;
+    box.innerHTML = (rows.join('') || `<div class="empty-state"><div class="icon">💈</div>${tl('No barbers yet.')}</div>`)
+        + `<div class="hint gray" style="margin-top:4px;">${tl('Barbers paid per service earn the "barber gets" amount set on each service. Tap Pay method to use a percentage, a salary or chair rent instead.')}</div>`;
+}
+// Today's share for one barber, by their pay method
+function todayShareTxt(x, w) {
+    const t = payOf(x).type;
+    if (t === 'salary') return `<span style="font-size:.8rem;">${tl('Salary')}</span>`;
+    return n0(earnedBy(x, { money: w.money, shares: w.shares, days: w.clients ? 1 : 0, months: 0 }));
 }
 function addBarber() { openTeam(); setTimeout(() => toggleAddStaff(true), 50); }
 
@@ -97,11 +105,17 @@ function renderDashBarbers() {
     const box = $('dashBarbers'); if (!box) return;
     if (!isBarberMode() || !isAdmin()) { box.innerHTML = ''; return; }
     const R = barberDay(S.todaySales || []);
+    if (!S.staffAll) loadStaffOnce().then(() => { if (S.staffAll) renderDashBarbers(); });
+    R.forEach(r => {
+        const x = (S.staffAll || []).find(y => y.uid === r.uid) || {};
+        r.salary = payOf(x).type === 'salary';
+        r.share = r.salary ? 0 : earnedBy(x, { money: r.money, shares: r.share, days: r.clients ? 1 : 0, months: 0 });
+    });
     const t = R.reduce((a, r) => ({ c: a.c + r.clients, m: a.m + r.money, s: a.s + r.share }), { c: 0, m: 0, s: 0 });
     box.innerHTML = `<div class="dash-barbers">
         <div class="db-head"><span>💈 ${tl('Barbers today')}</span><button class="link-btn" style="margin:0;" onclick="switchTab('barbers')">${tl('See all')} →</button></div>
         <div class="db-row db-cols"><span></span><span>${tl('Clients')}</span><span>${tl('Money')}</span><span>${tl('Their share')}</span></div>
-        ${R.length ? R.map(r => `<div class="db-row"><b class="notr">${esc(r.name)}</b><span>${r.clients}</span><span>${n0(r.money)}</span><span class="db-share">${n0(r.share)}</span></div>`).join('')
+        ${R.length ? R.map(r => `<div class="db-row"><b class="notr">${esc(r.name)}</b><span>${r.clients}</span><span>${n0(r.money)}</span><span class="db-share">${r.salary ? `<small>${tl('Salary')}</small>` : n0(r.share)}</span></div>`).join('')
             : `<div class="hint gray" style="margin:6px 0 0;">${tl('No clients yet today.')}</div>`}
         ${R.length ? `<div class="db-row db-total"><b>${tl('Total')}</b><span>${t.c}</span><span>${n0(t.m)}</span><span class="db-share">${n0(t.s)}</span></div>
         <div class="db-keep">${tl('Shop keeps')} <b>${n0(t.m - t.s)}</b></div>` : ''}
