@@ -116,7 +116,13 @@ function serviceChanged() {
     if (isBarberMode() && svc && !$('itemCat').value) $('itemCat').value = 'Services';
     buildEmojiPicker();
     const editing = !!$('itemId').value;
-    $('itemTitle').textContent = svc ? (editing ? 'Edit service' : 'Add a service') : (editing ? 'Edit Item' : 'Add New Item');
+    $('itemTitle').textContent = svc ? (editing ? 'Edit service' : 'Add a service') : isBarberMode() ? (editing ? 'Edit product' : 'Add a product') : (editing ? 'Edit Item' : 'Add New Item');
+    if (isBarberMode() && !svc) {
+        nameLbl.textContent = 'Product name'; $('itemName').placeholder = 'e.g. Hair oil, Shampoo, Wax';
+        document.querySelector('#sheetItem .save-bar .primary-cta').textContent = 'SAVE PRODUCT';
+        $('itemDeleteBtn').textContent = 'DELETE PRODUCT';
+        if (!$('itemCat').value) $('itemCat').value = 'Products';
+    }
     if ($('itemUnit').value) unitChanged(true);
 }
 
@@ -352,5 +358,5 @@ function shopKeeps() {
     const el = $('svcKeeps'); if (!el) return;
     const price = num($('itemSell').value), cut = num($('itemStaffPay').value);
     el.innerHTML = price > 0 && $('itemService').checked
-        ? (cut > price ? `⚠️ ${tl('The barber cannot get more than the price.')}` : `${tl('Barber gets')} <b>${n0(cut)}</b> · ${tl('Shop keeps')} <b>${n0(price - cut)}</b>`) : '';
+        ? (cut > price ? `⚠️ ${tl('The barber cannot get more than the price.')}` : `${tl('Barber gets')} <b>${n0(cut)}</b> · ${tl('You keep')} <b>${n0(price - cut)}</b>`) : '';
 }

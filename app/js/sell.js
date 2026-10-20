@@ -11,14 +11,14 @@ function renderDashboard() {
     const target = Number((S.tenantInfo.settings || {}).dailyTarget) || 0;
     $('targetWrap').innerHTML = target ? `<div class="target-bar"><div style="width:${Math.min(100, Math.round(t.sales / target * 100))}%"></div></div>
         <div style="font-size:0.55rem;color:rgba(255,255,255,0.5);margin-top:3px;">${Math.round(t.sales / target * 100)}% of ${n0(target)} target</div>` : '';
-    $('todayTx').textContent = `${t.tx} POS sale${t.tx === 1 ? '' : 's'} today`;
+    $('todayTx').textContent = isBarberMode() ? `${t.tx} ${tl(t.tx === 1 ? 'client' : 'clients')} ${tl('today')}` : `${t.tx} POS sale${t.tx === 1 ? '' : 's'} today`;
     const b = S.balances;
     $('balCash').textContent = fmt(b.cash); $('balMobile').textContent = fmt(b.mobile);
     $('balBank').textContent = fmt(b.bank); $('balSavings').textContent = fmt(b.savings);
 
     const m = today.slice(0, 7), f = monthFig(m), mon = monthShort(m);
-    $('lblMSales').textContent = 'Sales · ' + mon; $('mSales').textContent = fmt(f.sales);
-    $('lblMStock').textContent = 'Stock bought · ' + mon; $('mStock').textContent = fmt(f.supplier);
+    $('lblMSales').textContent = (isBarberMode() ? tl('Money in') : 'Sales') + ' · ' + mon; $('mSales').textContent = fmt(f.sales);
+    $('lblMStock').textContent = tl(stockWord()) + ' · ' + mon; $('mStock').textContent = fmt(f.supplier);
     $('lblMExp').textContent = 'Expenses · ' + mon; $('mExp').textContent = fmt(f.expense);
     $('lblMProfit').textContent = 'Profit · ' + mon; $('mProfit').textContent = fmt(f.profit);
     $('mProfit').style.color = f.profit >= 0 ? 'var(--green)' : 'var(--red)';
@@ -66,7 +66,7 @@ function renderHistory() {
     $('historyToggle').textContent = S.historyAll ? 'This month only' : 'Show all months';
     const list = $('historyList');
     if (!keys.length) {
-        list.innerHTML = `<div class="empty-state"><div class="icon">🗓️</div>Nothing recorded in ${monthName(m)} yet.<br><span style="font-size:0.75rem;">Sales from the POS appear here automatically.</span></div>`;
+        list.innerHTML = `<div class="empty-state"><div class="icon">🗓️</div>Nothing recorded in ${monthName(m)} yet.<br><span style="font-size:0.75rem;">${isBarberMode() ? tl('Clients you record appear here automatically.') : 'Sales from the POS appear here automatically.'}</span></div>`;
         $('historyMore').classList.add('hidden');
         return;
     }

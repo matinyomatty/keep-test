@@ -16,6 +16,12 @@ function applyBarberShell() {
     document.body.classList.toggle('barber', on);
     const L = TAB_LABELS[on ? 'barber' : 'shop'];
     Object.entries(L).forEach(([k, [ic, t]]) => { const b = $('tab-' + k); if (b) b.innerHTML = `<span class="tab-icon">${ic}</span>${t}`; });
+    document.querySelectorAll('[data-bw]').forEach(el => {
+        if (el.dataset.shop == null) el.dataset.shop = el.textContent;
+        const want = on ? el.dataset.bw : el.dataset.shop;
+        if (el.textContent !== want) el.textContent = want;
+    });
+    const sup = EXPENSE_CATS.find(c => c[0] === 'Supplier'); if (sup) sup[1] = on ? '🧴 Supplies (products, blades…)' : '📦 Supplier / Restock';
     if (on && $('page-inventory').classList.contains('active')) switchTab('pos');
     if (!on && ($('page-services').classList.contains('active') || $('page-barbers').classList.contains('active'))) switchTab('pos');
 }
@@ -45,7 +51,7 @@ function renderServicesPage() {
     $('svcList').innerHTML = svcs.length ? svcs.map(p => `
         <button class="svc-row" onclick="openItem('${p.id}')">
             <span class="sr-emoji">${esc(p.emoji || '✂️')}</span>
-            <span class="sr-name"><span class="notr">${esc(p.name)}</span>${p.staffPay ? `<small>${tl('Barber gets')} ${n0(p.staffPay)} · ${tl('Shop keeps')} ${n0((Number(p.sellPrice) || 0) - p.staffPay)}</small>` : `<small style="color:var(--red);">${tl('Barber share not set')}</small>`}</span>
+            <span class="sr-name"><span class="notr">${esc(p.name)}</span>${p.staffPay ? `<small>${tl('Barber gets')} ${n0(p.staffPay)} · ${tl('You keep')} ${n0((Number(p.sellPrice) || 0) - p.staffPay)}</small>` : `<small style="color:var(--red);">${tl('Barber share not set')}</small>`}</span>
             <b class="sr-price">${n0(p.sellPrice)}</b><span class="sr-edit">✏️</span></button>`).join('')
         : `<div class="empty-state"><div class="icon">✂️</div>${tl('No services yet.')}<br><span style="font-size:.78rem;">${tl('Add your services and prices — haircut, shave, kids cut…')}</span></div>`;
     $('svcGoods').innerHTML = goods.map(p => `
@@ -143,6 +149,10 @@ function renderDashBarbers() {
         ${R.length ? R.map(r => `<div class="db-row"><b class="notr">${esc(r.name)}</b><span>${r.clients}</span><span>${n0(r.money)}</span><span class="db-share">${r.salary ? `<small>${tl('Salary')}</small>` : n0(r.share)}</span></div>`).join('')
             : `<div class="hint gray" style="margin:6px 0 0;">${tl('No clients yet today.')}</div>`}
         ${R.length ? `<div class="db-row db-total"><b>${tl('Total')}</b><span>${t.c}</span><span>${n0(t.m)}</span><span class="db-share">${n0(t.s)}</span></div>
-        <div class="db-keep">${tl('Shop keeps')} <b>${n0(t.m - t.s)}</b></div>` : ''}
+        <div class="db-keep">${tl('You keep')} <b>${n0(t.m - t.s)}</b></div>` : ''}
     </div>`;
 }
+
+// Words that change in a barbershop
+const stockWord = () => isBarberMode() ? 'Supplies bought' : 'Stock bought';
+const roleWord = r => r === 'admin' ? 'Admin' : isBarberMode() ? 'Front desk' : 'Seller';

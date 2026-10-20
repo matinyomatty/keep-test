@@ -174,13 +174,13 @@ function renderDayBody(d, sales, entries) {
     const c = x.closing;
     let html = `<div style="font-size:0.7rem;font-weight:800;color:var(--gray);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">${prettyDay(d)}</div>
         <div class="sum-box">
-            <div class="sum-row"><span>🛒 Sales</span><strong style="color:var(--green);">${fmt(x.sales)}</strong></div>
+            <div class="sum-row"><span>${isBarberMode() ? '💈 ' + tl('Money in') : '🛒 Sales'}</span><strong style="color:var(--green);">${fmt(x.sales)}</strong></div>
             <div class="sum-row"><span>&nbsp;&nbsp;💵 Cash / 📱 Simu received</span><span>${n0(x.cash)} / ${n0(x.mobile)}</span></div>
             ${x.credit ? `<div class="sum-row"><span>&nbsp;&nbsp;📒 On credit</span><span style="color:var(--amber);">${n0(x.credit)}</span></div>` : ''}
             ${x.discount ? `<div class="sum-row"><span>&nbsp;&nbsp;🏷️ Discounts given</span><span>${n0(x.discount)}</span></div>` : ''}
             ${x.returns ? `<div class="sum-row"><span>&nbsp;&nbsp;↩️ Returns refunded</span><span style="color:#7c3aed;">−${n0(x.returns)}</span></div>` : ''}
             ${x.debtPaid ? `<div class="sum-row"><span>💰 Debts paid by customers</span><strong style="color:var(--pos);">${fmt(x.debtPaid)}</strong></div>` : ''}
-            <div class="sum-row"><span>📦 Stock bought</span><strong style="color:var(--red);">${fmt(x.supplier)}</strong></div>
+            <div class="sum-row"><span>📦 ${tl(stockWord())}</span><strong style="color:var(--red);">${fmt(x.supplier)}</strong></div>
             <div class="sum-row"><span>💸 Expenses</span><strong style="color:var(--red);">${fmt(x.expense)}</strong></div>
             <div class="sum-row"><span>🏦 Banked (net)</span><strong style="color:var(--blue);">${fmt(x.bankIn - x.bankOut)}</strong></div>
             <div class="sum-row big"><span>📈 Day profit</span><strong style="color:${x.sales - x.supplier - x.expense >= 0 ? 'var(--green)' : 'var(--red)'};">${fmt(x.sales - x.supplier - x.expense)}</strong></div>
@@ -189,7 +189,7 @@ function renderDayBody(d, sales, entries) {
     html += `<button class="btn-sec wide" onclick="openEntry('${d}')">➕ Add expense / banking for this date</button>`;
     if (entries.length) html += `<span class="section-label" style="margin-top:12px;">📒 Money entries (${entries.length})</span>` + entries.map(entryLine).join('');
     if (sales.length) {
-        html += `<span class="section-label" style="margin-top:12px;">🛒 Sales (${sales.filter(s => !s.voided).length})</span>`;
+        html += `<span class="section-label" style="margin-top:12px;">${isBarberMode() ? '💈 ' + tl('Clients') : '🛒 Sales'} (${sales.filter(s => !s.voided).length})</span>`;
         html += sales.map(s => {
             const pays = [s.cash ? '💵 ' + n0(s.cash) : '', s.mobile ? '📱 ' + n0(s.mobile) : '', s.credit ? '📒 credit ' + n0(s.credit) : ''].filter(Boolean).join(' · ');
             const manual = s.kind === 'manual', repay = s.kind === 'repay', ret = s.kind === 'return';

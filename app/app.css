@@ -632,3 +632,4 @@
         .bc-pay b { color: var(--ink); }
         .login-note { margin-top: 14px; font-size: .78rem; color: var(--gray); background: #fff; border: 1px dashed #d5dbe4; border-radius: 14px; padding: 12px 14px; line-height: 1.45; }
         .login-note a { color: var(--blue); font-weight: 800; }
+        body.barber #sheetItem .barber-hide, body.barber .tm-pane .shop-only { display: none !important; }

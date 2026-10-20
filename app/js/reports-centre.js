@@ -37,11 +37,26 @@ function rpPreset(p) {
 function rpCustom() { RP.preset = 'custom'; RP.from = $('rpFrom').value; RP.to = $('rpTo').value; if (RP.from > RP.to) [RP.from, RP.to] = [RP.to, RP.from]; renderReports(); }
 const rpPeriodText = () => RP.from === RP.to ? prettyDay(RP.from) : `${new Date(RP.from + 'T12:00').toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })} – ${new Date(RP.to + 'T12:00').toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}`;
 function openReports() { openSheet('sheetReports'); if (!RP.from) rpPreset('month'); else renderReports(); }
+// A barbershop sees the reports that fit it, in its own words
+const BARBER_REPORTS = {
+    salesList: ['Clients list', 'Every client with services, barber and payment'],
+    salesItems: ['By service', 'How many of each service, and the money'],
+    salesDaily: ['Daily summary', 'Day-by-day money, cash and mobile'],
+    returns: ['Cancelled', 'Cancelled sales and refunds'],
+    pnl: ['Profit & loss', 'Money in, supplies, expenses and profit'],
+    expenses: null, banking: null,
+    cashups: ['Cash-ups', "Each person's counts, shortages and overs"],
+    stockList: ['Products in stock', 'Products you sell, with stock and value']
+};
+const reportsShown = () => isBarberMode()
+    ? REPORTS.filter(r => r.id in BARBER_REPORTS && (r.id !== 'stockList' || S.products.some(p => !isService(p))))
+        .map(r => BARBER_REPORTS[r.id] ? { ...r, t: BARBER_REPORTS[r.id][0], d: BARBER_REPORTS[r.id][1], g: r.g === 'Sales' ? 'Clients' : r.g === 'Stock' ? 'Products' : r.g } : r)
+    : REPORTS;
 function renderReports() {
     document.querySelectorAll('#rpPresets button').forEach(b => b.classList.toggle('on', b.dataset.p === RP.preset));
     $('rpPeriod').textContent = rpPeriodText();
     let g = '';
-    $('rpList').innerHTML = REPORTS.map(r => (r.g !== g ? `<span class="section-label" style="margin-top:12px;">${(g = r.g)}</span>` : '') + `
+    $('rpList').innerHTML = reportsShown().map(r => (r.g !== g ? `<span class="section-label" style="margin-top:12px;">${(g = r.g)}</span>` : '') + `
         <div class="rp-card"><div class="rp-ic">${r.icon}</div>
             <div class="rp-tx"><b>${r.t}</b><small>${r.d}${r.now ? ' · <i>as of now</i>' : ''}</small></div>
             <div class="rp-btns"><button data-r="${r.id}" data-f="pdf" onclick="runReport(this.dataset.r,this.dataset.f)">PDF</button><button class="xl" data-r="${r.id}" data-f="xlsx" onclick="runReport(this.dataset.r,this.dataset.f)">Excel</button></div>
@@ -56,7 +71,7 @@ const dTime = x => dt(x) ? dt(x).toLocaleTimeString('en-GB', { hour: '2-digit', 
 const sum = (a, f) => a.reduce((s, x) => s + (Number(f(x)) || 0), 0);
 const catName = c => ((EXPENSE_CATS.find(x => x[0] === c) || [, c || 'Other'])[1] || '').replace(/^\S+\s/, '');
 async function buildReport(id) {
-    const r = { title: REPORTS.find(x => x.id === id).t, summary: [], tables: [] };
+    const r = { title: reportsShown().concat(REPORTS).find(x => x.id === id).t, summary: [], tables: [] };
     const T = (name, head, rows, foot) => r.tables.push({ name, head, rows, foot });
     if (['salesList', 'salesItems', 'salesStaff', 'returns', 'pnl'].includes(id)) {
         const sales = (await rpRange('sales')).sort((a, b) => (tms(a.createdAt) || 0) - (tms(b.createdAt) || 0));
@@ -201,7 +216,7 @@ async function buildReport(id) {
 }
 // ── output ──
 async function runReport(id, fmtType) {
-    const def = REPORTS.find(x => x.id === id);
+    const def = reportsShown().concat(REPORTS).find(x => x.id === id);
     if (!navigator.onLine && !def.now) return toast('⚠️ Reports for a period need internet.', 'err');
     loader(true, 'PREPARING REPORT...');
     try {

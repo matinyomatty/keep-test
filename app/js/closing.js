@@ -87,7 +87,7 @@ function renderShiftInfo() {
     const since = myShiftStart();
     const mine = S.todaySales.filter(x => !x.voided && (!x.kind || x.kind === 'pos') && x.staffUid === S.me.uid && (!since || (tms(x.createdAt) || 9e15) > since));
     $('shiftInfo').innerHTML = `👤 <b>${esc(S.me.name)}</b> · ${since ? 'since your last cash-up at ' + new Date(since).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) : 'today'}<br>
-        You made <b>${mine.length}</b> sale${mine.length === 1 ? '' : 's'}. Count <b>all</b> the cash in the drawer, including change.`;
+        ${isBarberMode() ? `${tl('You recorded')} <b>${mine.length}</b> ${tl(mine.length === 1 ? 'client' : 'clients')}. ${tl('Count all the cash in the drawer, including change.')}` : `You made <b>${mine.length}</b> sale${mine.length === 1 ? '' : 's'}. Count <b>all</b> the cash in the drawer, including change.`}`;
 }
 
 async function submitShift() {
@@ -267,7 +267,7 @@ async function loadCdCashups() {
         S.cdCashups = s.docs.map(x => ({ id: x.id, ...x.data() })).sort((a, b) => (tms(a.createdAt) || 0) - (tms(b.createdAt) || 0));
     } catch (e) { box.innerHTML = `<div class="hint amber">${esc(friendlyErr(e))}</div>`; S.cdCashups = []; return; }
     const pend = S.cdCashups.filter(c => c.status !== 'confirmed').length;
-    box.innerHTML = (S.cdCashups.length ? S.cdCashups.map(cashupLine).join('') : '<div class="hint gray">No seller has ended a shift on this day yet. You can still close the day.</div>')
+    box.innerHTML = (S.cdCashups.length ? S.cdCashups.map(cashupLine).join('') : `<div class="hint gray">${isBarberMode() ? tl('Nobody has ended a shift on this day yet. You can still close the day.') : 'No seller has ended a shift on this day yet. You can still close the day.'}</div>`)
         + (pend ? `<div class="hint amber">⚠️ ${pend} cash-up${pend > 1 ? 's' : ''} not checked yet. Tap ${pend > 1 ? 'each one' : 'it'} to review before closing.</div>` : '');
 }
 function confirmCloseDay() {
@@ -308,13 +308,13 @@ function confirmCloseDay() {
     $('cdSummary').innerHTML = `
         <div style="font-size:0.7rem;font-weight:800;color:var(--gray);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">${prettyDay(d)}</div>
         <div class="sum-box">
-            <div class="sum-row"><span>🛒 Sales</span><strong style="color:var(--green);">+${fmt(x.sales)}</strong></div>
+            <div class="sum-row"><span>${isBarberMode() ? '💈 ' + tl('Money in') : '🛒 Sales'}</span><strong style="color:var(--green);">+${fmt(x.sales)}</strong></div>
             <div class="sum-row"><span>&nbsp;&nbsp;💵 Cash / 📱 Simu received</span><span>${n0(x.cash)} / ${n0(x.mobile)}</span></div>
             ${x.credit ? `<div class="sum-row"><span>&nbsp;&nbsp;📒 Sold on credit</span><span style="color:var(--amber);">${n0(x.credit)}</span></div>` : ''}
             ${x.discount ? `<div class="sum-row"><span>&nbsp;&nbsp;🏷️ Discounts given</span><span>${n0(x.discount)}</span></div>` : ''}
             ${x.returns ? `<div class="sum-row"><span>&nbsp;&nbsp;↩️ Returns refunded</span><span>−${n0(x.returns)}</span></div>` : ''}
             ${x.debtPaid ? `<div class="sum-row"><span>💰 Debts paid by customers</span><span style="color:var(--pos);">${n0(x.debtPaid)}</span></div>` : ''}
-            <div class="sum-row"><span>📦 Stock bought</span><strong style="color:var(--red);">-${fmt(x.supplier)}</strong></div>
+            <div class="sum-row"><span>📦 ${tl(stockWord())}</span><strong style="color:var(--red);">-${fmt(x.supplier)}</strong></div>
             <div class="sum-row"><span>💸 Expenses</span><strong style="color:var(--red);">-${fmt(x.expense)}</strong></div>
             <div class="sum-row"><span>🏦 Banked</span><strong style="color:var(--blue);">${fmt(x.bankIn)}${x.bankOut ? ' / out ' + n0(x.bankOut) : ''}</strong></div>
             <div class="sum-row big"><span>📈 Day profit</span><strong style="color:${profit >= 0 ? 'var(--green)' : 'var(--red)'};">${fmt(profit)}</strong></div>
@@ -328,7 +328,7 @@ function confirmCloseDay() {
             return `<div class="sum-row"><span>${esc(c.staffName)} · ${timeOf(c.createdAt)}</span><strong style="color:${colr};">${n0(c.countedCash)} · ${w}</strong></div>`;
         }).join('')}</div>` : ''}
         <div class="mini-cards">
-            <div><b style="color:var(--pos);">${x.tx}</b><small>POS sales</small></div>
+            <div><b style="color:var(--pos);">${x.tx}</b><small>${isBarberMode() ? tl('Clients') : 'POS sales'}</small></div>
             <div style="background:${outItems.length ? '#fff5f5' : '#f0fdf4'};"><b style="color:${outItems.length ? 'var(--red)' : 'var(--green)'};">${outItems.length}</b><small>Out of stock</small></div>
             <div style="background:#fffbeb;"><b style="color:var(--amber);">${lowItems.length}</b><small>Low stock</small></div>
         </div>
@@ -337,9 +337,9 @@ function confirmCloseDay() {
 
     S.closeDayMsg = `🏪 *${(S.tenantInfo.name || S.tenant).toUpperCase()}* — ${prettyDay(d)}
 
-🛒 Sales: ${n0(x.sales)}
+${isBarberMode() ? '💈 Money in' : '🛒 Sales'}: ${n0(x.sales)}
 💵 Cash in: ${n0(x.cash)} · 📱 Simu in: ${n0(x.mobile)}${x.credit ? `\n📒 On credit: ${n0(x.credit)}` : ''}${x.discount ? `\n🏷️ Discounts: ${n0(x.discount)}` : ''}${x.returns ? `\n↩️ Returns: ${n0(x.returns)}` : ''}${x.debtPaid ? `\n💰 Debts collected: ${n0(x.debtPaid)}` : ''}
-📦 Stock bought: ${n0(x.supplier)}
+📦 ${stockWord()}: ${n0(x.supplier)}
 💸 Expenses: ${n0(x.expense)}
 🏦 Banked: ${n0(x.bankIn)}${x.bankOut ? ` | 💳 Out: ${n0(x.bankOut)}` : ''}
 ━━━━━━━━━━
@@ -347,7 +347,7 @@ function confirmCloseDay() {
 💵 Cash balance: ${n0(bal.cash)}
 📱 Mobile balance: ${n0(bal.mobile)}${recon.length ? '\n\n' + recon.join('\n') : ''}${cuLines.length ? '\n\n🧾 Cash-ups\n' + cuLines.join('\n') + (cuShort ? `\nTotal short: ${n0(-cuShort)}` : '') : ''}
 
-🧾 ${x.tx} POS sales${outItems.length ? `\n🚨 Out of stock: ${outItems.length} items` : ''}${lowItems.length ? `\n⚠️ Low stock: ${lowItems.length} items` : ''}${expItems.length ? `\n⏳ Expiring soon: ${expItems.length} items` : ''}
+🧾 ${x.tx} ${isBarberMode() ? 'clients' : 'POS sales'}${outItems.length ? `\n🚨 Out of stock: ${outItems.length} items` : ''}${lowItems.length ? `\n⚠️ Low stock: ${lowItems.length} items` : ''}${expItems.length ? `\n⏳ Expiring soon: ${expItems.length} items` : ''}
 Closed by ${S.me.name}`;
 
     $('cdStep1').classList.add('hidden'); $('cdStep2').classList.remove('hidden');
@@ -388,8 +388,8 @@ function renderMonthClose() {
     const row = (l, v, c) => `<div class="sum-row"><span>${l}</span><strong style="color:${c || 'inherit'};">${v}</strong></div>`;
     let html = `${cur ? `<div class="hint amber">⚠️ ${monthName(m)} isn't over yet — these are month-to-date figures.</div>` : ''}
         <div class="sum-box">
-            ${row('🛒 Sales', fmt(f.sales), 'var(--green)')}
-            ${row('📦 Stock bought', '-' + fmt(f.supplier), 'var(--red)')}
+            ${row(isBarberMode() ? '💈 ' + tl('Money in') : '🛒 Sales', fmt(f.sales), 'var(--green)')}
+            ${row('📦 ' + tl(stockWord()), '-' + fmt(f.supplier), 'var(--red)')}
             ${row('💸 Expenses', '-' + fmt(f.expense), 'var(--red)')}
             ${row('📈 Profit', fmt(f.profit), f.profit >= 0 ? 'var(--green)' : 'var(--red)')}
             ${row('🏦 Banked (net)', fmt(f.bankIn - f.bankOut), 'var(--blue)')}
@@ -448,8 +448,8 @@ function monthMessage() {
     const { m, f } = S.mc, b = S.balances, pct = f.sales ? Math.round(f.profit / f.sales * 100) : 0;
     return `🏪 *${(S.tenantInfo.name || S.tenant).toUpperCase()}* — ${monthName(m)}
 
-🛒 Sales: ${n0(f.sales)}
-📦 Stock bought: ${n0(f.supplier)}
+${isBarberMode() ? '💈 Money in' : '🛒 Sales'}: ${n0(f.sales)}
+📦 ${stockWord()}: ${n0(f.supplier)}
 💸 Expenses: ${n0(f.expense)}
 ━━━━━━━━━━
 📈 Profit: ${n0(f.profit)} (${pct}%)
@@ -490,13 +490,13 @@ async function previewReport() {
     const margin = f.sales ? (f.profit / f.sales * 100).toFixed(1) : 0;
     box.innerHTML = `<div style="font-size:0.75rem;color:var(--gray);text-align:center;margin-bottom:10px;">${monthName(m)} · ${f.days} trading days</div>
         <div class="sum-box">
-            <div class="sum-row"><span>🛒 Sales</span><strong style="color:var(--green);">${fmt(f.sales)}</strong></div>
+            <div class="sum-row"><span>${isBarberMode() ? '💈 ' + tl('Money in') : '🛒 Sales'}</span><strong style="color:var(--green);">${fmt(f.sales)}</strong></div>
             <div class="sum-row"><span>&nbsp;&nbsp;💵 Cash / 📱 Simu received</span><span>${n0(f.cash)} / ${n0(f.mobile)}</span></div>
             ${f.credit ? `<div class="sum-row"><span>&nbsp;&nbsp;📒 Sold on credit</span><span>${n0(f.credit)}</span></div>` : ''}
             ${f.discount ? `<div class="sum-row"><span>&nbsp;&nbsp;🏷️ Discounts given</span><span>${n0(f.discount)}</span></div>` : ''}
             ${f.returns ? `<div class="sum-row"><span>&nbsp;&nbsp;↩️ Returns refunded</span><span>−${n0(f.returns)}</span></div>` : ''}
             ${f.debtPaid ? `<div class="sum-row"><span>💰 Debts collected</span><span>${n0(f.debtPaid)}</span></div>` : ''}
-            <div class="sum-row"><span>📦 Stock bought</span><strong style="color:var(--red);">${fmt(f.supplier)}</strong></div>
+            <div class="sum-row"><span>📦 ${tl(stockWord())}</span><strong style="color:var(--red);">${fmt(f.supplier)}</strong></div>
             <div class="sum-row"><span>💸 Expenses</span><strong style="color:var(--red);">${fmt(f.expense)}</strong></div>
             <div class="sum-row"><span>🏦 Banked (net)</span><strong style="color:var(--blue);">${fmt(f.bankIn - f.bankOut)}</strong></div>
             <div class="sum-row big"><span>📈 Profit</span><strong style="color:${f.profit >= 0 ? 'var(--green)' : 'var(--red)'};">${fmt(f.profit)} (${margin}%)</strong></div>

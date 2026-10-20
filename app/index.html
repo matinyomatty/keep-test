@@ -136,7 +136,7 @@
             <div id="monthBanner" style="margin-bottom:8px;"></div>
             <div class="today-panel">
                 <div class="today-stat">
-                    <h4>Today Sales</h4>
+                    <h4 data-bw="Today's money">Today Sales</h4>
                     <p id="daySales">— TZS</p>
                     <div id="heroSalesTrend" style="margin-top:4px;"></div>
                     <div id="targetWrap"></div>
@@ -329,11 +329,11 @@
         <div class="field-group"><span class="field-label">Item name</span><input type="text" id="itemName" placeholder="e.g. Samsung 25W charger, Bosch drill, Cement 50kg"></div>
         <div class="field-group svc-hide"><span class="field-label">Category</span><input type="text" id="itemCat" placeholder="e.g. Phones, Accessories, Power tools, Paint..." list="catList"><datalist id="catList"></datalist></div>
         <label class="check svc-toggle" style="padding-top:0;"><input type="checkbox" id="itemService" onchange="serviceChanged()"><span>✂️ This is a service (haircut, shave, repair…) — no stock</span></label>
-        <div class="form-row goods-only">
+        <div class="form-row goods-only barber-hide">
             <div class="field-group"><span class="field-label">Sold by</span><select id="itemUnit" onchange="unitChanged()"></select></div>
             <div class="field-group"><span class="field-label">Pack size (optional)</span><input type="number" id="itemPack" inputmode="numeric" placeholder="e.g. 12 per box"></div>
         </div>
-        <label class="check goods-only" style="padding-top:0;"><input type="checkbox" id="itemPart"><span>Can sell part units (e.g. 2.5 m, 0.5 kg)</span></label>
+        <label class="check goods-only barber-hide" style="padding-top:0;"><input type="checkbox" id="itemPart"><span>Can sell part units (e.g. 2.5 m, 0.5 kg)</span></label>
         <div class="form-row">
             <div class="field-group"><span class="field-label" id="lblSell">Sell price / piece (TZS)</span><input type="number" id="itemSell" inputmode="decimal" placeholder="0" oninput="shopKeeps()"></div>
             <div class="field-group svc-hide"><span class="field-label" id="lblCost">Cost / piece (TZS)</span><input type="number" id="itemCost" inputmode="decimal" placeholder="0"></div>
@@ -343,12 +343,12 @@
             <div class="field-group"><span class="field-label" id="lblStock">In stock</span><input type="number" id="itemStock" inputmode="decimal" placeholder="0"></div>
             <div class="field-group"><span class="field-label">Warn when below</span><input type="number" id="itemReorder" inputmode="decimal" placeholder="5"></div>
         </div>
-        <div class="form-row goods-only">
+        <div class="form-row goods-only barber-hide">
             <div class="field-group"><span class="field-label">Warranty (months)</span><input type="number" id="itemWarranty" inputmode="numeric" placeholder="0 = none"></div>
             <div class="field-group" style="display:flex;align-items:flex-end;"><label class="check" style="padding:0 0 10px;"><input type="checkbox" id="itemSerial"><span>Ask for serial / IMEI when selling</span></label></div>
         </div>
-        <div class="field-group goods-only"><span class="field-label">Expiry date (optional) — the soonest on the shelf</span><input type="date" id="itemExpiry"></div>
-        <div class="field-group goods-only"><span class="field-label">Barcode (optional)</span><div style="display:flex;gap:6px;"><input type="text" id="itemBarcode" inputmode="numeric" placeholder="Scan or type the code on the pack"><button class="btn-sec" style="flex:none;" onclick="scanItemBarcode()">📷</button></div></div>
+        <div class="field-group goods-only barber-hide"><span class="field-label">Expiry date (optional) — the soonest on the shelf</span><input type="date" id="itemExpiry"></div>
+        <div class="field-group goods-only barber-hide"><span class="field-label">Barcode (optional)</span><div style="display:flex;gap:6px;"><input type="text" id="itemBarcode" inputmode="numeric" placeholder="Scan or type the code on the pack"><button class="btn-sec" style="flex:none;" onclick="scanItemBarcode()">📷</button></div></div>
         <div class="save-bar">
             <button class="primary-cta" onclick="saveItem()">SAVE ITEM</button>
             <button class="btn-sec wide ghost" style="color:var(--red);" id="itemDeleteBtn" onclick="deleteItem()">DELETE ITEM</button>
@@ -618,10 +618,10 @@
         <div class="modal-title">🔒 Close Day</div>
         <div id="cdStep1">
             <div class="field-group"><span class="field-label">📅 Date</span><input type="date" id="cdDate" onchange="loadCdCashups()"></div>
-            <span class="section-label">🧾 Sellers' cash-ups</span>
+            <span class="section-label" data-bw="🧾 Cash-ups">🧾 Sellers' cash-ups</span>
             <div id="cdCashups"></div>
             <details style="margin:6px 0 12px;">
-                <summary style="font-size:.75rem;font-weight:800;color:var(--blue);cursor:pointer;padding:6px 0;">I'm at the shop and counted myself (optional)</summary>
+                <summary style="font-size:.75rem;font-weight:800;color:var(--blue);cursor:pointer;padding:6px 0;" data-bw="I'm at the barbershop and counted myself (optional)">I'm at the shop and counted myself (optional)</summary>
                 <div style="padding-top:8px;">
                     <div class="field-group"><span class="field-label">💵 Cash in hand (counted)</span><input type="number" id="cdCash" inputmode="decimal" placeholder="Leave blank to skip"></div>
                     <div class="field-group"><span class="field-label">📱 Lipa kwa Simu balance</span><input type="number" id="cdMobile" inputmode="decimal" placeholder="Leave blank to skip"></div>
@@ -654,7 +654,7 @@
         <span class="field-label">💸 Money you paid out of the drawer</span>
         <div id="shDeliveries"></div>
         <div id="poRows"></div>
-        <button class="btn-sec wide" style="margin-bottom:12px;" onclick="addPaidOut()">➕ Add a payment (e.g. LUKU, transport, supplier)</button>
+        <button class="btn-sec wide" style="margin-bottom:12px;" onclick="addPaidOut()" data-bw="➕ Add a payment (e.g. LUKU, blades, transport)">➕ Add a payment (e.g. LUKU, transport, supplier)</button>
         <div class="field-group"><span class="field-label">📝 Note for the owner (optional)</span><textarea id="shNote" placeholder="e.g. A customer will pay 5,000 tomorrow"></textarea></div>
         <div class="save-bar">
             <label class="check hidden" id="shCloseWrap" style="background:#fffbeb;border-radius:12px;padding:10px;margin-bottom:8px;"><input type="checkbox" id="shCloseDay" onchange="$('shBtn').textContent=this.checked?'🔒 SUBMIT & CLOSE THE DAY':'✅ SUBMIT CASH-UP'"><span><b>I'm the last one today — close the day</b><br><small style="color:var(--gray);">Sends the day's summary to the owner on WhatsApp.</small></span></label>
@@ -736,7 +736,7 @@
     <div class="modal yellow">
         <div class="modal-handle"></div>
         <div class="modal-title">💸 Record an expense</div>
-        <div class="hint gray">For money paid out today, e.g. LUKU, transport, a supplier. It is taken off the drawer straight away — don't add it again in your cash-up.</div>
+        <div class="hint gray" data-bw="For money paid out today, e.g. LUKU, blades, transport. It is taken off the drawer straight away — don't add it again in your cash-up.">For money paid out today, e.g. LUKU, transport, a supplier. It is taken off the drawer straight away — don't add it again in your cash-up.</div>
         <div class="form-row">
             <div class="field-group"><span class="field-label">What for</span><select id="seCat"></select></div>
             <div class="field-group"><span class="field-label">Amount (TZS)</span><input type="number" id="seAmt" inputmode="decimal" placeholder="0"></div>
@@ -765,11 +765,11 @@
 <div class="modal-overlay" id="sheetTeam" onclick="overlayClose(event)">
     <div class="modal">
         <div class="modal-handle"></div>
-        <div class="modal-title">⚙️ Team & Settings</div>
+        <div class="modal-title" data-bw="⚙️ Settings">⚙️ Team & Settings</div>
         <div class="seg" id="tmTabs">
-            <button data-t="team" onclick="teamTab('team')">👥 Team</button>
+            <button data-t="team" onclick="teamTab('team')" data-bw="📱 Logins">👥 Team</button>
             <button data-t="perm" onclick="teamTab('perm')">🔐 Permissions</button>
-            <button data-t="shop" onclick="teamTab('shop')">🏪 Shop</button>
+            <button data-t="shop" onclick="teamTab('shop')" data-bw="💈 Barbershop">🏪 Shop</button>
             <button data-t="plan" onclick="teamTab('plan')">💳 Plan</button>
         </div>
 
@@ -777,9 +777,9 @@
         <div class="tm-pane" data-p="team">
             <div class="tm-usage" id="planUsage"></div>
             <div id="staffList"></div>
-            <button class="primary-cta" style="margin-top:6px;" id="stOpenBtn" onclick="toggleAddStaff(true)">➕ ADD STAFF</button>
+            <button class="primary-cta" style="margin-top:6px;" id="stOpenBtn" onclick="toggleAddStaff(true)" data-bw="➕ ADD A PHONE LOGIN">➕ ADD STAFF</button>
             <div id="addStaffForm" class="tm-box hidden">
-                <div class="tm-box-title">New staff login</div>
+                <div class="tm-box-title" data-bw="New phone login — for front desk or a barber who records clients">New staff login</div>
                 <div class="field-group"><span class="field-label">Full name</span><input type="text" id="stName" placeholder="e.g. Amina Juma"></div>
                 <div class="form-row">
                     <div class="field-group"><span class="field-label">Phone number</span><input type="tel" id="stPhone" placeholder="07XX XXX XXX"></div>
@@ -787,27 +787,28 @@
                 <div class="hint gray" style="margin:2px 0 10px;">They choose their own PIN. Keep gives you a one-time setup code to send them on WhatsApp.</div>
                 <span class="field-label">Role</span>
                 <div class="role-pick">
-                    <label><input type="radio" name="stRoleR" value="cashier" checked onchange="$('stRole').value=this.value"><span><b>🛒 Seller</b><small>Sells, receives stock, does cash-ups. Extra rights come from Permissions.</small></span></label>
+                    <label><input type="radio" name="stRoleR" value="cashier" checked onchange="$('stRole').value=this.value"><span><b data-bw="📱 Front desk">🛒 Seller</b><small data-bw="Records clients and payments, does cash-ups.">Sells, receives stock, does cash-ups. Extra rights come from Permissions.</small></span></label>
                     <label><input type="radio" name="stRoleR" value="admin" onchange="$('stRole').value=this.value"><span><b>👑 Admin</b><small>Everything the owner can do — money, reports, team.</small></span></label>
                 </div>
                 <input type="hidden" id="stRole" value="cashier">
-                <button class="primary-cta" id="stBtn" onclick="addStaff()">➕ ADD SELLER</button>
+                <button class="primary-cta" id="stBtn" onclick="addStaff()" data-bw="➕ ADD LOGIN">➕ ADD SELLER</button>
                 <button class="btn-sec wide ghost" onclick="toggleAddStaff(false)">CANCEL</button>
             </div>
         </div>
 
         <!-- PERMISSIONS -->
         <div class="tm-pane hidden" data-p="perm">
-            <div class="hint gray" style="margin-bottom:6px;">What <b>sellers</b> may do. Admins can always do everything. Changes save straight away.</div>
+            <div class="hint gray barber-only" style="margin-bottom:6px;">What <b>front-desk logins</b> may do. Admins can always do everything. Changes save straight away.</div>
+            <div class="hint gray shop-only" style="margin-bottom:6px;">What <b>sellers</b> may do. Admins can always do everything. Changes save straight away.</div>
             <div class="tg-list">
-                <label class="tg-row"><span class="tg-ic">📒</span><span class="tg-tx"><b>Sell on credit</b><small>Let customers take goods and pay later</small></span><span class="switch"><input type="checkbox" id="setCredit" data-k="cashierCredit" onchange="setPerm(this)"><i></i></span></label>
-                <label class="tg-row"><span class="tg-ic">↩️</span><span class="tg-tx"><b>Returns & refunds</b><small>Take goods back and give money back</small></span><span class="switch"><input type="checkbox" id="setReturns" data-k="cashierReturns" onchange="setPerm(this)"><i></i></span></label>
-                <label class="tg-row"><span class="tg-ic">✍️</span><span class="tg-tx"><b>Manual sales</b><small>Record sales made without the till — today only</small></span><span class="switch"><input type="checkbox" id="setManual" data-k="cashierManual" onchange="setPerm(this)"><i></i></span></label>
+                <label class="tg-row shop-only"><span class="tg-ic">📒</span><span class="tg-tx"><b>Sell on credit</b><small>Let customers take goods and pay later</small></span><span class="switch"><input type="checkbox" id="setCredit" data-k="cashierCredit" onchange="setPerm(this)"><i></i></span></label>
+                <label class="tg-row shop-only"><span class="tg-ic">↩️</span><span class="tg-tx"><b>Returns & refunds</b><small>Take goods back and give money back</small></span><span class="switch"><input type="checkbox" id="setReturns" data-k="cashierReturns" onchange="setPerm(this)"><i></i></span></label>
+                <label class="tg-row shop-only"><span class="tg-ic">✍️</span><span class="tg-tx"><b>Manual sales</b><small>Record sales made without the till — today only</small></span><span class="switch"><input type="checkbox" id="setManual" data-k="cashierManual" onchange="setPerm(this)"><i></i></span></label>
                 <label class="tg-row"><span class="tg-ic">💸</span><span class="tg-tx"><b>Expenses</b><small>Record money paid from the drawer or Lipa kwa Simu</small></span><span class="switch"><input type="checkbox" id="setExpenses" data-k="cashierExpenses" onchange="setPerm(this)"><i></i></span></label>
-                <label class="tg-row"><span class="tg-ic">🔒</span><span class="tg-tx"><b>Close the day</b><small>The last seller closes the day and sends you the summary</small></span><span class="switch"><input type="checkbox" id="setCloseDay" data-k="cashierCloseDay" onchange="setPerm(this)"><i></i></span></label>
-                <div class="tg-row"><span class="tg-ic">🏷️</span><span class="tg-tx"><b>Biggest discount</b><small>Most a seller can take off a sale</small></span><span class="tg-num"><input type="number" id="setMaxDisc" inputmode="numeric" onchange="setPerm(this)" data-k="maxDiscount">%</span></div>
+                <label class="tg-row"><span class="tg-ic">🔒</span><span class="tg-tx"><b>Close the day</b><small data-bw="The last person on shift closes the day and sends you the summary">The last seller closes the day and sends you the summary</small></span><span class="switch"><input type="checkbox" id="setCloseDay" data-k="cashierCloseDay" onchange="setPerm(this)"><i></i></span></label>
+                <div class="tg-row"><span class="tg-ic">🏷️</span><span class="tg-tx"><b>Biggest discount</b><small data-bw="Most front desk can take off a price">Most a seller can take off a sale</small></span><span class="tg-num"><input type="number" id="setMaxDisc" inputmode="numeric" onchange="setPerm(this)" data-k="maxDiscount">%</span></div>
             </div>
-            <div class="hint gray" style="margin-top:10px;">🔐 Sellers never see profit, cost prices, balances, banking or savings.</div>
+            <div class="hint gray" style="margin-top:10px;" data-bw="🔐 Front-desk logins never see profit, cost prices, balances, banking or savings.">🔐 Sellers never see profit, cost prices, balances, banking or savings.</div>
         </div>
 
         <!-- SHOP -->

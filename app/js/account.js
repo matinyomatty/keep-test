@@ -240,7 +240,7 @@ function openTeam() {
             return `<div class="tm-card ${off ? 'off' : ''}">
                 <div class="tm-top"><div class="staff-av ${p.role === 'admin' ? 'adm' : ''}">${esc((p.name || '?').charAt(0).toUpperCase())}</div>
                     <div style="flex:1;min-width:0;"><div class="tm-name">${esc(p.name)}${me ? ' <small>(you)</small>' : ''}</div><div class="tm-sub">${login}</div>${cashStatText(p.uid)}</div>
-                    <span class="role-pill ${off ? 'off' : p.role}">${off ? 'Off' : p.role === 'admin' ? 'Admin' : 'Seller'}</span></div>
+                    <span class="role-pill ${off ? 'off' : p.role}">${off ? 'Off' : roleWord(p.role)}</span></div>
                 <div class="tm-acts">${me ? `<button onclick="openPin()">🔑 Change my PIN</button>` : off
                     ? `<button class="go" data-u="${p.uid}" onclick="toggleStaff(this.dataset.u)">✅ Switch on</button>`
                     : `<button data-u="${p.uid}" onclick="resetStaffPin(this.dataset.u)">🔑 ${byEmail ? 'Email reset' : 'Reset PIN'}</button>
@@ -252,7 +252,7 @@ function openTeam() {
         $('staffList').innerHTML = on.map(card).join('') +
             (off.length ? `<details class="tm-off"><summary>Switched off (${off.length})</summary>${off.map(card).join('')}</details>` : '');
         const lim = (S.tenantInfo.limits || {}).maxStaff;
-        $('planUsage').innerHTML = `<b>${usedStaff()}</b> of ${lim || '∞'} staff logins used${lim && usedStaff() >= lim ? ' · <span style="color:var(--red);">plan full</span>' : ''}`;
+        $('planUsage').innerHTML = (isBarberMode() ? `<b>${usedStaff()}</b> / ${lim || '∞'} ${tl('phone logins used')}` : `<b>${usedStaff()}</b> of ${lim || '∞'} staff logins used`) + `${lim && usedStaff() >= lim ? ' · <span style="color:var(--red);">plan full</span>' : ''}`;
     };
 }
 
@@ -351,7 +351,7 @@ async function addStaff() {
         await sendSetupCode(name, phone, code, true);
     } catch (e) {
         toast('⚠️ ' + friendlyErr(e), 'err');
-    } finally { btn.disabled = false; btn.textContent = '➕ ADD SELLER'; }
+    } finally { btn.disabled = false; btn.textContent = isBarberMode() ? '➕ ADD LOGIN' : '➕ ADD SELLER'; }
 }
 
 async function resetStaffPin(uid) {
@@ -423,7 +423,7 @@ function openMeMenu(ev) {
     ev.stopPropagation();
     if (document.getElementById('meMenu')) return closeMeMenu();
     const r = ev.currentTarget.getBoundingClientRect(), me = S.me || {};
-    const role = me.role === 'admin' ? (me.uid === (S.tenantInfo || {}).ownerUid ? 'Owner' : 'Admin') : 'Seller';
+    const role = me.role === 'admin' ? (me.uid === (S.tenantInfo || {}).ownerUid ? 'Owner' : 'Admin') : roleWord(me.role);
     const ic = d => `<svg viewBox="0 0 24 24" aria-hidden="true">${d}</svg>`;
     const m = document.createElement('div');
     m.id = 'meMenu'; m.className = 'me-menu'; m.setAttribute('role', 'menu');
