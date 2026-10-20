@@ -814,7 +814,9 @@ async function createShop() {
     const btn = $('nBtn'); btn.disabled = true; btn.textContent = 'Creating...';
     try {
         if (!branchOf && ownerPhone && (await db.collection('logins').doc(ownerPhone).get()).exists) return err('That phone number is already used by another account. If it is the same owner, tick "This owner already uses Keep".');
-        const ownerUid = branchOf ? branchOf.ownerUid : await makeOwnerLogin(ownerEmail, name);
+        // New owners get a one-time setup code (sent on WhatsApp) instead of an email that lands in spam.
+        const setupCode = branchOf ? null : newSetupCode();
+        const ownerUid = branchOf ? branchOf.ownerUid : await makeOwnerLogin(ownerEmail, name, setupCode);
         const trial = $('nStart').value === 'trial';
         const until = trial ? addDays(new Date(), Number(V.config.trialDays) || 0) : new Date();
         const b = db.batch();
@@ -824,7 +826,9 @@ async function createShop() {
             status: 'active', trial, paidUntil: TS(until), lockAt: TS(trial ? addDays(until, Number(V.config.graceDays) || 0) : addDays(until, 1)),
             txnCount: 0, ownerName, ownerEmail, ownerPhone: ownerPhone || null, ownerUid, usageReady: true, createdAt: FV.serverTimestamp()
         });
-        b.set(tr.collection('staff').doc(ownerUid), { name: ownerName, loginId: ownerEmail, role: 'admin', active: true, createdAt: FV.serverTimestamp(), createdBy: 'Keep' });
+        b.set(tr.collection('staff').doc(ownerUid), { name: ownerName, loginId: ownerEmail, role: 'admin', active: true, createdAt: FV.serverTimestamp(), createdBy: 'Keep', ...(setupCode ? { inviteCode: setupCode } : {}) });
+        if (setupCode) b.set(db.collection('invites').doc(setupCode), { shop: code, shopName: name, uid: ownerUid, email: ownerEmail, name: ownerName, phone: ownerPhone || '',
+            expiresAt: TS(new Date(Date.now() + 48 * 3600e3)), createdAt: FV.serverTimestamp(), createdBy: 'Keep' });
         if (branchOf) {
             // Same login, one more shop: the till lists every shop in "shops" and lets the owner switch.
             const u = (await db.collection('users').doc(ownerUid).get()).data() || {};
@@ -844,20 +848,24 @@ async function createShop() {
             }
             return;
         }
-        await auth.sendPasswordResetEmail(ownerEmail, { url: window.KEEP_ENV.site });
         closeSheets();
-        const t = { id: code, name, ownerName, ownerEmail, ownerPhone };
+        const t = { id: code, name, ownerName, ownerEmail, ownerPhone, setupCode };
+        await afterInvite(t, true);
         if (!trial) { toast('✅ Shop created — now record the first payment'); setTimeout(() => openPay(code), 400); }
-        else await afterInvite(t, true);
     } catch (e) {
         err((e.code || '').includes('email-already-in-use') ? 'That email already has a Keep account. Use another email, or delete the old user in Firebase → Authentication → Users.' : 'Could not create shop: ' + e.message);
     } finally { btn.disabled = false; btn.textContent = 'Create shop'; }
 }
 // Creates a Firebase login with a random temporary password (you stay signed in here)
-async function makeOwnerLogin(email, shopName) {
+function newSetupCode() {
+    const abc = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789', r = crypto.getRandomValues(new Uint8Array(8));
+    return Array.from(r, x => abc[x % abc.length]).join('');
+}
+const setupLink = c => window.KEEP_ENV.site + '?setup=' + c;
+async function makeOwnerLogin(email, shopName, password) {
     const helper = firebase.apps.find(a => a.name === 'provisioner') || firebase.initializeApp(firebaseConfig, 'provisioner');
     await helper.auth().setPersistence(firebase.auth.Auth.Persistence.NONE);
-    const temp = Array.from(crypto.getRandomValues(new Uint8Array(18))).map(b => b.toString(36)).join('');
+    const temp = password || Array.from(crypto.getRandomValues(new Uint8Array(18))).map(b => b.toString(36)).join('');
     const cred = await helper.auth().createUserWithEmailAndPassword(email, temp);
     // The shop name appears in the "set your PIN" email (%DISPLAY_NAME%)
     if (shopName) await cred.user.updateProfile({ displayName: shopName }).catch(() => {});
@@ -865,6 +873,16 @@ async function makeOwnerLogin(email, shopName) {
     return cred.user.uid;
 }
 async function afterInvite(t, isNew) {
+    if (t.setupCode) {
+        const pretty = t.setupCode.slice(0, 4) + '-' + t.setupCode.slice(4);
+        const msg = `✅ <b>${esc(t.name)}</b> is ready.<br><br>Setup code for ${esc(t.ownerName)}:<br><span style="font-size:1.5rem;font-weight:800;letter-spacing:3px;">${pretty}</span><br><span style="font-size:.75rem;color:#6b7280;">They use it once to choose their own PIN. It works for 48 hours.</span>`;
+        if (!t.ownerPhone) return dialog(msg + `<br><br>Give them this link: <b>${esc(setupLink(t.setupCode))}</b>`, { no: null, yes: 'Done' });
+        if (await dialog(msg + '<br><br>Send it to them on WhatsApp?', { yes: '📲 WhatsApp', no: 'Not now', color: 'var(--pos)' })) {
+            const text = `Habari ${String(t.ownerName || '').split(' ')[0]}! Your business *${t.name}* is ready on Keep.\n\nTap the link to choose your own PIN:\n${setupLink(t.setupCode)}\n\nOr open keep.co.tz → "First time here?" and enter setup code *${pretty}*.\nIt works once and expires in 48 hours. Do not share it.\n\nAfter that, sign in with this phone number (or ${t.ownerEmail}) and your PIN.`;
+            window.open(`https://wa.me/${t.ownerPhone}?text=${encodeURIComponent(text)}`, '_blank');
+        }
+        return;
+    }
     const msg = `${isNew ? '✅ <b>' + esc(t.name) + '</b> is ready.<br><br>' : ''}A link to set ${isNew ? 'a' : 'a new'} PIN was emailed to <b>${esc(t.ownerEmail)}</b>.`;
     if (!t.ownerPhone) return dialog(msg + '<br><br><span style="font-size:.75rem;color:#6b7280;">Ask them to check spam if it does not arrive.</span>', { no: null, yes: 'Done' });
     if (await dialog(msg + '<br><br>Also send the sign-in steps on WhatsApp?', { yes: '📲 WhatsApp', no: 'Not now', color: 'var(--pos)' })) waOwner(t.id, isNew);
