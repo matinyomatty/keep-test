@@ -295,7 +295,7 @@ async function payBarbersToday(forClosing, what) {
                     <div class="pt-nums"><span>${tl('Clients')} <b>${r.clients}</b></span><span>${tl('Earned')} <b>${n0(r.earned)}</b></span><span>${tl('Paid')} <b>${n0(r.paid)}</b></span></div>
                     ${r.owed > 0 ? `<div class="pt-pay"><span>${tl('To pay')} <b>${fmt(r.owed)}</b></span>
                         <button data-a="cash" data-i="${i}" style="background:var(--pos);">💵 ${tl('Cash')}</button><button data-a="mobile" data-i="${i}" style="background:#1a56db;">📱 ${tl('Mobile')}</button></div>`
-                        : `<div class="pt-ok">✅ ${tl('Paid')}</div>`}
+                        : r.earned > 0 || r.paid > 0 ? `<div class="pt-ok">✅ ${tl('Paid')}</div>` : `<div class="pt-ok" style="color:var(--gray);">${tl('Nothing to pay yet')}</div>`}
                 </div>`).join('') : `<div class="hint gray">${tl('No barber earnings today.')}</div>`}
                 ${forClosing ? `<button class="qs-ok" data-a="go" ${left.length ? 'disabled style="opacity:.45;"' : ''}>${left.length ? tl('Pay everyone first') : '✅ ' + tl(what === 'shift' ? 'Continue to end the shift' : 'Continue closing the day')}</button>` : ''}
                 ${isAdmin() && noShare.length ? `<button class="qs-cancel" data-a="svc" style="color:var(--blue);">✂️ ${tl('Open Services')}</button>` : ''}
