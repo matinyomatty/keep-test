@@ -1,0 +1,838 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Keep · Barbershop</title>
+<script src="../env.js"></script>
+<script src="../lang.js"></script>
+<script src="../lang-sw.js"></script>
+<meta name="theme-color" content="#0b0d12">
+<link rel="manifest" href="/manifest.json">
+<link rel="icon" href="../icon-192.png">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@400;500;700;800&display=swap" rel="stylesheet">
+<style>
+:root { --ink:#0b0d12; --ink2:#1a1f2c; --blue:#1a56db; --blue-soft:#eaf0fd; --yellow:#ffc72c; --pos:#00875a; --pos-soft:#e7f6ef; --red:#dc2626; --red-soft:#fdecec; --amber:#f59e0b; --amber-soft:#fff5e0;
+        --bg:#f4f5f8; --card:#ffffff; --line:#e8eaef; --gray:#6b7280; --gray2:#9aa1ae; --r:20px; --shadow:0 1px 2px rgba(16,24,40,.04), 0 4px 14px rgba(16,24,40,.05); }
+* { box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent; }
+html, body { min-height:100%; }
+body { font-family:'DM Sans',system-ui,sans-serif; background:var(--bg); color:var(--ink); font-size:15px; line-height:1.35; -webkit-font-smoothing:antialiased; }
+button { font-family:inherit; cursor:pointer; color:inherit; transition:transform .12s ease, background .15s, box-shadow .15s, opacity .15s; }
+button:active:not(:disabled) { transform:scale(.97); }
+input, select, textarea { font-family:inherit; font-size:16px; color:var(--ink); }
+.hidden { display:none !important; }
+svg.ic { width:20px; height:20px; fill:none; stroke:currentColor; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; flex-shrink:0; }
+@keyframes fadeUp { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:none; } }
+#page > * { animation:fadeUp .22s ease-out both; }
+
+/* slim header */
+.top { background:var(--ink); color:#fff; padding:calc(10px + env(safe-area-inset-top)) 16px 10px; display:flex; align-items:center; gap:12px; position:sticky; top:0; z-index:40; }
+.brand { width:34px; height:34px; border-radius:10px; background:var(--yellow); color:var(--ink); display:flex; align-items:center; justify-content:center; font:800 1.05rem 'Syne'; flex-shrink:0; }
+.top .ttl { flex:1; min-width:0; }
+.top .ttl b { display:block; font-size:1rem; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.top .ttl span { font-size:.74rem; color:var(--gray2); }
+.back { width:34px; height:34px; border-radius:10px; border:0; background:rgba(255,255,255,.08); color:#fff; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+.me-chip { display:inline-flex; align-items:center; gap:6px; height:34px; padding:0 10px 0 4px; border-radius:999px; border:1px solid rgba(255,255,255,.16); background:rgba(255,255,255,.06); color:#fff; font:600 .8rem 'DM Sans'; flex-shrink:0; }
+.me-av { width:26px; height:26px; border-radius:50%; background:var(--yellow); color:var(--ink); display:inline-flex; align-items:center; justify-content:center; font-weight:800; font-size:.78rem; }
+.me-chip.staff .me-av { background:#2b3244; color:#fff; }
+.me-menu { position:fixed; z-index:9000; top:calc(56px + env(safe-area-inset-top)); right:12px; min-width:250px; background:#fff; color:var(--ink); border-radius:18px; box-shadow:0 18px 50px rgba(0,0,0,.22); padding:8px; animation:fadeUp .14s ease-out; }
+.me-menu .mm-head { display:flex; align-items:center; gap:10px; padding:8px 8px 12px; border-bottom:1px solid var(--line); margin-bottom:6px; }
+.me-menu .mm-head .me-av { width:38px; height:38px; font-size:1rem; }
+.me-menu .mm-sub { font-size:.74rem; color:var(--gray); }
+.me-menu button { display:flex; align-items:center; gap:12px; width:100%; border:0; background:none; padding:11px 10px; border-radius:12px; font:500 .9rem 'DM Sans'; text-align:left; }
+.me-menu button:hover { background:var(--bg); }
+.me-menu svg { width:18px; height:18px; color:var(--gray); }
+.me-menu .sep { border-top:1px solid var(--line); margin:6px 0; }
+.me-menu .lock, .me-menu .lock svg { color:var(--red); }
+
+/* bottom navigation */
+.nav { position:fixed; left:0; right:0; bottom:0; z-index:45; background:rgba(255,255,255,.96); backdrop-filter:blur(12px); border-top:1px solid var(--line); display:flex; justify-content:space-around; padding:8px 8px calc(8px + env(safe-area-inset-bottom)); }
+.nav button { flex:1; max-width:110px; border:0; background:none; display:flex; flex-direction:column; align-items:center; gap:3px; font:600 .7rem 'DM Sans'; color:var(--gray2); padding:4px 0; position:relative; }
+.nav button .pill { width:54px; height:32px; border-radius:999px; display:flex; align-items:center; justify-content:center; transition:background .2s; }
+.nav button.on { color:var(--ink); }
+.nav button.on .pill { background:var(--ink); color:var(--yellow); }
+.nav .badge { position:absolute; top:0; left:calc(50% + 10px); background:var(--red); color:#fff; border-radius:999px; font-size:.62rem; font-weight:700; min-width:17px; height:17px; display:flex; align-items:center; justify-content:center; padding:0 4px; border:2px solid #fff; }
+
+main { max-width:560px; margin:0 auto; padding:16px 16px 120px; }
+.sec { font:700 .82rem 'DM Sans'; color:var(--gray); margin:22px 2px 10px; display:flex; justify-content:space-between; align-items:center; }
+.sec:first-child { margin-top:2px; }
+.sec a { color:var(--blue); cursor:pointer; font-weight:600; }
+.card { background:var(--card); border-radius:var(--r); padding:16px; margin-bottom:10px; box-shadow:var(--shadow); }
+.muted { color:var(--gray); font-size:.82rem; }
+.row { display:flex; justify-content:space-between; align-items:center; gap:10px; }
+.g2 { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+.big-num { font:700 1.6rem 'DM Sans'; letter-spacing:-.5px; }
+
+/* summary strip */
+.strip { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-bottom:6px; }
+.strip > div { background:var(--card); border-radius:16px; padding:12px; box-shadow:var(--shadow); }
+.strip span { display:block; font-size:.72rem; color:var(--gray); }
+.strip b { display:block; font:700 1.12rem 'DM Sans'; margin-top:2px; letter-spacing:-.3px; }
+.strip .y { background:var(--ink); color:#fff; } .strip .y span { color:var(--gray2); } .strip .y b { color:var(--yellow); }
+
+/* chair board */
+.board { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+.seat { background:var(--card); border-radius:var(--r); padding:14px; box-shadow:var(--shadow); display:flex; flex-direction:column; gap:10px; position:relative; overflow:hidden; border:2px solid transparent; transition:border-color .2s; }
+.seat.busy { border-color:var(--amber); }
+.seat .who { display:flex; align-items:center; gap:10px; }
+.av { width:42px; height:42px; border-radius:50%; display:flex; align-items:center; justify-content:center; color:#fff; font-weight:700; font-size:1rem; flex-shrink:0; position:relative; }
+.av i { position:absolute; right:-1px; bottom:-1px; width:13px; height:13px; border-radius:50%; border:2.5px solid #fff; background:var(--pos); }
+.seat.busy .av i { background:var(--amber); }
+.seat .nm { font-weight:700; font-size:.95rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.seat .rl { font-size:.72rem; color:var(--gray); }
+.status { display:inline-flex; align-items:center; gap:6px; font-size:.75rem; font-weight:600; padding:4px 10px; border-radius:999px; align-self:flex-start; }
+.status.free { background:var(--pos-soft); color:var(--pos); }
+.status.busy { background:var(--amber-soft); color:#9a6200; }
+.status .pulse { width:7px; height:7px; border-radius:50%; background:currentColor; animation:pulse 1.6s infinite; }
+@keyframes pulse { 50% { opacity:.3; } }
+.seat .client { font-size:.85rem; } .seat .client b { font-weight:700; }
+.seat .next { font-size:.74rem; color:var(--gray); border-top:1px dashed var(--line); padding-top:8px; }
+.seat .cnt { position:absolute; top:12px; right:12px; text-align:right; line-height:1; }
+.seat .cnt b { font:700 1.25rem 'DM Sans'; display:block; }
+.seat .cnt span { font-size:.64rem; color:var(--gray); }
+
+/* buttons */
+.cta { width:100%; border:0; border-radius:16px; padding:15px; font:700 .98rem 'DM Sans'; color:#fff; background:var(--ink); display:flex; align-items:center; justify-content:center; gap:10px; }
+.cta.blue { background:var(--blue); } .cta.green { background:var(--pos); } .cta.yellow { background:var(--yellow); color:var(--ink); }
+.cta:disabled { opacity:.5; }
+.btn-sec { flex:1; padding:13px 12px; border-radius:14px; border:1px solid var(--line); background:#fff; font:600 .88rem 'DM Sans'; display:flex; align-items:center; justify-content:center; gap:8px; }
+.btn-sec.blue { color:var(--blue); background:var(--blue-soft); border-color:transparent; } .btn-sec.red { color:var(--red); background:var(--red-soft); border-color:transparent; }
+.btn-sm { border:0; border-radius:12px; padding:9px 14px; font:600 .82rem 'DM Sans'; background:var(--ink); color:#fff; display:inline-flex; align-items:center; justify-content:center; gap:6px; }
+.btn-sm.green { background:var(--pos); } .btn-sm.blue { background:var(--blue); } .btn-sm.ghost { background:var(--bg); color:var(--ink); } .btn-sm.wide { width:100%; }
+.x { width:34px; height:34px; border-radius:50%; border:0; background:var(--bg); display:inline-flex; align-items:center; justify-content:center; flex-shrink:0; color:var(--gray); }
+.x svg { width:16px; height:16px; }
+
+/* staff / earnings cards */
+.bcard { background:var(--card); border-radius:var(--r); padding:14px; box-shadow:var(--shadow); }
+.bcard .nm { font-weight:700; }
+.bcard .rule { font-size:.74rem; color:var(--gray); }
+.bcard .count { font:700 1.8rem 'DM Sans'; line-height:1.05; margin-top:8px; letter-spacing:-.5px; }
+.bcard .count small { font:500 .8rem 'DM Sans'; color:var(--gray); margin-left:4px; letter-spacing:0; }
+.bcard .earn { display:flex; justify-content:space-between; align-items:center; margin-top:10px; padding-top:10px; border-top:1px solid var(--line); font-size:.82rem; }
+.bcard .earn b { color:var(--pos); }
+.stat-card { background:var(--card); padding:14px; border-radius:16px; box-shadow:var(--shadow); }
+.stat-card h4 { font:500 .76rem 'DM Sans'; color:var(--gray); margin-bottom:4px; }
+.stat-card p { font:700 1.05rem 'DM Sans'; }
+.hero { background:var(--ink); color:#fff; border-radius:var(--r); padding:18px; margin-bottom:10px; position:relative; overflow:hidden; }
+.hero::after { content:''; position:absolute; right:-40px; top:-40px; width:160px; height:160px; border-radius:50%; background:radial-gradient(circle, rgba(255,199,44,.25), transparent 70%); }
+.hero .mo { font-size:.8rem; color:var(--gray2); }
+.hero .big { font:700 2rem 'DM Sans'; color:var(--yellow); letter-spacing:-.8px; margin:2px 0; }
+.hero .big small { font-size:.8rem; color:var(--gray2); margin-left:4px; letter-spacing:0; }
+.hero .sub { font-size:.8rem; color:#c9cfdb; }
+.bar { height:6px; background:rgba(255,255,255,.1); border-radius:3px; margin-top:12px; overflow:hidden; } .bar div { height:100%; background:var(--yellow); border-radius:3px; }
+.hero-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:14px; padding-top:14px; border-top:1px solid rgba(255,255,255,.1); position:relative; z-index:1; }
+.hero-grid span { display:block; font-size:.72rem; color:var(--gray2); } .hero-grid b { font-size:1rem; }
+
+/* point of sale */
+.staffbar { display:flex; gap:10px; overflow-x:auto; scrollbar-width:none; padding:2px 2px 4px; }
+.staffbar::-webkit-scrollbar, .catbar::-webkit-scrollbar { display:none; }
+.chair { flex-shrink:0; width:66px; border:0; background:none; display:flex; flex-direction:column; align-items:center; gap:5px; font:600 .76rem 'DM Sans'; color:var(--gray); }
+.chair .av { width:50px; height:50px; font-size:1.1rem; box-shadow:0 0 0 3px var(--bg); transition:box-shadow .15s, transform .15s; }
+.chair.on { color:var(--ink); }
+.chair.on .av { box-shadow:0 0 0 3px #fff, 0 0 0 5.5px var(--ink); transform:scale(1.04); }
+.chair span.n { max-width:66px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.catbar { display:flex; gap:8px; overflow-x:auto; scrollbar-width:none; padding:4px 2px 2px; margin:12px 0 4px; }
+.catbar button { flex-shrink:0; border:1px solid var(--line); background:#fff; border-radius:999px; padding:8px 14px 8px 10px; font:600 .82rem 'DM Sans'; display:inline-flex; align-items:center; gap:6px; color:var(--ink); }
+.catbar button svg { width:16px; height:16px; }
+.catbar button.on { background:var(--ink); border-color:var(--ink); color:#fff; }
+.tiles { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+.tile { background:var(--card); border:2px solid transparent; border-radius:18px; padding:12px; text-align:left; position:relative; box-shadow:var(--shadow); display:flex; flex-direction:column; gap:8px; min-height:118px; }
+.tile .icon { width:38px; height:38px; border-radius:12px; display:flex; align-items:center; justify-content:center; }
+.tile .icon svg { width:20px; height:20px; }
+.tile b { display:block; font-size:.9rem; font-weight:600; line-height:1.25; padding-right:22px; }
+.tile .meta { margin-top:auto; display:flex; justify-content:space-between; align-items:baseline; }
+.tile .p { font-weight:700; font-size:.9rem; }
+.tile .s { font-size:.72rem; color:var(--gray); }
+.tile.on { border-color:var(--pos); background:#f6fcf9; }
+.tile .q { position:absolute; top:10px; right:10px; background:var(--pos); color:#fff; border-radius:999px; min-width:24px; height:24px; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:.78rem; animation:pop .2s ease-out; }
+@keyframes pop { from { transform:scale(.4); } to { transform:scale(1); } }
+.tile.out { opacity:.45; }
+.ticket { position:fixed; left:16px; right:16px; bottom:calc(84px + env(safe-area-inset-bottom)); max-width:528px; margin:0 auto; background:var(--ink); color:#fff; border-radius:18px; padding:12px 14px; display:flex; align-items:center; gap:12px; z-index:44; box-shadow:0 14px 34px rgba(11,13,18,.35); border:0; text-align:left; animation:fadeUp .2s ease-out; }
+.ticket .n { width:34px; height:34px; border-radius:50%; background:var(--yellow); color:var(--ink); display:flex; align-items:center; justify-content:center; font-weight:700; flex-shrink:0; }
+.ticket .t1 { font:700 .9rem 'DM Sans'; }
+.ticket .t2 { font-size:.74rem; color:var(--gray2); }
+.ticket .tot { margin-left:auto; font:700 1.05rem 'DM Sans'; color:var(--yellow); white-space:nowrap; }
+
+/* lists */
+.li { display:flex; align-items:center; gap:12px; padding:12px 0; border-bottom:1px solid var(--line); }
+.li:last-child { border-bottom:0; }
+.li .mx { flex:1; min-width:0; } .li .mx b { display:block; font-size:.92rem; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.dot { width:38px; height:38px; border-radius:50%; flex-shrink:0; display:flex; align-items:center; justify-content:center; color:#fff; font-weight:700; font-size:.88rem; }
+.tag { display:inline-block; border-radius:6px; padding:2px 7px; font:600 .66rem 'DM Sans'; }
+.tag.v { background:var(--red-soft); color:var(--red); }
+.empty { text-align:center; color:var(--gray); padding:24px 10px; font-size:.88rem; }
+.chips { display:flex; gap:8px; flex-wrap:wrap; }
+.chip { border:1px solid var(--line); background:#fff; border-radius:999px; padding:8px 14px; font:600 .82rem 'DM Sans'; }
+.chip.on { background:var(--ink); color:#fff; border-color:var(--ink); }
+
+/* forms + sheet */
+label.f { display:block; font:600 .8rem 'DM Sans'; color:var(--gray); margin:14px 0 6px; }
+.in { width:100%; border:1.5px solid var(--line); border-radius:14px; padding:12px 14px; background:#fff; outline:none; transition:border-color .15s, box-shadow .15s; }
+.in:focus { border-color:var(--blue); box-shadow:0 0 0 4px var(--blue-soft); }
+.seg { display:flex; background:var(--bg); border-radius:14px; padding:4px; gap:4px; }
+.seg button { flex:1; border:0; background:none; border-radius:11px; padding:10px 6px; font:600 .82rem 'DM Sans'; color:var(--gray); }
+.seg button.on { background:#fff; color:var(--ink); box-shadow:0 1px 4px rgba(0,0,0,.1); }
+.ov { position:fixed; inset:0; background:rgba(11,13,18,.5); z-index:60; display:flex; align-items:flex-end; justify-content:center; animation:fade .15s; }
+@keyframes fade { from { opacity:0; } }
+.modal { background:#fff; width:100%; max-width:560px; max-height:92vh; overflow:auto; border-radius:26px 26px 0 0; padding:10px 18px calc(22px + env(safe-area-inset-bottom)); animation:up .22s cubic-bezier(.2,.8,.2,1); }
+.modal::before { content:''; display:block; width:40px; height:5px; border-radius:3px; background:var(--line); margin:0 auto 14px; }
+@keyframes up { from { transform:translateY(40px); opacity:.5; } to { transform:none; opacity:1; } }
+.modal-title { font:700 1.15rem 'DM Sans'; text-align:center; margin-bottom:14px; }
+.tot-line { display:flex; justify-content:space-between; align-items:center; background:var(--bg); border-radius:16px; padding:14px 16px; margin:16px 0 4px; }
+.tot-line span { font:600 .85rem 'DM Sans'; color:var(--gray); }
+.tot-line b { font:700 1.35rem 'DM Sans'; letter-spacing:-.4px; }
+.toast { position:fixed; left:50%; transform:translateX(-50%); bottom:calc(150px + env(safe-area-inset-bottom)); background:var(--ink); color:#fff; padding:12px 18px; border-radius:14px; font-weight:600; font-size:.88rem; z-index:99; max-width:90vw; text-align:center; box-shadow:0 10px 30px rgba(0,0,0,.25); animation:fadeUp .18s ease-out; }
+.toast.err { background:var(--red); }
+.note { background:var(--amber-soft); padding:12px 14px; border-radius:14px; font-size:.84rem; margin-bottom:12px; color:#6b4a00; }
+.check { display:flex; gap:10px; align-items:center; margin-top:16px; font-weight:500; font-size:.92rem; }
+.check input { width:20px; height:20px; accent-color:var(--pos); }
+.svc-row { display:flex; align-items:center; gap:8px; padding:6px 8px 6px 12px; border-radius:14px; border:1.5px solid var(--line); margin-bottom:6px; background:#fff; transition:border-color .15s, background .15s; }
+.svc-row.on { border-color:var(--pos); background:#f6fcf9; }
+.svc-tick { flex:1; display:flex; align-items:center; gap:10px; font-weight:500; font-size:.9rem; min-width:0; cursor:pointer; }
+.svc-tick input { width:20px; height:20px; flex-shrink:0; accent-color:var(--pos); }
+.svc-row .svc-p { width:92px; flex-shrink:0; padding:9px 8px; text-align:right; font-size:.9rem; }
+
+/* first run */
+.login { min-height:100vh; background:var(--ink); display:flex; align-items:center; justify-content:center; padding:24px 16px; }
+.login-card { background:#fff; border-radius:26px; padding:26px 20px; width:100%; max-width:440px; animation:fadeUp .25s ease-out; }
+.login-logo { display:flex; align-items:center; justify-content:center; gap:10px; font:800 1.6rem 'Syne'; }
+.login-logo .brand { width:40px; height:40px; font-size:1.25rem; }
+.login-sub { text-align:center; color:var(--gray); font:500 .86rem 'DM Sans'; margin:6px 0 16px; }
+</style>
+</head>
+<body>
+<div id="app"></div>
+
+<script>
+'use strict';
+// ════════════════════════════════════════════════════════════
+//  Keep · Barbershop module (pilot)
+//  Barbers are paid by the clients they serve. Records are kept on
+//  this device (localStorage) with backup / restore, until the module
+//  moves onto Keep's cloud.
+// ════════════════════════════════════════════════════════════
+const KEY = 'keep.barbershop.v1', APP_VERSION = 1;
+const COLORS = ['#1a56db', '#00875a', '#7c3aed', '#dc2626', '#f59e0b', '#0891b2', '#db2777', '#4b5563'];
+const ICON = {
+    dash: '<path d="M3 3v18h18"/><path d="M7 15l4-4 3 3 5-6"/>',
+    cut: '<circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M20 4L8.12 15.88M14.47 14.48L20 20M8.12 8.12L12 12"/>',
+    queue: '<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>',
+    report: '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M8 13h8M8 17h5"/>',
+    team: '<circle cx="12" cy="8" r="4"/><path d="M4 21v-1a6 6 0 0 1 6-6h4a6 6 0 0 1 6 6v1"/>',
+    list: '<path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/>',
+    wallet: '<rect x="2" y="6" width="20" height="14" rx="2"/><path d="M2 10h20M16 15h2"/>',
+    book: '<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20V3H6.5A2.5 2.5 0 0 0 4 5.5z"/><path d="M4 19.5V21h16"/>',
+    gear: '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.820-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>',
+    save: '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/>',
+    lock: '<rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>',
+    unlock: '<rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/>',
+    x: '<path d="M18 6L6 18M6 6l12 12"/>',
+    caret: '<path d="M6 9l6 6 6-6"/>',
+    back: '<path d="M15 18l-6-6 6-6"/>',
+    plus: '<path d="M12 5v14M5 12h14"/>',
+    wa: '<path d="M21 11.5a8.4 8.4 0 0 1-12.4 7.4L3 21l2.1-5.4A8.4 8.4 0 1 1 21 11.5z"/>',
+    check: '<path d="M20 6L9 17l-5-5"/>',
+    chair: '<path d="M6 19v-4h12v4M5 11h14v4H5zM7 11V5a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v6M8 19v2M16 19v2"/>',
+    grid: '<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/>',
+    razor: '<path d="M3 17l9-9 4 4-9 9H3z"/><path d="M14 6l2-2a2.8 2.8 0 0 1 4 4l-2 2"/>',
+    sparkle: '<path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"/>',
+    hand: '<path d="M18 11V6a2 2 0 0 0-4 0v5M14 10V4a2 2 0 0 0-4 0v6M10 10.5V6a2 2 0 0 0-4 0v8"/><path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.9-5.9-2.3l-3.6-3.6a2 2 0 0 1 2.8-2.8L7 15"/>',
+    spa: '<path d="M12 22c4-2 7-5.5 7-10-3 0-5.5 1.5-7 4-1.5-2.5-4-4-7-4 0 4.5 3 8 7 10z"/><path d="M12 16c0-5 1.5-9 0-13-1.5 4 0 8 0 13z"/>',
+    locs: '<path d="M8 3c-2 3 2 5 0 8s2 5 0 8M12 3c-2 3 2 5 0 8s2 5 0 8M16 3c-2 3 2 5 0 8s2 5 0 8"/>',
+    star: '<path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1-4.4-4.3 6.1-.9z"/>',
+    bottle: '<path d="M10 2h4v4l2 3v11a2 2 0 0 1-2 2h-4a2 2 0 0 1-2-2V9l2-3z"/><path d="M8 13h8"/>'
+};
+const ic = (k, st = '') => `<svg class="ic" viewBox="0 0 24 24" style="${st}">${ICON[k]}</svg>`;
+
+// ── state ──
+let D = load();
+const U = { tab: 'chairs', view: null, job: blankJob(), owner: false, ownerAt: 0, rp: 'today', qBarber: '', cq: '', cat: 'all' };
+function blankJob() { return { barberId: null, items: {}, customer: { name: '', phone: '' }, discount: 0, queueId: null }; }
+function load() {
+    try { const d = JSON.parse(localStorage.getItem(KEY) || 'null'); if (d && d.v === 1) return d; } catch (e) {}
+    return { v: 1, shop: { name: '', phone: '', address: '', footer: '', pin: '' }, barbers: [], services: [], products: [], customers: [], jobs: [], queue: [], expenses: [], payouts: [], seq: 0 };
+}
+function persist() { try { localStorage.setItem(KEY, JSON.stringify(D)); return true; } catch (e) { toast('Storage is full — download a backup now', true); return false; } }
+
+// ── helpers ──
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const n0 = v => Math.round(Number(v) || 0).toLocaleString('en-US');
+const num = v => { const n = parseFloat(String(v ?? '').replace(/,/g, '')); return isFinite(n) ? n : 0; };
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+const dayStr = (d = new Date()) => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+const tm = ms => new Date(ms).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+const normPhone = p => { let x = String(p || '').replace(/\D/g, ''); if (x.startsWith('0')) x = '255' + x.slice(1); if (x.length === 9) x = '255' + x; return x; };
+const pretty = p => { const x = normPhone(p); return x.startsWith('255') && x.length === 12 ? '0' + x.slice(3, 6) + ' ' + x.slice(6, 9) + ' ' + x.slice(9) : (p || ''); };
+const barber = id => D.barbers.find(b => b.id === id);
+const initial = s => (String(s || '?').trim()[0] || '?').toUpperCase();
+const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+function toast(m, err) { document.querySelectorAll('.toast').forEach(x => x.remove()); const e = document.createElement('div'); e.className = 'toast' + (err ? ' err' : ''); e.textContent = m; document.body.appendChild(e); setTimeout(() => e.remove(), err ? 3800 : 2200); }
+function modal(html) { closeModal(); const o = document.createElement('div'); o.className = 'ov'; o.id = 'ov'; o.innerHTML = `<div class="modal">${html}</div>`; o.onclick = e => { if (e.target === o) closeModal(); }; document.body.appendChild(o); return o; }
+function closeModal() { const o = $('ov'); if (o) o.remove(); }
+function confirmBox(msg, yes, cb) { modal(`<div class="modal-title">${esc(msg)}</div><div class="g2"><button class="btn-sec" onclick="closeModal()">Cancel</button><button class="btn-sec red" id="cfYes">${esc(yes)}</button></div>`); $('cfYes').onclick = () => { closeModal(); cb(); }; }
+function segPick(el) { el.parentNode.querySelectorAll('button').forEach(b => b.classList.toggle('on', b === el)); }
+
+// ── pay rules: barbers are paid by the clients they serve ──
+const PAYTYPES = [['head', 'Per client'], ['service', 'Per service'], ['pct', 'Percentage'], ['rent', 'Chair rent']];
+function payDesc(b) { const ty = b.payType || 'pct'; return ty === 'head' ? n0(b.perHead) + ' per client' : ty === 'rent' ? 'Chair rent ' + n0(b.rent) + '/day' : ty === 'service' ? 'Per service' : (b.pct || 0) + '% of service'; }
+// what the barber earns from one job (services only; products stay with the shop)
+function jobPay(b, svcGross, disc, items) {
+    const ty = b.payType || 'pct', svcNet = Math.max(0, svcGross - disc);
+    if (ty === 'head') return Math.min(svcNet, Math.round(b.perHead || 0));
+    if (ty === 'service') return Math.min(svcNet, items.filter(i => i.t === 's').reduce((a, i) => { const s = D.services.find(x => x.id === i.id); return a + (s && s.cut ? s.cut : 0) * i.qty; }, 0));
+    if (ty === 'rent') return svcNet;            // keeps the service money, pays chair rent for each day worked
+    return Math.round(svcNet * (b.pct || 0) / 100);
+}
+
+// ── owner PIN ──
+async function sha(s) { try { const b = await crypto.subtle.digest('SHA-256', new TextEncoder().encode('keep-barbershop:' + s)); return [...new Uint8Array(b)].map(x => x.toString(16).padStart(2, '0')).join(''); } catch (e) { return 'p:' + s; } }
+function isOwner() { if (U.owner && Date.now() - U.ownerAt > 15 * 60 * 1000) U.owner = false; return U.owner || !D.shop.pin; }
+function askPin(ok) {
+    if (!D.shop.pin) { ok(); return; }
+    modal(`<div class="modal-title">Owner PIN</div><input class="in" id="pinIn" type="password" inputmode="numeric" maxlength="8" autocomplete="off" style="font-size:1.5rem;letter-spacing:8px;text-align:center;">
+      <button class="cta" style="margin-top:14px;" id="pinGo">Unlock</button>`);
+    const go = async () => { if (await sha($('pinIn').value) === D.shop.pin) { U.owner = true; U.ownerAt = Date.now(); closeModal(); ok(); } else { toast('Wrong PIN', true); $('pinIn').value = ''; } };
+    $('pinGo').onclick = go; $('pinIn').onkeydown = e => { if (e.key === 'Enter') go(); }; setTimeout(() => $('pinIn').focus(), 60);
+}
+function ownerGate(fn) { closeMe(); if (isOwner()) { U.ownerAt = Date.now(); fn(); } else askPin(fn); }
+
+// ── shell ──
+const TABS = [['chairs', 'chair', 'Chairs'], ['pos', 'cut', 'Sell'], ['queue', 'queue', 'Queue'], ['insights', 'dash', 'Insights']];
+function go(tab) { if (tab === 'dash') tab = 'chairs'; U.tab = tab; U.view = null; closeMe(); render(); window.scrollTo(0, 0); }
+function openView(view) { U.view = view; closeMe(); render(); window.scrollTo(0, 0); }
+function meChip() { const own = isOwner(); return `<button class="me-chip ${own ? '' : 'staff'}" onclick="openMe(event)"><span class="me-av">${own ? esc(initial(D.shop.name)) : ic('lock', 'width:13px;height:13px')}</span>${own ? 'Owner' : 'Staff'}${ic('caret', 'width:14px;height:14px;opacity:.6')}</button>`; }
+function render() {
+    if (!D.shop.name) return renderSetup();
+    const q = D.queue.filter(x => x.status === 'waiting').length;
+    const views = { reports: renderReports, team: renderTeam, catalog: renderCatalog, expenses: renderExpenses, clients: renderClients, shop: renderShop, backup: renderBackup };
+    $('app').innerHTML = `<div id="page"></div><nav class="nav">${TABS.map(([k, i, l]) => `<button class="${U.tab === k && !U.view ? 'on' : ''}" onclick="go('${k}')"><span class="pill">${ic(i)}</span>${l}${k === 'queue' && q ? `<span class="badge">${q}</span>` : ''}</button>`).join('')}</nav>`;
+    if (U.view && views[U.view]) return views[U.view]();
+    ({ chairs: renderChairs, pos: renderPOS, queue: renderQueue, insights: renderInsights })[U.tab]();
+}
+const todayLabel = () => new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' });
+function header(sub) { return `<div class="top"><div class="brand">K</div><div class="ttl"><b>${esc(D.shop.name)}</b><span>${esc(sub || todayLabel())}</span></div>${meChip()}</div>`; }
+const subHeader = title => `<div class="top"><button class="back" onclick="go(U.tab)" aria-label="Back">${ic('back', 'width:18px;height:18px')}</button><div class="ttl"><b>${esc(title)}</b><span>${esc(D.shop.name)}</span></div>${meChip()}</div>`;
+function openMe(e) {
+    e.stopPropagation(); if ($('meMenu')) return closeMe();
+    const own = isOwner(), m = document.createElement('div'); m.className = 'me-menu'; m.id = 'meMenu';
+    const it = (i, l, fn, cls = '') => `<button class="${cls}" onclick="${fn}">${ic(i)}${l}</button>`;
+    m.innerHTML = `<div class="mm-head"><span class="me-av">${esc(initial(D.shop.name))}</span><div><b>${esc(D.shop.name)}</b><div class="mm-sub">${own ? 'Owner' : 'Staff'} · Barbershop</div></div></div>
+      ${it('report', 'Reports', "ownerGate(()=>openView('reports'))")}${it('team', 'Staff &amp; pay', "ownerGate(()=>openView('team'))")}${it('list', 'Services &amp; products', "ownerGate(()=>openView('catalog'))")}
+      ${it('wallet', 'Expenses', "ownerGate(()=>openView('expenses'))")}${it('book', 'Clients', "openView('clients')")}${it('gear', 'Shop settings', "ownerGate(()=>openView('shop'))")}${it('save', 'Backup', "ownerGate(()=>openView('backup'))")}
+      ${D.shop.pin ? '<div class="sep"></div>' + (own ? it('lock', 'Lock (staff mode)', 'lockOwner()', 'lock') : it('unlock', 'Owner unlock', 'ownerGate(render)')) : ''}`;
+    document.body.appendChild(m); setTimeout(() => document.addEventListener('click', meOutside), 0);
+}
+function meOutside(e) { const m = $('meMenu'); if (m && !m.contains(e.target)) closeMe(); }
+function closeMe() { const m = $('meMenu'); if (m) m.remove(); document.removeEventListener('click', meOutside); }
+function lockOwner() { U.owner = false; closeMe(); if (U.view && U.view !== 'clients') U.view = null; render(); toast('Locked — staff mode'); }
+const avatar = (b, cls = 'av', dot = false) => `<div class="${cls}" style="background:${b ? b.color : '#9aa1ae'}">${esc(initial(b ? b.name : '?'))}${dot ? '<i></i>' : ''}</div>`;
+// ════════════ SERVICE MENU (starter list — owner ticks what they offer and sets their own prices) ════════════
+const SVC_CATS = [['hair', 'Hair'], ['beard', 'Beard'], ['face', 'Face & skin'], ['nails', 'Hands & feet'], ['massage', 'Massage'], ['style', 'Locs & styling'], ['other', 'Other']];
+const catName = k => (SVC_CATS.find(c => c[0] === k) || [0, 'Other'])[1];
+// [name, category, price TZS, minutes, staff gets (per-service pay), ticked by default]
+const SERVICE_MENU = [
+    ['Haircut', 'hair', 3000, 20, 1500, 1], ['Haircut + beard', 'hair', 4000, 30, 2000, 1], ['Clean shave (bald)', 'hair', 3000, 20, 1500, 1], ['Kids haircut', 'hair', 2000, 15, 1000, 1],
+    ['Fade / design lines', 'hair', 5000, 30, 2500, 1], ['Hair wash', 'hair', 2000, 10, 1000, 1], ['Black dye', 'hair', 3000, 20, 1500, 1], ['Colour dye', 'hair', 10000, 40, 4000, 0],
+    ['Relaxer / texturizer', 'hair', 10000, 45, 4000, 0], ['Waves / curl treatment', 'hair', 15000, 60, 6000, 0],
+    ['Beard trim', 'beard', 1500, 10, 700, 1], ['Beard shape-up', 'beard', 2000, 15, 1000, 1], ['Beard dye', 'beard', 2000, 15, 1000, 0], ['Hot towel shave', 'beard', 5000, 20, 2500, 0],
+    ['Face scrub', 'face', 3000, 15, 1500, 1], ['Steam', 'face', 3000, 15, 1500, 1], ['Facial', 'face', 10000, 40, 4000, 1], ['Face mask', 'face', 5000, 20, 2000, 0],
+    ['Blackhead removal', 'face', 5000, 20, 2000, 0], ['Eyebrow shaping', 'face', 2000, 10, 1000, 0],
+    ['Manicure', 'nails', 7000, 30, 3000, 1], ['Pedicure', 'nails', 10000, 45, 4000, 1], ['Manicure + pedicure', 'nails', 15000, 75, 6000, 0], ['Nail cut & clean', 'nails', 2000, 10, 1000, 0], ['Foot scrub', 'nails', 5000, 20, 2000, 0],
+    ['Head massage', 'massage', 3000, 10, 1500, 1], ['Neck & shoulder massage', 'massage', 5000, 15, 2000, 0], ['Full back massage', 'massage', 15000, 30, 6000, 0],
+    ['Dreadlocks — start', 'style', 30000, 120, 12000, 0], ['Dreadlocks — retwist', 'style', 15000, 60, 6000, 0], ['Twists / braids (men)', 'style', 15000, 90, 6000, 0], ['Cornrows', 'style', 10000, 60, 4000, 0]
+];
+const ROLES = ['Barber', 'Nail technician', 'Beautician', 'Masseur', 'Assistant'];
+
+// ════════════ FIRST RUN ════════════
+function renderSetup() {
+    U.suB = U.suB || [{ name: '', v: '', role: 'Barber' }, { name: '', v: '', role: 'Barber' }];
+    U.suPay = U.suPay || 'head';
+    U.suStep = U.suStep || 1;
+    U.suS = U.suS || SERVICE_MENU.map(([n, c, p, m, cut, on]) => ({ n, c, p, m, cut, on: !!on }));
+    if (U.suStep === 2) return renderSetupServices();
+    $('app').innerHTML = `<div class="login"><div class="login-card">
+      <div class="login-logo"><span class="brand">K</span>Keep</div><div class="login-sub">Barbershop setup · step 1 of 2</div>
+      <label class="f">Shop name</label><input class="in" id="suName" value="${esc(U.suName || '')}" oninput="U.suName=this.value" placeholder="e.g. Classic Cuts">
+      <label class="f">Owner PIN (4–8 digits)</label><input class="in" id="suPin" type="password" inputmode="numeric" maxlength="8" oninput="U.suPin=this.value">
+      <label class="f">How is your staff paid?</label>
+      <div class="seg">${PAYTYPES.map(([k, l]) => `<button class="${U.suPay === k ? 'on' : ''}" onclick="U.suPay='${k}';renderSetup()">${l}</button>`).join('')}</div>
+      <div class="muted" style="margin-top:6px;">${{ head: 'A fixed amount for every client they serve.', service: 'A set amount for each service — you choose it per service on the next step.', pct: 'A share of the price of the services they do.', rent: 'They keep what they charge and pay the shop a daily chair rent.' }[U.suPay]} You can set each person differently later.</div>
+      <label class="f">Staff${U.suPay === 'service' ? '' : ' · ' + suValLabel()}</label>
+      <div id="suBarbers"></div><button class="btn-sm ghost" style="margin-top:4px;" onclick="suAddBarber()">+ Add staff</button>
+      <button class="cta" style="margin-top:20px;" onclick="suNext()">Next: choose services</button></div></div>`;
+    if (U.suPin) $('suPin').value = U.suPin;
+    suDrawBarbers();
+}
+function suValLabel() { return { head: 'amount per client (TZS)', pct: 'percentage (%)', rent: 'chair rent per day (TZS)', service: '' }[U.suPay]; }
+function suDrawBarbers() { const svc = U.suPay === 'service', ph = { head: '1,500', pct: '50', rent: '10,000' }[U.suPay];
+    $('suBarbers').innerHTML = U.suB.map((b, i) => `<div style="display:grid;grid-template-columns:${svc ? '3fr 2fr' : '3fr 2fr 2fr'};gap:6px;margin-bottom:8px;"><input class="in" placeholder="Name" value="${esc(b.name)}" oninput="U.suB[${i}].name=this.value"><select class="in" style="padding:12px 6px;font-size:.8rem;" onchange="U.suB[${i}].role=this.value">${ROLES.map(r => `<option ${b.role === r ? 'selected' : ''}>${r}</option>`).join('')}</select>${svc ? '' : `<input class="in" type="number" inputmode="numeric" placeholder="${ph}" value="${esc(b.v)}" oninput="U.suB[${i}].v=this.value">`}</div>`).join(''); }
+function suAddBarber() { U.suB.push({ name: '', v: '', role: 'Barber' }); suDrawBarbers(); }
+function suNext() {
+    const name = (U.suName || '').trim(), pin = (U.suPin || '').trim();
+    if (!name) return toast('Enter the shop name', true);
+    if (!/^\d{4,8}$/.test(pin)) return toast('PIN must be 4–8 digits', true);
+    const bs = U.suB.filter(b => b.name.trim());
+    if (!bs.length) return toast('Add at least one staff member', true);
+    if (U.suPay !== 'service' && bs.some(b => !(num(b.v) > 0))) return toast('Enter the ' + suValLabel() + ' for each person', true);
+    U.suStep = 2; renderSetup(); window.scrollTo(0, 0);
+}
+function renderSetupServices() {
+    const cut = U.suPay === 'service', n = U.suS.filter(s => s.on).length;
+    $('app').innerHTML = `<div class="login" style="align-items:flex-start;"><div class="login-card">
+      <div class="login-logo"><span class="brand">K</span>Keep</div><div class="login-sub">Barbershop setup · step 2 of 2</div>
+      <div class="note">Tick the services you offer and type <b>your own prices</b>. The prices shown are only a starting point.${cut ? ' “Staff gets” is what the person who does the service earns.' : ''} You can add more services later.</div>
+      ${SVC_CATS.filter(([k]) => U.suS.some(s => s.c === k)).map(([k, l]) => `<div class="sec">${l}</div>${U.suS.map((s, i) => s.c !== k ? '' : `
+        <div class="svc-row ${s.on ? 'on' : ''}"><label class="svc-tick"><input type="checkbox" ${s.on ? 'checked' : ''} onchange="U.suS[${i}].on=this.checked;this.closest('.svc-row').classList.toggle('on',this.checked);suCount()"><span>${esc(s.n)}</span></label>
+          <input class="in svc-p" type="number" inputmode="numeric" value="${s.p}" oninput="U.suS[${i}].p=num(this.value)" aria-label="Price">${cut ? `<input class="in svc-p" type="number" inputmode="numeric" value="${s.cut}" oninput="U.suS[${i}].cut=num(this.value)" aria-label="Staff gets" title="Staff gets">` : ''}</div>`).join('')}`).join('')}
+      ${cut ? '<p class="muted" style="margin-top:6px;">Left box: price · right box: staff gets</p>' : ''}
+      <div style="display:flex;gap:10px;margin-top:20px;"><button class="btn-sec" style="flex:0 0 30%;" onclick="U.suStep=1;renderSetup()">Back</button><button class="cta" style="flex:1;" id="suGo" onclick="finishSetup()">Open shop · ${n} services</button></div></div></div>`;
+}
+function suCount() { $('suGo').textContent = 'Open shop · ' + U.suS.filter(s => s.on).length + ' services'; }
+async function finishSetup() {
+    const ty = U.suPay, sv = U.suS.filter(s => s.on);
+    if (!sv.length) return toast('Tick at least one service', true);
+    if (sv.some(s => !(s.p > 0))) return toast('Every ticked service needs a price', true);
+    D.shop.name = U.suName.trim(); D.shop.pin = await sha(U.suPin.trim());
+    D.barbers = U.suB.filter(b => b.name.trim()).map((b, i) => { const v = num(b.v); return { id: uid(), name: b.name.trim(), role: b.role || 'Barber', payType: ty, pct: ty === 'pct' ? Math.min(100, v) : 50, perHead: ty === 'head' ? v : 0, rent: ty === 'rent' ? v : 0, active: true, color: COLORS[i % COLORS.length] }; });
+    D.services = sv.map(s => ({ id: uid(), name: s.n, cat: s.c, price: s.p, mins: s.m, cut: Math.min(s.p, s.cut || 0), active: true }));
+    persist(); U.owner = true; U.ownerAt = Date.now(); go('chairs');
+}
+
+// ════════════ FIGURES ════════════
+// staff on a sale: older sales have one barber; newer ones list each person and their pay
+const jobStaff = j => j.pays ? Object.keys(j.pays) : [j.barberId];
+function fig(from, to) {
+    const J = D.jobs.filter(j => !j.voided && j.day >= from && j.day <= to);
+    const E = D.expenses.filter(e => e.day >= from && e.day <= to), P = D.payouts.filter(p => p.day >= from && p.day <= to);
+    const f = { jobs: J.length, revenue: 0, cash: 0, mobile: 0, commission: 0, productCost: 0, productSales: 0, expenses: E.reduce((a, e) => a + e.amount, 0), payouts: P.reduce((a, p) => a + p.amount, 0), per: {}, svc: {}, cats: {}, J, E };
+    const R = id => f.per[id] = f.per[id] || { jobs: 0, takings: 0, commission: 0, paid: 0, rent: 0, days: new Set() };
+    J.forEach(j => {
+        f.revenue += j.total; f.cash += j.cash; f.mobile += j.mobile; f.commission += j.commission;
+        const k = j.sub ? j.total / j.sub : 1;
+        j.items.forEach(i => { if (i.t === 'p') { f.productCost += (i.cost || 0) * i.qty; f.productSales += i.price * i.qty; } else { f.svc[i.name] = (f.svc[i.name] || 0) + i.qty; const c = i.cat || 'other'; f.cats[c] = (f.cats[c] || 0) + i.price * i.qty * k; } });
+        jobStaff(j).forEach(sid => {
+            const r = R(sid); r.jobs++; r.days.add(j.day);
+            r.commission += j.pays ? (j.pays[sid] || 0) : j.commission;
+            r.takings += j.pays ? j.items.filter(i => (i.staff || j.barberId) === sid).reduce((a, i) => a + i.price * i.qty, 0) * k : j.total;
+        });
+    });
+    // chair rent: charged for each day the person worked
+    D.barbers.forEach(b => { if (b.payType !== 'rent' || !b.rent || !f.per[b.id]) return; const r = f.per[b.id]; r.rent = r.days.size * b.rent; r.commission -= r.rent; f.commission -= r.rent; });
+    P.forEach(p => { R(p.barberId).paid += p.amount; });
+    f.profit = f.revenue - f.commission - f.productCost - f.expenses;
+    return f;
+}
+function owedAll(bid) { const r = fig('0000-00-00', '9999-99-99').per[bid]; return r ? r.commission - r.paid : 0; }
+
+// ════════════ CHAIRS (home) ════════════
+function seatState(b) {
+    const c = D.queue.find(q => q.status === 'chair' && q.barberId === b.id);
+    // a client who asked for this person, otherwise (only on a free chair) the first client happy with anyone
+    const next = D.queue.find(q => q.status === 'waiting' && q.barberId === b.id) || (c ? null : D.queue.find(q => q.status === 'waiting' && !q.barberId));
+    return { c, next };
+}
+function salesList(d) {
+    const own = isOwner(), jobs = D.jobs.filter(j => j.day === d).sort((a, b) => b.at - a.at).slice(0, 30);
+    return `<div class="card" style="padding:4px 16px;">${jobs.map(j => `<div class="li">${avatar(barber(j.barberId), 'dot')}
+        <div class="mx"><b>${esc(j.items.map(i => i.name + (i.qty > 1 ? ' ×' + i.qty : '')).join(', '))}</b><span class="muted">${tm(j.at)} · ${esc(j.barberName)}${j.customerName ? ' · ' + esc(j.customerName) : ''} ${j.voided ? '<span class="tag v">Void</span>' : ''}</span></div>
+        <b style="font-size:.92rem;${j.voided ? 'text-decoration:line-through;color:var(--gray2)' : ''}">${n0(j.total)}</b>
+        ${!j.voided ? `<button class="x" title="WhatsApp receipt" onclick="sendReceipt('${j.id}')">${ic('wa')}</button>${own ? `<button class="x" title="Void" onclick="voidJob('${j.id}')">${ic('x')}</button>` : ''}` : ''}</div>`).join('') || '<div class="empty">No sales yet today.</div>'}</div>`;
+}
+function renderChairs() {
+    const d = dayStr(), f = fig(d, d), now = Date.now(), wait = D.queue.filter(q => q.status === 'waiting').length;
+    const seats = D.barbers.filter(b => b.active).map(b => { const { c, next } = seatState(b), r = f.per[b.id] || { jobs: 0 }, mins = c ? Math.max(0, Math.round((now - c.startedAt) / 60000)) : 0;
+        return `<div class="seat ${c ? 'busy' : ''}">
+          <div class="cnt"><b>${r.jobs}</b><span>today</span></div>
+          <div class="who">${avatar(b, 'av', true)}<div style="min-width:0;padding-right:28px;"><div class="nm">${esc(b.name)}</div><div class="rl">${esc(b.role || 'Barber')}</div></div></div>
+          ${c ? `<span class="status busy"><span class="pulse"></span>Busy · ${mins} min</span><div class="client">with <b>${esc(c.name)}</b></div><button class="btn-sm green wide" onclick="qFinish('${c.id}')">${ic('check', 'width:16px;height:16px')} Checkout</button>`
+              : `<span class="status free">Free</span><div class="client muted">Ready for a client</div><button class="btn-sm wide" onclick="seatStart('${b.id}')">${ic('plus', 'width:16px;height:16px')} Start client</button>`}
+          ${next ? `<div class="next">Next: <b style="color:var(--ink)">${esc(next.name)}</b>${next.barberId ? '' : ' · anyone'}</div>` : ''}
+        </div>`; }).join('');
+    $('page').innerHTML = header() + `<main>
+      <div class="strip"><div class="y"><span>Takings today</span><b>${n0(f.revenue)}</b></div><div><span>Clients</span><b>${f.jobs}</b></div><div><span>Waiting</span><b>${wait}</b></div></div>
+      <div class="sec">Chairs <a onclick="go('queue')">Queue →</a></div>
+      <div class="board">${seats || '<div class="empty">Add staff under Staff &amp; pay.</div>'}</div>
+      <button class="cta blue" style="margin-top:14px;" onclick="U.job=blankJob();go('pos')">${ic('cut')} Quick sale</button>
+      <div class="sec">Today's sales</div>${salesList(d)}</main>`;
+}
+function seatStart(bid) {
+    const b = barber(bid), W = D.queue.filter(q => q.status === 'waiting' && (!q.barberId || q.barberId === bid));
+    modal(`<div class="modal-title">Who's in ${esc(b.name)}'s chair?</div>
+      ${W.length ? `<div class="muted" style="margin-bottom:2px;">From the queue</div>${W.map(q => `<div class="li" style="cursor:pointer;" data-q="${q.id}"><div class="dot" style="background:var(--gray2)">${esc(initial(q.name))}</div><div class="mx"><b>${esc(q.name)}</b><span class="muted">waiting ${Math.max(0, Math.round((Date.now() - q.at) / 60000))} min${q.barberId ? ' · asked for ' + esc(b.name) : ''}</span></div><span class="btn-sm ghost">Start</span></div>`).join('')}` : ''}
+      <label class="f">${W.length ? 'Or a walk-in' : 'Walk-in client'}</label><input class="in" id="wkName" placeholder="Name (optional)">
+      <button class="cta" style="margin-top:12px;" id="wkGo">Start now</button>`);
+    document.querySelectorAll('#ov .li[data-q]').forEach(el => el.onclick = () => { const q = D.queue.find(x => x.id === el.dataset.q); if (!q) return; q.status = 'chair'; q.barberId = bid; q.startedAt = Date.now(); persist(); closeModal(); render(); });
+    $('wkGo').onclick = () => { D.queue.push({ id: uid(), name: $('wkName').value.trim() || 'Walk-in', phone: '', barberId: bid, at: Date.now(), startedAt: Date.now(), status: 'chair' }); persist(); closeModal(); render(); };
+}
+
+// ════════════ INSIGHTS ════════════
+function staffCards(f, own) {
+    return D.barbers.filter(b => b.active || f.per[b.id]).map(b => { const r = f.per[b.id] || { jobs: 0, takings: 0, commission: 0 }, due = own ? owedAll(b.id) : 0;
+        return `<div class="bcard"><div class="row" style="justify-content:flex-start;gap:10px;">${avatar(b, 'dot')}<div style="min-width:0"><div class="nm">${esc(b.name)}</div><div class="rule">${esc(payDesc(b))}</div></div></div>
+          <div class="count">${r.jobs}<small>client${r.jobs === 1 ? '' : 's'}</small></div><div class="muted">${n0(r.takings)} TZS taken</div>
+          ${own ? `<div class="earn"><span>Earned today</span><b>${n0(r.commission)}</b></div>${due > 0 ? `<button class="btn-sm blue wide" style="margin-top:10px;" onclick="payBarber('${b.id}')">Pay ${n0(due)}</button>` : ''}` : ''}</div>`; }).join('');
+}
+function renderInsights() {
+    const own = isOwner(), now = new Date(), d = dayStr(), f = fig(d, d), mon = MONTHS[now.getMonth()];
+    if (!own) {
+        $('page').innerHTML = header('Insights') + `<main><div class="sec">Clients served today</div><div class="g2">${staffCards(f, false)}</div>
+          <div class="card" style="text-align:center;margin-top:14px;padding:22px;"><div style="width:48px;height:48px;border-radius:50%;background:var(--bg);display:flex;align-items:center;justify-content:center;margin:0 auto 10px;">${ic('lock')}</div>
+          <b>Money and profit are for the owner</b><p class="muted" style="margin:4px 0 14px;">Unlock with the owner PIN to see takings, pay and profit.</p><button class="btn-sm" onclick="ownerGate(render)">Owner unlock</button></div></main>`;
+        return;
+    }
+    const mFrom = dayStr(new Date(now.getFullYear(), now.getMonth(), 1)), m = fig(mFrom, d), dim = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+    const yd = new Date(now - 864e5), fy = fig(dayStr(yd), dayStr(yd)), trend = fy.revenue ? Math.round((f.revenue - fy.revenue) / fy.revenue * 100) : null;
+    $('page').innerHTML = header('Insights') + `<main>
+      <div class="hero"><div class="mo">${mon} ${now.getFullYear()} · profit so far</div><div class="big">${n0(m.profit)}<small>TZS</small></div><div class="sub">Day ${now.getDate()} of ${dim} · ${m.jobs} clients this month</div>
+        <div class="bar"><div style="width:${Math.round(now.getDate() / dim * 100)}%"></div></div>
+        <div class="hero-grid"><div><span>Takings today</span><b>${n0(f.revenue)}</b>${trend === null ? '' : ` <span style="display:inline;color:${trend >= 0 ? '#4ade80' : '#f87171'}">${trend >= 0 ? '▲' : '▼'} ${Math.abs(trend)}%</span>`}</div><div><span>Clients today</span><b>${f.jobs}</b></div><div><span>Cash</span><b>${n0(f.cash)}</b></div><div><span>Mobile money</span><b>${n0(f.mobile)}</b></div></div></div>
+      <div class="sec">Staff today</div><div class="g2">${staffCards(f, true)}</div>
+      <div class="sec">${mon} so far</div><div class="g2">
+        <div class="stat-card"><h4>Revenue</h4><p>${n0(m.revenue)}</p></div><div class="stat-card"><h4>Staff pay</h4><p>${n0(m.commission)}</p></div>
+        <div class="stat-card"><h4>Costs</h4><p>${n0(m.expenses + m.productCost)}</p></div><div class="stat-card"><h4>Profit</h4><p style="color:var(--pos)">${n0(m.profit)}</p></div></div>
+      <div style="display:flex;gap:10px;margin-top:12px;"><button class="btn-sec blue" onclick="openView('reports')">${ic('report', 'width:18px;height:18px')} Reports</button><button class="btn-sec" onclick="openView('expenses')">${ic('wallet', 'width:18px;height:18px')} Expenses</button></div></main>`;
+}
+function voidJob(id) { ownerGate(() => confirmBox('Void this sale? It will be removed from takings and staff pay.', 'Void sale', () => {
+    const j = D.jobs.find(x => x.id === id); if (!j || j.voided) return; j.voided = true; j.voidedAt = Date.now();
+    j.items.forEach(i => { if (i.t === 'p') { const p = D.products.find(y => y.id === i.id); if (p) p.stock += i.qty; } });
+    const c = D.customers.find(x => x.id === j.customerId); if (c) { c.visits = Math.max(0, c.visits - 1); c.spent = Math.max(0, c.spent - j.total); }
+    persist(); render(); toast('Sale voided'); })); }
+// ════════════ POINT OF SALE ════════════
+// ticket lines are keyed "type:itemId:staffId" so one visit can include work by several people
+const lineOf = k => { const [ty, id, sid] = k.split(':'); return { ty, id, sid, it: ty === 's' ? D.services.find(x => x.id === id) : D.products.find(x => x.id === id) }; };
+const jobTotals = () => {
+    let sub = 0, svc = 0;
+    Object.entries(U.job.items).forEach(([k, q]) => { const { ty, it } = lineOf(k); if (it) { sub += it.price * q; if (ty === 's') svc += it.price * q; } });
+    const disc = Math.min(sub, Math.max(0, U.job.discount || 0));
+    return { sub, svc, disc, total: sub - disc };
+};
+const qtyOf = (ty, id) => Object.entries(U.job.items).reduce((a, [k, q]) => { const l = lineOf(k); return a + (l.ty === ty && l.id === id ? q : 0); }, 0);
+const CAT_LOOK = { hair: ['cut', '#1a56db', '#eaf0fd'], beard: ['razor', '#7c3aed', '#f1ebfe'], face: ['sparkle', '#db2777', '#fdeaf3'], nails: ['hand', '#d97706', '#fff4e0'], massage: ['spa', '#0891b2', '#e4f6fa'], style: ['locs', '#00875a', '#e7f6ef'], other: ['star', '#4b5563', '#eef0f3'], products: ['bottle', '#b45309', '#fdf0e3'] };
+const catIcon = (k, size = 20) => { const L = CAT_LOOK[k] || CAT_LOOK.other; return ic(L[0], `width:${size}px;height:${size}px;color:${L[1]}`); };
+function renderPOS() {
+    const d = dayStr(), f = fig(d, d), busy = new Set(D.queue.filter(q => q.status === 'chair').map(q => q.barberId));
+    const act = D.barbers.filter(b => b.active), wait = D.queue.filter(q => q.status === 'waiting').length;
+    const S = D.services.filter(s => s.active), cats = SVC_CATS.filter(([k]) => S.some(s => (s.cat || 'other') === k));
+    if (U.cat !== 'all' && U.cat !== 'products' && !cats.some(c => c[0] === U.cat)) U.cat = 'all';
+    const showP = D.products.some(p => p.active);
+    const tile = (ty, x) => { const q = qtyOf(ty, x.id), out = ty === 'p' && x.stock <= 0, ck = ty === 'p' ? 'products' : (x.cat || 'other'), L = CAT_LOOK[ck] || CAT_LOOK.other;
+        return `<button class="tile ${q ? 'on' : ''} ${out ? 'out' : ''}" onclick="addItem('${ty}','${x.id}')" ${out ? 'disabled' : ''}>${q ? `<span class="q">${q}</span>` : ''}<span class="icon" style="background:${L[2]}">${catIcon(ck)}</span><b>${esc(x.name)}</b>
+          <div class="meta"><span class="p">${n0(x.price)}</span><span class="s">${ty === 'p' ? (out ? 'Out of stock' : x.stock + ' left') : (x.mins ? x.mins + ' min' : '')}</span></div></button>`; };
+    const list = U.cat === 'products' ? D.products.filter(p => p.active).map(p => tile('p', p)) : S.filter(s => U.cat === 'all' || (s.cat || 'other') === U.cat).map(s => tile('s', s));
+    $('page').innerHTML = header(`Today · ${f.jobs} clients · ${n0(f.revenue)} TZS`) + `<main>
+      <div class="sec" style="margin-top:0;">${U.job.barberId ? `Adding for ${esc(barber(U.job.barberId).name)}` : 'Who is doing the work?'}${wait ? `<a onclick="go('queue')">${wait} waiting →</a>` : ''}</div>
+      <div class="staffbar">${act.map(b => `<button class="chair ${U.job.barberId === b.id ? 'on' : ''}" onclick="pickBarber('${b.id}')">${avatar(b, 'av', busy.has(b.id))}<span class="n">${esc(b.name)}</span></button>`).join('')}</div>
+      <div class="catbar">${[['all', 'All', 'grid'], ...cats.map(([k, l]) => [k, l, k]), ...(showP ? [['products', 'Products', 'products']] : [])].map(([k, l, i]) => `<button class="${U.cat === k ? 'on' : ''}" onclick="U.cat='${k}';renderPOS()">${i === 'grid' ? ic('grid', 'width:16px;height:16px') : catIcon(i, 16)}${l}</button>`).join('')}</div>
+      ${!U.job.barberId ? `<div class="note" style="margin-top:8px;">Tap a name above, then the services. If someone else does the next service — a pedicure, a scrub — tap their name first.</div>` : ''}
+      <div class="tiles" style="margin-top:10px;">${list.join('') || '<div class="empty">Nothing here.</div>'}</div>
+    </main><div id="ticketWrap"></div>`;
+    if (U.cat !== 'all') document.querySelectorAll('.catbar .on .ic').forEach(s => s.style.color = '#fff');
+    drawTicket();
+}
+function pickBarber(id) { U.job.barberId = U.job.barberId === id ? null : id; renderPOS(); }
+function addItem(ty, id) {
+    if (!U.job.barberId) return toast('First tap who is doing the work', true);
+    const k = ty + ':' + id + ':' + U.job.barberId;
+    if (ty === 'p') { const p = D.products.find(x => x.id === id); if (!p || qtyOf('p', id) >= p.stock) return toast('Not enough stock', true); }
+    U.job.items[k] = (U.job.items[k] || 0) + 1; renderPOS();
+}
+function ticketStaff() { return [...new Set(Object.keys(U.job.items).map(k => lineOf(k).sid))].map(barber).filter(Boolean); }
+function drawTicket() {
+    const n = Object.values(U.job.items).reduce((a, b) => a + b, 0), x = jobTotals(), w = $('ticketWrap'); if (!w) return;
+    if (!n) { w.innerHTML = ''; return; }
+    const names = Object.keys(U.job.items).map(k => (lineOf(k).it || {}).name).filter(Boolean);
+    w.innerHTML = `<button class="ticket" onclick="openCheckout()"><span class="n">${n}</span><div style="min-width:0;"><div class="t1">View ticket</div><div class="t2" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(ticketStaff().map(b => b.name).join(' + '))} · ${esc(names.slice(0, 2).join(', '))}${names.length > 2 ? ' +' + (names.length - 2) : ''}</div></div><span class="tot">${n0(x.total)} TZS</span></button>`;
+}
+function openCheckout() {
+    if (!Object.keys(U.job.items).length) return toast('Add a service or product', true);
+    const x = jobTotals(), multi = ticketStaff().length > 1;
+    const lines = Object.entries(U.job.items).map(([k, q]) => { const { it, sid } = lineOf(k), b = barber(sid); return it ? `<div class="li"><div class="dot" style="width:28px;height:28px;font-size:.7rem;background:${b ? b.color : '#9ca3af'}">${esc(initial(b ? b.name : '?'))}</div><div class="mx"><b>${esc(it.name)}</b><span class="muted">${q} × ${n0(it.price)} · ${esc(b ? b.name : '')}</span></div><b>${n0(it.price * q)}</b><button class="x" onclick="decItem('${k}')">−</button></div>` : ''; }).join('');
+    const names = D.customers.map(c => `<option value="${esc(c.name)}">${esc(pretty(c.phone))}</option>`).join('');
+    modal(`<div class="modal-title">Ticket · ${esc(ticketStaff().map(b => b.name).join(' + '))}</div>${lines}
+      ${multi ? '<div class="muted" style="margin-top:6px;">Each person is paid for their own services.</div>' : ''}
+      <label class="f">Client (optional)</label>
+      <div class="g2"><input class="in" id="coName" list="custList" placeholder="Name" value="${esc(U.job.customer.name)}" oninput="coCust()"><input class="in" id="coPhone" inputmode="tel" placeholder="07XX XXX XXX" value="${esc(U.job.customer.phone)}"></div><datalist id="custList">${names}</datalist>
+      <label class="f">Discount</label><input class="in" id="coDisc" type="number" inputmode="numeric" value="${U.job.discount || ''}" placeholder="0" oninput="coRecalc()">
+      <div class="tot-line"><span>Total</span><b id="coTot">${n0(x.total)} TZS</b></div>
+      <label class="f">Payment</label>
+      <div class="seg" style="margin-bottom:6px;"><button class="on" onclick="segPick(this);coAll('cash')">All cash</button><button onclick="segPick(this);coAll('mobile')">All mobile</button><button onclick="segPick(this);$('coSplit').classList.remove('hidden')">Split</button></div>
+      <div class="g2 hidden" id="coSplit"><div><label class="f">Cash</label><input class="in" id="coCash" type="number" inputmode="numeric" value="${x.total}"></div><div><label class="f">Mobile money</label><input class="in" id="coMob" type="number" inputmode="numeric" value="0"></div></div>
+      <button class="cta green" style="margin-top:16px;" onclick="saveJob()">${ic('check')} Complete sale</button>`);
+}
+function decItem(k) { U.job.items[k]--; if (U.job.items[k] <= 0) delete U.job.items[k]; renderPOS(); if (Object.keys(U.job.items).length) openCheckout(); else closeModal(); }
+function coCust() { const c = D.customers.find(x => x.name.toLowerCase() === $('coName').value.trim().toLowerCase()); if (c && !$('coPhone').value) $('coPhone').value = pretty(c.phone); }
+function coRecalc() { U.job.discount = num($('coDisc').value); const x = jobTotals(); $('coTot').textContent = n0(x.total) + ' TZS'; if (num($('coMob').value) > x.total) $('coMob').value = x.total; $('coCash').value = Math.max(0, x.total - num($('coMob').value)); }
+function coAll(w) { const x = jobTotals(); $('coCash').value = w === 'cash' ? x.total : 0; $('coMob').value = w === 'mobile' ? x.total : 0; $('coSplit').classList.add('hidden'); }
+function saveJob() {
+    U.job.discount = num($('coDisc').value);
+    const x = jobTotals(), cash = num($('coCash').value), mobile = num($('coMob').value);
+    if (cash < 0 || mobile < 0 || Math.abs(cash + mobile - x.total) > 0.5) { $('coSplit').classList.remove('hidden'); return toast('Cash + mobile must equal ' + n0(x.total), true); }
+    const name = $('coName').value.trim(), phone = normPhone($('coPhone').value);
+    const items = Object.entries(U.job.items).map(([k, q]) => { const { ty, id, sid, it } = lineOf(k); return { t: ty, id, name: it.name, cat: ty === 's' ? (it.cat || 'other') : '', price: it.price, qty: q, cost: ty === 'p' ? (it.cost || 0) : 0, staff: sid }; });
+    // pay each person for their own services; the discount is shared across services by value
+    const pays = {};
+    ticketStaff().forEach(b => { const mine = items.filter(i => i.staff === b.id), g = mine.filter(i => i.t === 's').reduce((a, i) => a + i.price * i.qty, 0);
+        pays[b.id] = jobPay(b, g, x.svc ? x.disc * g / x.svc : 0, mine); });
+    const staff = ticketStaff(), commission = Object.values(pays).reduce((a, v) => a + v, 0);
+    let cust = null;
+    if (name || phone) {
+        cust = D.customers.find(c => (phone && c.phone === phone) || (name && c.name.toLowerCase() === name.toLowerCase()));
+        if (!cust) { cust = { id: uid(), name: name || pretty(phone), phone, visits: 0, spent: 0, lastVisit: 0 }; D.customers.push(cust); }
+        if (phone && !cust.phone) cust.phone = phone;
+        cust.visits++; cust.spent += x.total; cust.lastVisit = Date.now();
+    }
+    D.seq = (D.seq || 0) + 1;
+    const job = { id: uid(), no: 'B' + dayStr().slice(2).replace(/-/g, '') + '-' + String(D.seq).padStart(4, '0'), at: Date.now(), day: dayStr(), barberId: staff[0].id, barberName: staff.map(b => b.name).join(' + '),
+        items, sub: x.sub, discount: x.disc, total: x.total, cash, mobile, commission, pays, customerId: cust ? cust.id : null, customerName: cust ? cust.name : '', customerPhone: cust ? cust.phone : '', voided: false };
+    D.jobs.push(job);
+    items.forEach(i => { if (i.t === 'p') { const p = D.products.find(y => y.id === i.id); if (p) p.stock -= i.qty; } });
+    if (U.job.queueId) D.queue = D.queue.filter(q => q.id !== U.job.queueId);
+    persist();
+    U.job = blankJob(); render();
+    modal(`<div style="text-align:center;"><div style="width:64px;height:64px;border-radius:50%;background:#e6f6f0;color:var(--pos);display:flex;align-items:center;justify-content:center;margin:4px auto 10px;">${ic('check', 'width:32px;height:32px;stroke-width:2.6')}</div>
+        <div class="modal-title" style="margin-bottom:4px;">Sale complete</div><div style="font:800 1.8rem 'DM Sans';color:var(--pos);">${n0(job.total)} TZS</div>
+        <p class="muted" style="margin-top:4px;">${esc(job.no)} · ${esc(job.barberName)}${job.customerName ? ' · ' + esc(job.customerName) : ''}</p></div>
+      <button class="cta" style="margin-top:18px;" onclick="sendReceipt('${job.id}')">${ic('wa')} Send receipt on WhatsApp</button>
+      <button class="cta yellow" style="margin-top:10px;" onclick="closeModal()">Next client</button>`);
+}
+function receiptText(j) {
+    const L = [`*${D.shop.name.toUpperCase()}*`]; if (D.shop.address) L.push(D.shop.address); if (D.shop.phone) L.push('Tel: ' + pretty(D.shop.phone));
+    L.push('', `Receipt ${j.no}`, `${new Date(j.at).toLocaleDateString('en-GB')} ${tm(j.at)}`, `Served by: ${j.barberName}`);
+    if (j.customerName) L.push('Client: ' + j.customerName);
+    L.push(''); j.items.forEach(i => L.push(`${i.name}${i.qty > 1 ? ' x' + i.qty : ''} — ${n0(i.price * i.qty)}`));
+    if (j.discount) L.push(`Discount: -${n0(j.discount)}`);
+    L.push('──────────', `*TOTAL: TZS ${n0(j.total)}*`);
+    if (j.cash) L.push(`Cash: ${n0(j.cash)}`); if (j.mobile) L.push(`Mobile money: ${n0(j.mobile)}`);
+    L.push(''); if (D.shop.footer) L.push(D.shop.footer); L.push('Thank you — karibu tena!', '_Receipt by Keep_');
+    return L.join('\n');
+}
+function sendReceipt(id) { const j = D.jobs.find(x => x.id === id); if (!j) return; window.open(`https://wa.me/${j.customerPhone || ''}?text=${encodeURIComponent(receiptText(j))}`, '_blank'); }
+
+// ════════════ QUEUE ════════════
+function renderQueue() {
+    const now = Date.now(), act = D.barbers.filter(b => b.active);
+    const wait = D.queue.filter(q => q.status === 'waiting'), chair = D.queue.filter(q => q.status === 'chair');
+    const avg = wait.length ? Math.round(wait.reduce((a, q) => a + (now - q.at), 0) / wait.length / 60000) : 0;
+    const row = (q, i) => { const b = barber(q.barberId), mins = Math.max(0, Math.round((now - (q.status === 'chair' ? q.startedAt : q.at)) / 60000));
+        return `<div class="li">${q.status === 'chair' ? avatar(b, 'dot') : `<div class="dot" style="background:var(--bg);color:var(--ink);">${i + 1}</div>`}<div class="mx"><b>${esc(q.name)}</b><span class="muted">${q.status === 'chair' ? 'with ' + esc(b ? b.name : '') + ' · ' + mins + ' min' : (b ? 'asked for ' + esc(b.name) : 'anyone') + ' · waiting ' + mins + ' min'}</span></div>
+          ${q.status === 'waiting' ? `<button class="btn-sm" onclick="qStart('${q.id}')">Start</button>` : `<button class="btn-sm green" onclick="qFinish('${q.id}')">Checkout</button>`}
+          <button class="x" onclick="qRemove('${q.id}')" aria-label="Remove">${ic('x')}</button></div>`; };
+    $('page').innerHTML = header('Queue') + `<main>
+      <div class="strip"><div class="y"><span>Waiting</span><b>${wait.length}</b></div><div><span>In chairs</span><b>${chair.length}</b></div><div><span>Avg wait</span><b>${avg} min</b></div></div>
+      <div class="card" style="margin-top:8px;"><b style="display:block;margin-bottom:10px;">Add a client to the queue</b>
+        <div style="display:grid;grid-template-columns:3fr 2fr;gap:8px;"><input class="in" id="qName" placeholder="Client name"><input class="in" id="qPhone" inputmode="tel" placeholder="Phone"></div>
+        <div class="muted" style="margin:12px 0 6px;">Asking for</div>
+        <div class="chips" style="margin-bottom:14px;">${[['', 'Anyone'], ...act.map(b => [b.id, b.name])].map(([id, n]) => `<button class="chip ${U.qBarber === id ? 'on' : ''}" onclick="U.qBarber='${id}';segPick(this)">${esc(n)}</button>`).join('')}</div>
+        <button class="cta yellow" onclick="qAdd()">${ic('plus')} Add to queue</button></div>
+      <div class="sec">Waiting</div><div class="card" style="padding:4px 16px;">${wait.map(row).join('') || '<div class="empty">Nobody is waiting.</div>'}</div>
+      <div class="sec">In chairs</div><div class="card" style="padding:4px 16px;">${chair.map(row).join('') || '<div class="empty">No one in a chair.</div>'}</div></main>`;
+}
+function qAdd() { const name = $('qName').value.trim(); if (!name) return toast('Enter the client name', true); D.queue.push({ id: uid(), name, phone: normPhone($('qPhone').value), barberId: U.qBarber || null, at: Date.now(), status: 'waiting' }); U.qBarber = ''; persist(); render(); }
+function qStart(id) {
+    const q = D.queue.find(x => x.id === id); if (!q) return;
+    const start = bid => { q.status = 'chair'; q.barberId = bid; q.startedAt = Date.now(); persist(); closeModal(); render(); };
+    if (q.barberId) return start(q.barberId);
+    const busy = new Set(D.queue.filter(x => x.status === 'chair').map(x => x.barberId));
+    modal(`<div class="modal-title">Who will serve ${esc(q.name)}?</div>${D.barbers.filter(b => b.active).map(b => `<div class="li" style="cursor:pointer;" data-b="${b.id}"><div class="dot" style="background:${b.color}">${esc(initial(b.name))}</div><div class="mx"><b>${esc(b.name)}</b><span class="muted">${busy.has(b.id) ? 'Busy — in chair' : 'Free'}</span></div></div>`).join('')}`);
+    document.querySelectorAll('#ov .li').forEach(el => el.onclick = () => start(el.dataset.b));
+}
+function qFinish(id) { const q = D.queue.find(x => x.id === id); if (!q) return; U.job = blankJob(); U.job.barberId = q.barberId; U.job.customer = { name: q.name === 'Walk-in' ? '' : q.name, phone: q.phone ? pretty(q.phone) : '' }; U.job.queueId = q.id; go('pos'); toast('Add the services for ' + q.name); }
+function qRemove(id) { confirmBox('Remove from the queue?', 'Remove', () => { D.queue = D.queue.filter(q => q.id !== id); persist(); render(); }); }
+
+// ════════════ REPORTS ════════════
+function rpRange(p) {
+    const now = new Date(), y = now.getFullYear(), m = now.getMonth();
+    const R = { today: [now, now], week: [new Date(now - ((now.getDay() + 6) % 7) * 864e5), now], month: [new Date(y, m, 1), now], last: [new Date(y, m - 1, 1), new Date(y, m, 0)] }[p];
+    return [dayStr(R[0]), dayStr(R[1])];
+}
+function renderReports() {
+    if (!isOwner()) return go('dash');
+    const [from, to] = rpRange(U.rp), f = fig(from, to);
+    const top = Object.entries(f.svc).sort((a, b) => b[1] - a[1]);
+    $('page').innerHTML = subHeader('Reports') + `<main>
+      <div class="chips">${[['today', 'Today'], ['week', 'This week'], ['month', 'This month'], ['last', 'Last month']].map(([k, l]) => `<button class="chip ${U.rp === k ? 'on' : ''}" onclick="U.rp='${k}';renderReports()">${l}</button>`).join('')}</div>
+      <p class="muted" style="margin:10px 2px;">${from === to ? from : from + ' → ' + to}</p>
+      <div class="g2"><div class="stat-card"><h4>Revenue</h4><p>${n0(f.revenue)} TZS</p></div><div class="stat-card" style="border-left-color:var(--yellow)"><h4>Profit</h4><p style="color:var(--pos)">${n0(f.profit)} TZS</p></div></div>
+      <div class="card" style="margin-top:10px;">
+        ${[['Clients served', f.jobs], ['Cash', n0(f.cash)], ['Mobile money', n0(f.mobile)], ['Product sales', n0(f.productSales)], ['Staff pay', '− ' + n0(f.commission)], ['Product cost', '− ' + n0(f.productCost)], ['Expenses', '− ' + n0(f.expenses)]].map(([l, v]) => `<div class="row" style="padding:6px 0;"><span>${l}</span><b>${v}</b></div>`).join('')}
+        <div class="row" style="padding:10px 0 2px;border-top:1.5px solid var(--line);margin-top:6px;"><b>Profit</b><b style="color:var(--pos);font-size:1.05rem;">${n0(f.profit)} TZS</b></div></div>
+      <div class="sec">Staff</div>
+      ${D.barbers.map(b => { const r = f.per[b.id] || { jobs: 0, takings: 0, commission: 0, paid: 0, rent: 0 }, due = owedAll(b.id); return `<div class="bcard" style="border-left-color:${b.color};margin-bottom:10px;">
+          <div class="row"><div><div class="nm">${esc(b.name)}</div><div class="rule">${esc(payDesc(b))}</div></div><div style="text-align:right;"><div style="font:800 1.5rem 'DM Sans';line-height:1;">${r.jobs}</div><div class="rule">clients</div></div></div>
+          <div class="g2" style="grid-template-columns:repeat(3,1fr);margin-top:12px;font-size:.78rem;">
+            <div><div class="muted">Takings</div><b>${n0(r.takings)}</b></div><div><div class="muted">Earned</div><b style="color:var(--pos)">${n0(r.commission)}</b>${r.rent ? `<div class="muted">after ${n0(r.rent)} rent</div>` : ''}</div><div><div class="muted">Paid</div><b>${n0(r.paid)}</b></div></div>
+          <div class="earn"><span>Owed now: <b style="color:${due > 0 ? 'var(--red)' : 'var(--pos)'}">${n0(due)} TZS</b></span>${due > 0 ? `<button class="btn-sm" onclick="payBarber('${b.id}')">Pay</button>` : ''}</div></div>`; }).join('')}
+      <p class="muted" style="margin:0 2px 8px;">Owed now = everything earned minus everything paid, across all dates.</p>
+      ${Object.keys(f.cats).length ? `<div class="sec">Takings by service group</div><div class="card">${Object.entries(f.cats).sort((a, b) => b[1] - a[1]).map(([k, v]) => `<div class="row" style="padding:6px 0;"><span>${catName(k)}</span><b>${n0(v)}</b></div>`).join('')}${f.productSales ? `<div class="row" style="padding:6px 0;"><span>Products</span><b>${n0(f.productSales)}</b></div>` : ''}</div>` : ''}
+      ${top.length ? `<div class="sec">Services</div><div class="card">${top.map(([n, q]) => `<div class="row" style="padding:6px 0;"><span>${esc(n)}</span><b>${q}</b></div>`).join('')}</div>` : ''}
+      <button class="btn-sec" style="width:100%;margin-top:6px;" onclick="exportCsv('${from}','${to}')">${ic('save', 'width:16px;height:16px')} Download Excel (CSV)</button></main>`;
+}
+function payBarber(bid) {
+    const b = barber(bid), due = owedAll(bid);
+    modal(`<div class="modal-title">Pay ${esc(b.name)}</div><div class="tot-line" style="margin-top:0;"><span>Owed</span><b>${n0(due)} TZS</b></div>
+      <label class="f">Amount</label><input class="in" id="poAmt" type="number" inputmode="numeric" value="${Math.max(0, due)}">
+      <label class="f">Paid from</label><div class="seg" id="poFrom"><button class="on" data-v="cash" onclick="segPick(this)">Cash</button><button data-v="mobile" onclick="segPick(this)">Mobile money</button></div>
+      <label class="f">Note</label><input class="in" id="poNote" placeholder="Optional">
+      <button class="cta green" style="margin-top:16px;" onclick="savePayout('${bid}')">Record payment</button>`);
+}
+function savePayout(bid) { const amt = num($('poAmt').value); if (!(amt > 0)) return toast('Enter the amount', true);
+    D.payouts.push({ id: uid(), day: dayStr(), at: Date.now(), barberId: bid, amount: amt, from: $('poFrom').querySelector('.on').dataset.v, note: $('poNote').value.trim() }); persist(); closeModal(); toast('Payment recorded'); render(); }
+function exportCsv(from, to) {
+    const rows = [['Receipt', 'Date', 'Time', 'Staff', 'Items', 'Total', 'Discount', 'Cash', 'Mobile money', 'Staff pay', 'Client', 'Voided']];
+    D.jobs.filter(j => j.day >= from && j.day <= to).forEach(j => rows.push([j.no, j.day, tm(j.at), j.barberName, j.items.map(i => i.name + ' x' + i.qty).join('; '), j.total, j.discount, j.cash, j.mobile, j.commission, j.customerName, j.voided ? 'yes' : '']));
+    rows.push([], ['Expenses'], ['Date', 'Type', 'Amount', 'Note']); D.expenses.filter(e => e.day >= from && e.day <= to).forEach(e => rows.push([e.day, e.cat, e.amount, e.note]));
+    rows.push([], ['Staff payments'], ['Date', 'Staff', 'Amount', 'Note']); D.payouts.filter(p => p.day >= from && p.day <= to).forEach(p => rows.push([p.day, (barber(p.barberId) || {}).name || '', p.amount, p.note]));
+    const csv = rows.map(r => r.map(c => `"${String(c ?? '').replace(/"/g, '""')}"`).join(',')).join('\n');
+    dl(new Blob(['﻿' + csv], { type: 'text/csv' }), `Keep_Barbershop_${from}_${to}.csv`);
+}
+function dl(blob, name) { const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 3000); }
+
+// ════════════ STAFF & PAY ════════════
+function renderTeam() {
+    if (!isOwner()) return go('dash');
+    const P = [...D.payouts].sort((a, b) => b.at - a.at).slice(0, 30);
+    $('page').innerHTML = subHeader('Staff & pay') + `<main>
+      <div class="sec" style="margin-top:0">Staff <a onclick="editBarber()">+ Add staff</a></div>
+      <div class="card" style="padding:4px 14px;">${D.barbers.map(b => `<div class="li" style="cursor:pointer;" onclick="editBarber('${b.id}')"><div class="dot" style="background:${b.color}">${esc(initial(b.name))}</div><div class="mx"><b>${esc(b.name)}${b.active ? '' : ' <span class="tag v">Inactive</span>'}</b><span class="muted">${esc(b.role || 'Barber')} · ${esc(payDesc(b))}</span></div><div style="text-align:right;"><div class="muted">Owed</div><b>${n0(owedAll(b.id))}</b></div></div>`).join('')}</div>
+      <div class="sec">Recent payments</div>
+      <div class="card" style="padding:4px 14px;">${P.map(p => `<div class="li"><div class="mx"><b>${esc((barber(p.barberId) || {}).name || '—')}</b><span class="muted">${p.day} · ${p.from === 'mobile' ? 'Mobile money' : 'Cash'}${p.note ? ' · ' + esc(p.note) : ''}</span></div><b>${n0(p.amount)}</b></div>`).join('') || '<div class="empty">No payments yet.</div>'}</div></main>`;
+}
+function editBarber(id) {
+    const f0 = D.barbers[0] || {}, b = id ? barber(id) : { name: '', role: 'Barber', payType: f0.payType || 'head', pct: f0.pct || 50, perHead: f0.perHead || 0, rent: f0.rent || 0, active: true, color: COLORS[D.barbers.length % COLORS.length] };
+    modal(`<div class="modal-title">${id ? esc(b.name) : 'Add staff'}</div>
+      <div class="g2"><div><label class="f">Name</label><input class="in" id="ebName" value="${esc(b.name)}"></div><div><label class="f">Role</label><select class="in" id="ebRole">${ROLES.map(r => `<option ${(b.role || 'Barber') === r ? 'selected' : ''}>${r}</option>`).join('')}</select></div></div>
+      <label class="f">How paid</label><select class="in" id="ebType" onchange="ebShow()">${PAYTYPES.map(([k, l]) => `<option value="${k}" ${(b.payType || 'pct') === k ? 'selected' : ''}>${l}</option>`).join('')}</select>
+      <div id="ebF_head"><label class="f">Amount per client (TZS)</label><input class="in" id="ebHead" type="number" inputmode="numeric" value="${b.perHead || ''}"><div class="muted" style="margin-top:6px;">Paid once for each client they serve, whatever services the client has.</div></div>
+      <div id="ebF_pct"><label class="f">Percentage of service price (%)</label><input class="in" id="ebPct" type="number" inputmode="numeric" value="${b.pct || ''}"></div>
+      <div id="ebF_rent"><label class="f">Chair rent per day worked (TZS)</label><input class="in" id="ebRent" type="number" inputmode="numeric" value="${b.rent || ''}"><div class="muted" style="margin-top:6px;">They keep the money for their services; the shop charges rent for each day they serve at least one client.</div></div>
+      <div id="ebF_service" class="note" style="margin-top:12px;">Set what staff get for each service under Services &amp; products.</div>
+      <label class="check"><input type="checkbox" id="ebAct" ${b.active ? 'checked' : ''}> Working (shows at the till)</label>
+      <button class="cta green" style="margin-top:16px;" id="ebSave">Save</button>`);
+    ebShow();
+    $('ebSave').onclick = () => { const name = $('ebName').value.trim(); if (!name) return toast('Enter a name', true);
+        const v = { name, role: $('ebRole').value, payType: $('ebType').value, pct: Math.min(100, Math.max(0, num($('ebPct').value))), perHead: Math.max(0, num($('ebHead').value)), rent: Math.max(0, num($('ebRent').value)), active: $('ebAct').checked };
+        if (id) Object.assign(b, v); else D.barbers.push({ id: uid(), ...v, color: b.color });
+        persist(); closeModal(); render(); toast('Saved'); };
+}
+function ebShow() { const k = $('ebType').value; ['head', 'pct', 'rent', 'service'].forEach(x => $('ebF_' + x).classList.toggle('hidden', x !== k)); }
+
+// ════════════ SERVICES & PRODUCTS ════════════
+function renderCatalog() {
+    if (!isOwner()) return go('dash');
+    const missing = SERVICE_MENU.filter(m => !D.services.some(s => s.name.toLowerCase() === m[0].toLowerCase()));
+    $('page').innerHTML = subHeader('Services & products') + `<main>
+      <div class="sec" style="margin-top:0">Services <a onclick="editService()">+ Add your own</a></div>
+      ${SVC_CATS.filter(([k]) => D.services.some(s => (s.cat || 'other') === k)).map(([k, l]) => `<div class="muted" style="font-weight:800;margin:12px 2px 6px;">${l}</div>
+        <div class="card" style="padding:4px 14px;">${D.services.filter(s => (s.cat || 'other') === k).map(s => `<div class="li" style="cursor:pointer;" onclick="editService('${s.id}')"><div class="mx"><b style="${s.active ? '' : 'color:var(--gray);text-decoration:line-through'}">${esc(s.name)}</b><span class="muted">${s.mins ? s.mins + ' min · ' : ''}staff gets ${n0(s.cut || 0)} (per-service pay)</span></div><b>${n0(s.price)}</b></div>`).join('')}</div>`).join('')}
+      ${missing.length ? `<button class="btn-sec" style="width:100%;margin-top:4px;" onclick="pickMore()">${ic('plus', 'width:16px;height:16px')} Add from the common list (${missing.length})</button>` : ''}
+      <div class="sec">Products <a onclick="editProduct()">+ Add product</a></div>
+      <div class="card" style="padding:4px 14px;">${D.products.map(p => `<div class="li" style="cursor:pointer;" onclick="editProduct('${p.id}')"><div class="mx"><b>${esc(p.name)}</b><span class="muted">Stock ${p.stock} · cost ${n0(p.cost)}</span></div><b>${n0(p.price)}</b></div>`).join('') || '<div class="empty">No products. Add hair oils, creams, combs and other items you sell.</div>'}</div></main>`;
+}
+function pickMore() {
+    const missing = SERVICE_MENU.filter(m => !D.services.some(s => s.name.toLowerCase() === m[0].toLowerCase()));
+    modal(`<div class="modal-title">Add services</div><div class="muted" style="text-align:center;margin:-8px 0 8px;">Tick what you offer and set your price.</div>
+      ${missing.map((m, i) => `<div class="svc-row"><label class="svc-tick"><input type="checkbox" class="pm-on" data-i="${i}"><span>${esc(m[0])}<small class="muted" style="display:block;font-weight:500;">${catName(m[1])}</small></span></label><input class="in svc-p pm-p" data-i="${i}" type="number" inputmode="numeric" value="${m[2]}"></div>`).join('')}
+      <button class="cta green" style="margin-top:14px;" id="pmGo">Add selected</button>`);
+    $('pmGo').onclick = () => { let n = 0;
+        document.querySelectorAll('.pm-on').forEach(cb => { if (!cb.checked) return; const m = missing[+cb.dataset.i], p = num(document.querySelector(`.pm-p[data-i="${cb.dataset.i}"]`).value); if (!(p > 0)) return;
+            D.services.push({ id: uid(), name: m[0], cat: m[1], price: p, mins: m[3], cut: Math.min(p, m[4]), active: true }); n++; });
+        persist(); closeModal(); render(); toast(n ? n + ' service' + (n > 1 ? 's' : '') + ' added' : 'Nothing selected'); };
+}
+function editService(id) {
+    const s = id ? D.services.find(x => x.id === id) : { name: '', cat: 'hair', price: 0, mins: 20, cut: 0, active: true };
+    modal(`<div class="modal-title">${id ? esc(s.name) : 'Add service'}</div><label class="f">Name</label><input class="in" id="esName" value="${esc(s.name)}" placeholder="e.g. Steam + scrub">
+      <label class="f">Group</label><select class="in" id="esCat">${SVC_CATS.map(([k, l]) => `<option value="${k}" ${(s.cat || 'other') === k ? 'selected' : ''}>${l}</option>`).join('')}</select>
+      <div class="g2"><div><label class="f">Price (TZS)</label><input class="in" id="esPrice" type="number" inputmode="numeric" value="${s.price || ''}"></div><div><label class="f">Minutes</label><input class="in" id="esMins" type="number" inputmode="numeric" value="${s.mins || ''}"></div></div>
+      <label class="f">Staff gets (per-service pay)</label><input class="in" id="esCut" type="number" inputmode="numeric" value="${s.cut || ''}"><div class="muted" style="margin-top:6px;">Only used for staff paid per service.</div>
+      <label class="check"><input type="checkbox" id="esAct" ${s.active ? 'checked' : ''}> Offered (shows at the till)</label>
+      <button class="cta green" style="margin-top:16px;" id="esSave">Save</button>`);
+    $('esSave').onclick = () => { const name = $('esName').value.trim(), price = num($('esPrice').value); if (!name || !(price > 0)) return toast('Enter a name and price', true);
+        const v = { name, cat: $('esCat').value, price, mins: num($('esMins').value), cut: Math.min(price, Math.max(0, num($('esCut').value))), active: $('esAct').checked };
+        if (id) Object.assign(s, v); else D.services.push({ id: uid(), ...v }); persist(); closeModal(); render(); toast('Saved'); };
+}
+function editProduct(id) {
+    const p = id ? D.products.find(x => x.id === id) : { name: '', price: 0, cost: 0, stock: 0, active: true };
+    modal(`<div class="modal-title">${id ? esc(p.name) : 'Add product'}</div><label class="f">Name</label><input class="in" id="epName" value="${esc(p.name)}">
+      <div class="g2"><div><label class="f">Sell price</label><input class="in" id="epPrice" type="number" inputmode="numeric" value="${p.price || ''}"></div><div><label class="f">Cost price</label><input class="in" id="epCost" type="number" inputmode="numeric" value="${p.cost || ''}"></div></div>
+      ${id ? `<div class="g2"><div><label class="f">In stock</label><input class="in" value="${p.stock}" disabled></div><div><label class="f">Add stock</label><input class="in" id="epAdd" type="number" inputmode="numeric" placeholder="+0"></div></div>`
+           : `<label class="f">Opening stock</label><input class="in" id="epStock" type="number" inputmode="numeric" value="0">`}
+      <label class="check"><input type="checkbox" id="epAct" ${p.active ? 'checked' : ''}> For sale (shows at the till)</label>
+      <button class="cta green" style="margin-top:16px;" id="epSave">Save</button>`);
+    $('epSave').onclick = () => { const name = $('epName').value.trim(), price = num($('epPrice').value); if (!name || !(price > 0)) return toast('Enter a name and price', true);
+        const v = { name, price, cost: num($('epCost').value), active: $('epAct').checked };
+        if (id) { Object.assign(p, v); p.stock += Math.round(num($('epAdd').value)); } else D.products.push({ id: uid(), ...v, stock: Math.round(num($('epStock').value)) });
+        persist(); closeModal(); render(); toast('Saved'); };
+}
+
+// ════════════ EXPENSES ════════════
+const CATS = [['rent', 'Rent'], ['power', 'Electricity (LUKU)'], ['water', 'Water'], ['supplies', 'Supplies'], ['salary', 'Salary'], ['other', 'Other']];
+function renderExpenses() {
+    if (!isOwner()) return go('dash');
+    const L = [...D.expenses].sort((a, b) => b.at - a.at).slice(0, 60), cn = Object.fromEntries(CATS);
+    $('page').innerHTML = subHeader('Expenses') + `<main><div class="card">
+        <label class="f" style="margin-top:0">Type</label><select class="in" id="exCat">${CATS.map(([k, l]) => `<option value="${k}">${l}</option>`).join('')}</select>
+        <div class="g2"><div><label class="f">Amount</label><input class="in" id="exAmt" type="number" inputmode="numeric"></div><div><label class="f">Paid from</label><select class="in" id="exFrom"><option value="cash">Cash</option><option value="mobile">Mobile money</option></select></div></div>
+        <label class="f">Note</label><input class="in" id="exNote" placeholder="Optional">
+        <button class="cta" style="margin-top:14px;" onclick="addExpense()">Add expense</button></div>
+      <div class="sec">Recent</div><div class="card" style="padding:4px 14px;">${L.map(e => `<div class="li"><div class="mx"><b>${esc(cn[e.cat] || e.cat)}${e.note ? ' · ' + esc(e.note) : ''}</b><span class="muted">${e.day} · ${e.from === 'mobile' ? 'Mobile money' : 'Cash'}</span></div><b>${n0(e.amount)}</b><button class="x" onclick="delExpense('${e.id}')">${ic('x')}</button></div>`).join('') || '<div class="empty">No expenses yet.</div>'}</div></main>`;
+}
+function addExpense() { const amt = num($('exAmt').value); if (!(amt > 0)) return toast('Enter the amount', true); D.expenses.push({ id: uid(), day: dayStr(), at: Date.now(), cat: $('exCat').value, amount: amt, from: $('exFrom').value, note: $('exNote').value.trim() }); persist(); toast('Expense added'); renderExpenses(); }
+function delExpense(id) { confirmBox('Delete this expense?', 'Delete', () => { D.expenses = D.expenses.filter(e => e.id !== id); persist(); renderExpenses(); }); }
+
+// ════════════ CLIENTS ════════════
+function renderClients() {
+    const q = U.cq.toLowerCase();
+    const L = D.customers.filter(c => !q || c.name.toLowerCase().includes(q) || (c.phone || '').includes(q)).sort((a, b) => b.lastVisit - a.lastVisit);
+    $('page').innerHTML = subHeader('Clients') + `<main><input class="in" id="cq" placeholder="Search name or phone" value="${esc(U.cq)}" oninput="U.cq=this.value;renderClients();const e=$('cq');e.focus();e.setSelectionRange(e.value.length,e.value.length)">
+      <div class="card" style="margin-top:10px;padding:4px 14px;">${L.map(c => `<div class="li" style="cursor:pointer;" onclick="clientDetail('${c.id}')"><div class="dot" style="background:var(--blue)">${esc(initial(c.name))}</div><div class="mx"><b>${esc(c.name)}</b><span class="muted">${c.phone ? pretty(c.phone) + ' · ' : ''}${c.visits} visit${c.visits === 1 ? '' : 's'}${c.lastVisit ? ' · last ' + new Date(c.lastVisit).toLocaleDateString('en-GB') : ''}</span></div>${isOwner() ? `<b>${n0(c.spent)}</b>` : ''}</div>`).join('') || '<div class="empty">Clients appear here when you add a name or phone at checkout.</div>'}</div></main>`;
+}
+function clientDetail(id) { const c = D.customers.find(x => x.id === id); if (!c) return;
+    const J = D.jobs.filter(j => j.customerId === id && !j.voided).sort((a, b) => b.at - a.at).slice(0, 30);
+    modal(`<div class="modal-title">${esc(c.name)}</div><p class="muted" style="text-align:center;margin-top:-8px;">${c.phone ? pretty(c.phone) + ' · ' : ''}${c.visits} visits</p>
+      ${J.map(j => `<div class="li"><div class="mx"><b>${esc(j.items.map(i => i.name).join(', '))}</b><span class="muted">${j.day} · ${esc(j.barberName)}</span></div><b>${n0(j.total)}</b></div>`).join('') || '<div class="empty">No visits.</div>'}
+      ${c.phone ? `<button class="cta" style="margin-top:14px;" onclick="window.openView('https://wa.me/${c.phone}','_blank')">${ic('wa')} WhatsApp</button>` : ''}`); }
+
+// ════════════ SHOP SETTINGS ════════════
+function renderShop() {
+    if (!isOwner()) return go('dash');
+    $('page').innerHTML = subHeader('Shop settings') + `<main><div class="card">
+        <label class="f" style="margin-top:0">Shop name</label><input class="in" id="stName" value="${esc(D.shop.name)}">
+        <div class="g2"><div><label class="f">Phone</label><input class="in" id="stPhone" inputmode="tel" value="${esc(D.shop.phone ? pretty(D.shop.phone) : '')}"></div><div><label class="f">New owner PIN</label><input class="in" id="stPin" type="password" inputmode="numeric" maxlength="8" placeholder="Unchanged"></div></div>
+        <label class="f">Address</label><input class="in" id="stAddr" value="${esc(D.shop.address || '')}">
+        <label class="f">Receipt message</label><input class="in" id="stFoot" value="${esc(D.shop.footer || '')}" placeholder="e.g. Open daily 8am – 10pm">
+        <button class="cta" style="margin-top:16px;" onclick="saveShop()">Save</button></div>
+      <p class="muted" style="text-align:center;">Keep · Barbershop v${APP_VERSION} · pilot</p></main>`;
+}
+async function saveShop() {
+    const name = $('stName').value.trim(); if (!name) return toast('Enter the shop name', true);
+    const pin = $('stPin').value.trim(); if (pin && !/^\d{4,8}$/.test(pin)) return toast('PIN must be 4–8 digits', true);
+    D.shop.name = name; D.shop.phone = normPhone($('stPhone').value); D.shop.address = $('stAddr').value.trim(); D.shop.footer = $('stFoot').value.trim();
+    if (pin) D.shop.pin = await sha(pin);
+    persist(); render(); toast(pin ? 'Saved — new PIN set' : 'Saved');
+}
+
+// ════════════ BACKUP ════════════
+function renderBackup() {
+    if (!isOwner()) return go('dash');
+    $('page').innerHTML = subHeader('Backup') + `<main><div class="note">During the pilot your records are kept on this phone. Download a backup every week and keep it somewhere safe — WhatsApp it to yourself, or save it to Google Drive or email.</div>
+      <button class="cta" onclick="downloadBackup()">${ic('save')} Download backup</button>
+      <button class="btn-sec" style="width:100%;margin-top:10px;padding:15px;" onclick="$('rsFile').click()">Restore from backup</button>
+      <input type="file" id="rsFile" accept="application/json,.json" class="hidden" onchange="restoreBackup(this)">
+      <div class="card" style="margin-top:14px;">${[['Sales', D.jobs.length], ['Clients', D.customers.length], ['Expenses', D.expenses.length], ['Last backup', D.lastBackup ? new Date(D.lastBackup).toLocaleString('en-GB') : 'Never']].map(([l, v]) => `<div class="row" style="padding:5px 0;"><span class="muted">${l}</span><b>${v}</b></div>`).join('')}</div></main>`;
+}
+function downloadBackup() { D.lastBackup = Date.now(); persist(); dl(new Blob([JSON.stringify({ app: 'keep-barbershop', madeAt: new Date().toISOString(), data: D })], { type: 'application/json' }), `Keep_Barbershop_backup_${dayStr()}.json`); renderBackup(); }
+function restoreBackup(input) {
+    const f = input.files && input.files[0]; input.value = ''; if (!f) return;
+    const r = new FileReader(); r.onload = () => { try { const o = JSON.parse(r.result); if (o.app !== 'keep-barbershop' || !o.data || o.data.v !== 1) throw 0;
+        confirmBox('Replace everything on this phone with this backup?', 'Restore', () => { D = o.data; persist(); go('dash'); toast('Backup restored'); }); } catch (e) { toast('This file is not a Keep Barbershop backup', true); } };
+    r.readAsText(f);
+}
+
+// ── boot ──
+render();
+setInterval(() => { if ((U.tab === 'queue' || U.tab === 'chairs') && !U.view && !$('ov') && !($('qName') && ($('qName').value || document.activeElement === $('qName')))) render(); }, 30000);
+if ('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('sw.js').catch(() => {});
+</script>
+</body>
+</html>

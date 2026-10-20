@@ -1,0 +1,618 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<link rel="icon" type="image/png" href="icon-192.png">
+<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}[hidden]{display:none!important}img{max-width:100%}</style>
+</head>
+<body>
+<title>Keep Sign In</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="theme-color" content="#0b0d12">
+<link rel="manifest" href="/manifest.json">
+<script src="/env.js"></script>
+<script src="/lang.js"></script>
+<script src="/lang-sw.js"></script>
+<link rel="apple-touch-icon" href="/icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Keep">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=DM+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: split screen. Form on white (left), Keep brand panel in ink (right). Phone: form only.
+   Single deliberate look (white form + ink panel), the same in light and dark. */
+:root{
+  color-scheme:light;
+  --ink:#0b0d12; --ink2:#161b27; --blue:#1a56db; --blue-dk:#1546b3; --yellow:#ffc72c;
+  --paper:#ffffff; --text:#0b0d12; --muted:#545d6d; --line:#d9dee7; --field-line:#aeb6c4; --field:#f5f7fa; --hover:#f4f6fa;
+  --red:#c81e1e; --red-bg:#fdf0f0; --green:#0f7a3d; --green-bg:#ecf8f1;
+  --f-logo:"Syne","Segoe UI",system-ui,sans-serif;
+  --f-body:"DM Sans","Segoe UI",system-ui,sans-serif;
+  --f-mono:"DM Mono",ui-monospace,Menlo,monospace;
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;background:var(--paper);color:var(--text);font:400 15px/1.5 var(--f-body);-webkit-font-smoothing:antialiased}
+button{font-family:inherit;cursor:pointer}
+:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
+h1,h2{margin:0;text-wrap:balance}
+
+.page{min-height:100vh;min-height:100dvh;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+/* Computers: exactly one screen, no scrolling */
+@media (min-width:901px) and (min-height:560px){html,body{overflow:hidden}.page{height:100vh;height:100dvh}.side,.brand{min-height:0}}
+
+/* ── Left: form side ── */
+.side{display:flex;flex-direction:column;min-width:0;padding-block:22px;
+  padding-left:max(24px,env(safe-area-inset-left,0px));padding-right:max(24px,env(safe-area-inset-right,0px))}
+.top{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.logo{display:flex;align-items:center;gap:9px;text-decoration:none;color:var(--ink)}
+.logo .k{width:30px;height:30px;border-radius:7px;background:var(--ink);display:grid;place-items:center;color:var(--yellow);font:800 17px/1 var(--f-logo)}
+.logo .w{font:800 26px/1 var(--f-logo);letter-spacing:-.02em}
+.logo .w i{font-style:normal;color:var(--blue)}
+.trial{border:1px solid var(--line);background:var(--paper);color:var(--ink);font:600 13.5px/1 var(--f-body);padding:10px 14px;border-radius:999px;white-space:nowrap}
+.trial:hover{border-color:var(--ink)}
+.acts{display:flex;align-items:center;gap:8px}
+.inst{display:inline-flex;align-items:center;gap:7px;background:var(--ink);color:#fff;border-color:var(--ink)}
+.inst:hover{background:var(--blue);border-color:var(--blue)}
+.inst svg{width:15px;height:15px}
+.lng{padding:10px 12px;font-weight:700;letter-spacing:.04em}
+@media (max-width:420px){.acts{gap:6px}.trial{padding:9px 11px;font-size:12.5px}}
+@media (max-width:440px){.inst{padding:10px 11px}.inst span{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}}
+
+.center{flex:1;min-height:0;display:flex;align-items:center;justify-content:center;padding-block:16px}
+.box{width:100%;max-width:380px}
+.box h1{font:700 28px/1.15 var(--f-body);letter-spacing:-.02em}
+.box .sub{margin:8px 0 22px;color:var(--muted)}
+
+form{display:flex;flex-direction:column;gap:14px}
+.field{display:flex;flex-direction:column;gap:7px}
+.lab{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
+label{font-weight:600;font-size:14px}
+.tlink{border:0;background:none;padding:0;color:var(--blue);font:500 13.5px var(--f-body)}
+.tlink:hover{text-decoration:underline}
+input,select{width:100%;height:48px;padding:0 14px;font:400 16px var(--f-body);color:var(--text);background:var(--field);border:1.5px solid var(--field-line);border-radius:8px;transition:border-color .15s,box-shadow .15s,background .15s}
+input:hover,select:hover{border-color:#7d8696}
+input:focus,select:focus{outline:none;background:#fff;border-color:var(--blue);box-shadow:0 0 0 3px rgba(26,86,219,.18)}
+input::placeholder{color:#8a93a3}
+.pw{position:relative}
+.pw input{padding-right:64px}
+.eye{position:absolute;right:4px;top:4px;height:40px;border:0;background:none;color:var(--muted);font:500 13px var(--f-body);padding:0 12px;border-radius:6px}
+.eye:hover{color:var(--ink)}
+input.pin{font-family:var(--f-mono);letter-spacing:.35em}
+.switch{font-size:13.5px;color:var(--muted)}
+.btn{height:48px;border:0;border-radius:8px;background:var(--blue);color:#fff;font:600 15.5px var(--f-body);width:100%;transition:background .15s}
+.btn:hover{background:var(--blue-dk)}
+.btn:disabled{opacity:.65;cursor:wait}
+.btn.dark{background:var(--ink)}
+.btn.dark:hover{background:var(--ink2)}
+.btn.plain{background:var(--paper);color:var(--ink);border:1px solid var(--line)}
+.btn.plain:hover{background:var(--hover)}
+.msg{font-size:13.5px;padding:10px 12px;border-radius:8px;background:var(--red-bg);color:var(--red)}
+.msg.good{background:var(--green-bg);color:var(--green)}
+.msg:empty{display:none}
+.below{margin-top:18px;font-size:13.5px;color:var(--muted)}
+
+.who{display:flex;flex-direction:column;gap:14px}
+.acct{display:flex;align-items:center;gap:12px;border:1px solid var(--line);border-radius:10px;padding:12px 14px}
+.av{width:40px;height:40px;border-radius:50%;background:var(--ink);color:var(--yellow);display:grid;place-items:center;font:800 16px var(--f-logo);flex:none}
+.acct b{display:block;font-weight:600;overflow-wrap:anywhere}
+.acct span{font-size:13px;color:var(--muted)}
+
+.foot{display:flex;flex-wrap:wrap;justify-content:space-between;gap:6px 16px;font-size:12.5px;color:var(--muted)}
+.foot a{color:inherit;text-decoration:none}
+
+/* ── Right: brand panel ── */
+.brand{background:var(--ink);color:#fff;position:relative;overflow:hidden;display:flex;flex-direction:column;justify-content:center;
+  padding-block:24px;padding-left:max(48px,env(safe-area-inset-left,0px));padding-right:max(48px,env(safe-area-inset-right,0px))}
+.stage{position:relative;z-index:1;max-width:440px;display:flex;flex-direction:column;gap:clamp(16px,3.2vh,30px)}
+.brand h2{font:700 clamp(26px,2.6vw,34px)/1.15 var(--f-body);letter-spacing:-.02em;color:#fff}
+.brand h2 em{font-style:normal;color:var(--yellow)}
+.bar{width:44px;height:5px;background:var(--yellow)}
+.kicker{font:500 12px/1 var(--f-mono);letter-spacing:.14em;text-transform:uppercase;color:#8d96a8}
+.today{background:#fff;color:var(--ink);width:340px;max-width:100%;border-radius:12px;border-top:5px solid var(--blue);padding:18px 20px 16px;
+  box-shadow:0 30px 60px -24px rgba(0,0,0,.7);font-variant-numeric:tabular-nums}
+.today .hd{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:12px}
+.today .hd b{font:700 15px var(--f-body)}
+.today .hd span{font:400 12px var(--f-mono);color:#6b7280}
+.today .big{font:700 30px/1.1 var(--f-body);letter-spacing:-.02em}
+.today .big small{font:500 13px var(--f-mono);color:#6b7280;margin-right:6px;letter-spacing:0}
+.today .lbl{font-size:12.5px;color:#6b7280;margin:2px 0 14px}
+.today .r{display:flex;justify-content:space-between;gap:10px;font-size:13.5px;padding:7px 0;border-top:1px solid #eef0f4}
+.today .r span:last-child{font-family:var(--f-mono);font-size:13px}
+.today .ok{color:#0f7a3d}
+.kinds{display:flex;flex-wrap:wrap;gap:8px}
+.kinds span{border:1px solid #2a3140;color:#c5ccd8;border-radius:999px;padding:5px 12px;font-size:12.5px}
+.points{display:flex;flex-wrap:wrap;gap:8px 22px;color:#aab2c2;font-size:13.5px}
+.points span::before{content:"";display:inline-block;width:6px;height:6px;background:var(--yellow);margin-right:8px;vertical-align:2px}
+
+/* ── Trial sheet ── */
+.veil{position:fixed;inset:0;background:rgba(11,13,18,.55);z-index:20;display:flex;align-items:center;justify-content:center;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:16px}
+.sheet{background:var(--paper);width:100%;max-width:440px;border-radius:14px;padding:26px;max-height:100%;overflow:auto}
+.sheet .hd{display:flex;justify-content:space-between;align-items:start;gap:12px;margin-bottom:6px}
+.sheet h2{font:700 21px/1.2 var(--f-body);letter-spacing:-.01em}
+.x{border:0;background:none;width:36px;height:36px;margin:-6px -8px 0 0;border-radius:8px;color:var(--muted);font-size:22px;line-height:1}
+.x:hover{background:var(--hover);color:var(--ink)}
+.sheet .sub{margin:0 0 20px;color:var(--muted);font-size:14px}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.contact{font-family:var(--f-mono);font-size:13.5px;user-select:all;color:var(--ink)}
+.sent{display:flex;flex-direction:column;gap:14px}
+.sent p{margin:0;color:var(--muted)}
+a.btn{display:grid;place-items:center;text-decoration:none}
+
+@media (max-width:900px){
+  .page{grid-template-columns:1fr}
+  .brand{display:none}
+}
+@media (max-width:420px){
+  .two{grid-template-columns:1fr}
+  .side{padding-left:max(18px,env(safe-area-inset-left,0px));padding-right:max(18px,env(safe-area-inset-right,0px))}
+  .trial{padding:9px 12px;font-size:13px}
+  .center{align-items:flex-start;padding-top:48px}
+  .sheet{padding:22px 18px}
+}
+</style>
+
+<div class="page">
+  <div class="side">
+    <header class="top">
+      <a class="logo" href="#" aria-label="Keep"><span class="w">Keep<i>.</i></span></a>
+      <div class="acts">
+        <button class="trial lng notr" type="button" id="lang-btn" title="Lugha / Language"></button>
+        <button class="trial inst" type="button" id="install-app" aria-label="Install app"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11m0 0-4.5-4.5M12 15l4.5-4.5M5 20h14"/></svg><span>Install app</span></button>
+        <button class="trial" type="button" id="open-trial">Request free trial</button>
+      </div>
+    </header>
+
+    <div class="center">
+      <div class="box">
+        <!-- Sign-in form -->
+        <div id="v-form">
+          <h1 style="margin-bottom:22px">Sign in to Keep</h1>
+          <form id="f-signin" novalidate>
+            <div class="field">
+              <label for="si-id">Phone number or email</label>
+              <input id="si-id" type="text" inputmode="email" autocomplete="username" autocapitalize="off" spellcheck="false" placeholder="0712 345 678">
+            </div>
+            <div class="field">
+              <div class="lab"><label for="si-secret" id="secret-label">PIN</label><button type="button" class="tlink" id="forgot">Forgot PIN?</button></div>
+              <div class="pw">
+                <input id="si-secret" type="password" class="pin" inputmode="numeric" pattern="[0-9]*" maxlength="12" autocomplete="current-password">
+                <button type="button" class="eye" id="reveal" aria-controls="si-secret" aria-pressed="false">Show</button>
+              </div>
+            </div>
+            <p class="msg" id="si-msg" role="alert"></p>
+            <button class="btn" type="submit" id="si-btn">Sign in</button>
+            <p class="switch"><button type="button" class="tlink" id="switch">Use a password instead</button></p>
+          </form>
+          <p class="below">First time here? <button type="button" class="tlink" id="open-setup">Use your setup code</button> to choose your PIN.</p>
+        </div>
+
+        <!-- Already signed in -->
+        <div id="v-setup" hidden>
+          <h1 style="margin-bottom:8px">Choose your PIN</h1>
+          <p class="sub" id="su-sub">Enter the setup code you received on WhatsApp.</p>
+          <form id="f-code" novalidate>
+            <div class="field">
+              <label for="su-code">Setup code</label>
+              <input id="su-code" type="text" autocomplete="one-time-code" autocapitalize="characters" spellcheck="false" maxlength="9" placeholder="ABCD-2345" style="font-family:var(--f-mono);letter-spacing:.2em;text-transform:uppercase">
+            </div>
+            <p class="msg" id="su-msg" role="alert"></p>
+            <button class="btn" type="submit" id="su-btn">Continue</button>
+          </form>
+          <form id="f-pin" novalidate hidden>
+            <div class="field">
+              <label for="su-pin">New PIN</label>
+              <input id="su-pin" type="password" class="pin" inputmode="numeric" pattern="[0-9]*" maxlength="12" autocomplete="new-password">
+            </div>
+            <div class="field">
+              <label for="su-pin2">Type it again</label>
+              <input id="su-pin2" type="password" class="pin" inputmode="numeric" pattern="[0-9]*" maxlength="12" autocomplete="new-password">
+            </div>
+            <p class="switch" style="margin:0">6 to 12 digits. Only you should know it. Avoid 123456 or your birth year.</p>
+            <p class="msg" id="sp-msg" role="alert"></p>
+            <button class="btn" type="submit" id="sp-btn">Save PIN and open</button>
+          </form>
+          <p class="below"><button type="button" class="tlink" id="back-signin">Back to sign in</button></p>
+        </div>
+
+        <div id="v-who" class="who" hidden>
+          <h1 id="who-title">Welcome back</h1>
+          <p class="sub" style="margin:0 0 6px" id="who-sub">Continue where you left off.</p>
+          <div class="acct"><span class="av" id="who-av">K</span><div><b id="who-name"></b><span id="who-dest"></span></div></div>
+          <p class="msg" id="who-msg" role="alert"></p>
+          <button class="btn" type="button" id="who-go">Continue</button>
+          <button class="btn plain" type="button" id="who-out">Use another account</button>
+        </div>
+      </div>
+    </div>
+
+    <footer class="foot"><span>© 2026 Keep · keep.co.tz</span><span id="mode">Support +255 740 116 251</span></footer>
+  </div>
+
+  <aside class="brand" aria-label="About Keep">
+    <div class="stage">
+      <div class="bar" aria-hidden="true"></div>
+      <div>
+        <p class="kicker" style="margin:0 0 14px">Point of sale · Tanzania</p>
+        <h2>Every sale, every shilling. <em>Wherever you are.</em></h2>
+      </div>
+      <div class="today" aria-label="Example day summary">
+        <div class="hd"><b>Today</b><span>Sat 18 Oct</span></div>
+        <div class="big"><small>TZS</small>1,284,000</div>
+        <div class="lbl">Total sales</div>
+        <div class="r"><span>Cash</span><span>672,000</span></div>
+        <div class="r"><span>Lipa kwa Simu</span><span>612,000</span></div>
+        <div class="r"><span>Customers served</span><span>46</span></div>
+        <div class="r"><span>Cash-up</span><span class="ok">Balanced ✓</span></div>
+      </div>
+      <div class="kinds" aria-label="Built for"><span>Shops</span><span>Barbershops &amp; salons</span><span>Hardware</span><span>Electronics</span><span>More coming</span></div>
+    </div>
+  </aside>
+</div>
+
+<!-- Request free trial -->
+<div class="veil" id="trial" hidden role="dialog" aria-modal="true" aria-labelledby="t-title">
+  <div class="sheet">
+    <div class="hd"><h2 id="t-title">Request free trial</h2><button class="x" type="button" id="close-trial" aria-label="Close">×</button></div>
+    <div id="t-form-wrap">
+      <p class="sub">We'll set up Keep for your business and contact you on WhatsApp.</p>
+      <form id="f-trial" novalidate>
+        <div class="two">
+          <div class="field"><label for="n-name">Your name</label><input id="n-name" autocomplete="name"></div>
+          <div class="field"><label for="n-phone">WhatsApp number</label><input id="n-phone" type="tel" inputmode="tel" autocomplete="tel" placeholder="07XX XXX XXX"></div>
+        </div>
+        <div class="field"><label for="n-biz">Business name</label><input id="n-biz" autocomplete="organization"></div>
+        <div class="two">
+          <div class="field"><label for="n-type">Type of business</label>
+            <select id="n-type"><option>Shop / minimarket</option><option>Hardware &amp; tools</option><option>Electronics</option><option>Barbershop / salon</option><option>Other</option></select></div>
+          <div class="field"><label for="n-town">Town</label><input id="n-town" placeholder="Zanzibar"></div>
+        </div>
+        <p class="msg" id="n-msg" role="alert"></p>
+        <button class="btn dark" type="submit">Continue</button>
+      </form>
+    </div>
+    <div class="sent" id="t-sent" hidden>
+      <p>Tap below to send your request to Keep on WhatsApp. We reply within one working day.</p>
+      <a class="btn" id="wa-link" href="https://wa.me/255740116251" target="_blank" rel="noopener">Send on WhatsApp</a>
+      <p>Or contact us directly at <span class="contact">+255 740 116 251</span> or <span class="contact">info@keep.co.tz</span></p>
+    </div>
+  </div>
+</div>
+
+<!-- Install Keep -->
+<div class="veil" id="inst" hidden role="dialog" aria-modal="true" aria-labelledby="i-title">
+  <div class="sheet">
+    <div class="hd"><h2 id="i-title">Install Keep</h2><button class="x" type="button" id="close-inst" aria-label="Close">×</button></div>
+    <p class="sub" id="i-intro">Keep gets its own icon and opens in its own window.</p>
+    <ol class="isteps" id="i-steps"></ol>
+  </div>
+</div>
+<style>
+.isteps{margin:4px 0 6px;padding-left:20px;display:grid;gap:10px;font-size:14.5px;line-height:1.45}
+.isteps b{font-weight:700}
+</style>
+
+<script>
+(function () {
+  // ── Settings ─────────────────────────────────────────────
+  const VENDOR_EMAIL = 'maternusadriano@gmail.com';     // Keep HQ owner
+  const SELLER_DOMAIN = 'tenants.matinyopos.app';       // hidden seller logins
+  // Where each kind of account goes after signing in (same website as this page)
+  const ROUTES = {
+    hq:         { name: 'Keep HQ',  path: 'hq/' },
+    shop:       { name: 'your shop', path: 'app/' },
+    barbershop: { name: 'your barbershop', path: 'barber/' }
+  };
+  const firebaseConfig = window.KEEP_ENV.firebaseConfig;   // live or test — see /env.js
+  const LIVE = ['keep.co.tz', 'www.keep.co.tz', 'test.keep.co.tz', 'matinyomatty.github.io', 'localhost', '127.0.0.1'].includes(location.hostname);
+
+  // ── Helpers ──────────────────────────────────────────────
+  const $ = s => document.getElementById(s);
+  const store = { get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }, set(k, v) { try { localStorage.setItem(k, v); } catch (e) {} } };
+  function normPhone(v) {
+    let d = String(v || '').replace(/\D/g, '');
+    if (d.startsWith('0') && d.length === 10) d = '255' + d.slice(1);
+    else if (d.length === 9 && /^[67]/.test(d)) d = '255' + d;
+    return d;
+  }
+  const normId = v => { v = String(v || '').trim().toLowerCase(); return v.includes('@') ? v : normPhone(v); };
+  const isSeller = e => (e || '').toLowerCase().endsWith('@' + SELLER_DOMAIN);
+  function say(el, text, good) { el.textContent = text || ''; el.classList.toggle('good', !!good); }
+  if (!LIVE) $('mode').textContent = 'Preview · sign-in is simulated';
+  // A message handed back by HQ or the till (e.g. "account switched off")
+  try { const m = sessionStorage.getItem('keep.msg'); if (m) { say($('si-msg'), m); sessionStorage.removeItem('keep.msg'); } } catch (e) {}
+
+  // ── PIN or password ──────────────────────────────────────
+  const secret = $('si-secret'), reveal = $('reveal'), idf = $('si-id');
+  let usePin = true;
+  function setMethod(pin) {
+    usePin = pin;
+    secret.value = ''; secret.type = 'password';
+    secret.classList.toggle('pin', pin);
+    secret.setAttribute('inputmode', pin ? 'numeric' : 'text');
+    if (pin) { secret.setAttribute('pattern', '[0-9]*'); secret.maxLength = 12; } else { secret.removeAttribute('pattern'); secret.removeAttribute('maxlength'); }
+    reveal.textContent = 'Show'; reveal.setAttribute('aria-pressed', 'false');
+    $('secret-label').textContent = pin ? 'PIN' : 'Password';
+    $('forgot').textContent = pin ? 'Forgot PIN?' : 'Forgot password?';
+    $('switch').textContent = pin ? 'Use a password instead' : 'Use a PIN instead';
+    say($('si-msg'), '');
+    store.set('keep.method', pin ? 'pin' : 'password');
+  }
+  $('switch').onclick = () => { setMethod(!usePin); secret.focus(); };
+  secret.addEventListener('input', () => { if (usePin) { const v = secret.value.replace(/\D/g, '').slice(0, 12); if (v !== secret.value) secret.value = v; } });
+  reveal.onclick = () => { const show = secret.type === 'password'; secret.type = show ? 'text' : 'password'; reveal.textContent = show ? 'Hide' : 'Show'; reveal.setAttribute('aria-pressed', show); };
+  if (store.get('keep.method') === 'password') setMethod(false);
+  const lastId = store.get('keep.lastId'); if (lastId) idf.value = lastId;
+  idf.addEventListener('input', () => { idf.setAttribute('inputmode', /^[+\d][\d\s]*$/.test(idf.value) ? 'tel' : 'email'); });
+
+  // ── Firebase (live site only) ────────────────────────────
+  let auth = null, db = null, booting = null;
+  function loadScript(src) { return new Promise((ok, no) => { const s = document.createElement('script'); s.src = src; s.onload = ok; s.onerror = () => no(new Error('Could not reach Keep. Check your internet and reload.')); document.head.appendChild(s); }); }
+  function startFirebase() {
+    if (!booting) booting = (async () => {
+      const v = 'https://www.gstatic.com/firebasejs/9.23.0/';
+      await loadScript(v + 'firebase-app-compat.js');
+      await Promise.all([loadScript(v + 'firebase-auth-compat.js'), loadScript(v + 'firebase-firestore-compat.js')]);
+      firebase.initializeApp(firebaseConfig);
+      auth = firebase.auth(); db = firebase.firestore();
+    })();
+    return booting;
+  }
+  const route = k => ({ name: ROUTES[k].name, url: ROUTES[k].path });
+
+  // Decide where this account belongs
+  async function destinationFor(user) {
+    if ((user.email || '').toLowerCase() === VENDOR_EMAIL) return route('hq');
+    const link = await db.collection('users').doc(user.uid).get();
+    if (!link.exists || !link.data().shop) throw new Error('This account is not linked to a shop. Contact Keep support on +255 740 116 251.');
+    let type = 'shop';
+    try { const t = await db.collection('tenants').doc(link.data().shop).get(); if (t.exists) type = String(t.data().type || t.data().businessType || 'shop').toLowerCase(); } catch (e) {}
+    const r = ROUTES[type] || ROUTES.shop;
+    if (!r.path) throw new Error('Keep for barbershops opens soon. Contact Keep support on +255 740 116 251.');
+    return { name: r.name, url: r.path };
+  }
+
+  async function emailFor(id) {
+    if (id.includes('@')) return id;
+    if (id.length < 12) throw new Error('Enter a valid phone number, like 0712 345 678.');
+    const snap = await db.collection('logins').doc(id).get();
+    if (!snap.exists) throw new Error('No Keep account uses that phone number.');
+    return snap.data().email;
+  }
+
+  function friendly(e) {
+    const c = (e && e.code) || '';
+    if (c.includes('too-many')) return 'Too many tries. Wait a few minutes and try again.';
+    if (c.includes('network')) return 'No internet connection. Check it and try again.';
+    if (c.includes('user-disabled')) return 'This account has been switched off. Contact your business owner.';
+    if (c.startsWith('auth/')) return 'That phone number or ' + (usePin ? 'PIN' : 'password') + " doesn't match. Try again.";
+    return (e && e.message) || 'Could not sign in. Try again.';
+  }
+
+  // ── Signed-in view ───────────────────────────────────────
+  let pending = null;
+  function showWho(label, dest, go) {
+    pending = dest;
+    $('v-form').hidden = true; $('v-who').hidden = false;
+    $('who-av').textContent = (label || 'K').trim().charAt(0).toUpperCase();
+    $('who-name').textContent = label;
+    $('who-dest').textContent = 'Opens ' + dest.name;
+    $('who-go').textContent = 'Continue to ' + dest.name;
+    say($('who-msg'), '');
+    if (go) open();
+  }
+  function open() {
+    if (!pending) return;
+    $('who-title').textContent = 'Signing you in';
+    $('who-go').disabled = true; $('who-go').textContent = 'Opening ' + pending.name + '…';
+    if (LIVE) location.assign(pending.url);
+    else setTimeout(() => { $('who-go').disabled = false; $('who-go').textContent = 'Continue to ' + pending.name; $('who-title').textContent = 'Welcome back'; say($('who-msg'), 'Preview: on keep.co.tz this opens ' + pending.name + ' at ' + pending.url, true); }, 700);
+  }
+  $('who-go').onclick = open;
+  $('who-out').onclick = async () => { if (auth) await auth.signOut().catch(() => {}); secret.value = ''; $('v-who').hidden = true; $('v-form').hidden = false; idf.focus(); };
+
+  // ── Sign in ──────────────────────────────────────────────
+  $('f-signin').addEventListener('submit', async e => {
+    e.preventDefault();
+    const msg = $('si-msg'), btn = $('si-btn');
+    const id = normId(idf.value), pass = secret.value;
+    if (!id) { say(msg, 'Enter your phone number or email.'); idf.focus(); return; }
+    if (usePin && !/^\d{6,12}$/.test(pass)) { say(msg, 'Your PIN is 6 to 12 digits.'); secret.focus(); return; }
+    if (!usePin && !pass) { say(msg, 'Enter your password.'); secret.focus(); return; }
+    say(msg, ''); btn.disabled = true; btn.textContent = 'Signing in…';
+    try {
+      if (!LIVE) { await new Promise(r => setTimeout(r, 500)); showWho(idf.value.trim(), previewRoute(id), true); return; }
+      if (!navigator.onLine) throw new Error('Signing in needs internet. Connect and try again.');
+      await startFirebase();
+      const cred = await auth.signInWithEmailAndPassword(await emailFor(id), pass);
+      store.set('keep.lastId', idf.value.trim());
+      try { showWho(idf.value.trim(), await destinationFor(cred.user), true); }
+      catch (err) { await auth.signOut().catch(() => {}); throw err; }
+    } catch (err) { say(msg, friendly(err)); secret.value = ''; }
+    finally { btn.disabled = false; btn.textContent = 'Sign in'; }
+  });
+
+  // Preview only: try 'maternusadriano@gmail.com' for HQ, any phone for a shop
+  function previewRoute(id) {
+    if (id === VENDOR_EMAIL) return route('hq');
+    if (id.includes('barber')) return { name: 'your barbershop', url: 'barber/' };
+    return route('shop');
+  }
+
+  // ── Forgot PIN / password ────────────────────────────────
+  $('forgot').onclick = async () => {
+    const msg = $('si-msg'), id = normId(idf.value);
+    if (!id) { say(msg, 'Type your phone number or email first.'); idf.focus(); return; }
+    if (!LIVE) { say(msg, 'Preview: on keep.co.tz this emails a reset link.', true); return; }
+    try {
+      await startFirebase();
+      const email = await emailFor(id);
+      if (isSeller(email)) { say(msg, 'Ask the business owner for a new setup code. They can make one from Team → Reset PIN.'); return; }
+      await auth.sendPasswordResetEmail(email, { url: window.KEEP_ENV.site });
+      say(msg, 'We sent a reset link to your email. Check spam too.', true);
+    } catch (err) { say(msg, friendly(err)); }
+  };
+
+  // ── First time: setup code → own PIN ─────────────────────
+  // The code is a one-time password created by the owner. We read its invite,
+  // sign in with it once, replace it with the person's own PIN, then delete the invite.
+  let invite = null, inviteCode = '';
+  const cleanCode = v => String(v || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 8);
+  function showSetup(code) {
+    $('v-form').hidden = true; $('v-who').hidden = true; $('v-setup').hidden = false;
+    $('f-code').hidden = false; $('f-pin').hidden = true; invite = null;
+    $('su-sub').textContent = 'Enter the setup code you received on WhatsApp.';
+    say($('su-msg'), ''); say($('sp-msg'), '');
+    $('su-code').value = code ? cleanCode(code).replace(/^(.{4})(.+)$/, '$1-$2') : '';
+    if (code) $('f-code').requestSubmit(); else $('su-code').focus();
+  }
+  function hideSetup() { $('v-setup').hidden = true; $('v-form').hidden = false; try { history.replaceState(null, '', location.pathname); } catch (e) {} }
+  $('open-setup').onclick = () => showSetup('');
+  $('back-signin').onclick = hideSetup;
+  $('su-code').addEventListener('input', e => { const c = cleanCode(e.target.value); e.target.value = c.length > 4 ? c.slice(0, 4) + '-' + c.slice(4) : c; });
+  ['su-pin', 'su-pin2'].forEach(id => $(id).addEventListener('input', e => { e.target.value = e.target.value.replace(/\D/g, '').slice(0, 12); }));
+
+  $('f-code').addEventListener('submit', async e => {
+    e.preventDefault();
+    const msg = $('su-msg'), btn = $('su-btn'), code = cleanCode($('su-code').value);
+    if (code.length !== 8) { say(msg, 'The setup code has 8 letters and numbers, like ABCD-2345.'); return; }
+    if (!LIVE) { invite = { name: 'Asha', shopName: 'Upendo Hardware' }; inviteCode = code; return askPin(); }
+    btn.disabled = true; btn.textContent = 'Checking…';
+    try {
+      await startFirebase();
+      const snap = await db.collection('invites').doc(code).get();
+      if (!snap.exists) throw new Error('That code is not valid or was already used. Ask your employer for a new one.');
+      const d = snap.data();
+      if (d.expiresAt && d.expiresAt.toMillis() < Date.now()) throw new Error('That code has expired. Ask your employer for a new one.');
+      invite = d; inviteCode = code; askPin();
+    } catch (err) { say(msg, friendly(err)); }
+    finally { btn.disabled = false; btn.textContent = 'Continue'; }
+  });
+  function askPin() {
+    $('f-code').hidden = true; $('f-pin').hidden = false;
+    $('su-sub').textContent = `Hi ${invite.name || ''}! Choose the PIN you will use at ${invite.shopName || 'your shop'}.`;
+    $('su-pin').value = ''; $('su-pin2').value = ''; $('su-pin').focus();
+  }
+  $('f-pin').addEventListener('submit', async e => {
+    e.preventDefault();
+    const msg = $('sp-msg'), btn = $('sp-btn'), pin = $('su-pin').value;
+    if (!/^\d{6,12}$/.test(pin)) { say(msg, 'Your PIN must be 6 to 12 digits.'); return; }
+    if (/^(\d)\1+$/.test(pin) || '0123456789012'.includes(pin) || '9876543210987'.includes(pin)) { say(msg, 'That PIN is too easy to guess. Choose a different one.'); return; }
+    if (pin !== $('su-pin2').value) { say(msg, 'The two PINs do not match.'); return; }
+    say(msg, ''); btn.disabled = true; btn.textContent = 'Saving…';
+    try {
+      if (!LIVE) { await new Promise(r => setTimeout(r, 500)); say(msg, 'Preview: on keep.co.tz this saves your PIN and opens your shop.', true); return; }
+      const cred = await auth.signInWithEmailAndPassword(invite.email, inviteCode);
+      await cred.user.updatePassword(pin);
+      await db.collection('invites').doc(inviteCode).delete();
+      if (invite.phone) store.set('keep.lastId', invite.phone.replace(/^255/, '0'));
+      try { history.replaceState(null, '', location.pathname); } catch (x) {}
+      showWho(invite.name || 'you', await destinationFor(cred.user), true);
+    } catch (err) {
+      say(msg, (err && err.code || '').startsWith('auth/') ? 'That code no longer works. Ask your employer for a new one.' : friendly(err));
+    } finally { btn.disabled = false; btn.textContent = 'Save PIN and open'; }
+  });
+  const setupParam = new URLSearchParams(location.search).get('setup');
+
+  // ── Already signed in on this device? ────────────────────
+  if (setupParam) { if (LIVE) startFirebase().then(() => auth.signOut().catch(() => {})).finally(() => showSetup(setupParam)); else showSetup(setupParam); }
+  else if (LIVE) {
+    startFirebase().then(() => {
+      const off = auth.onAuthStateChanged(async user => {
+        off();
+        if (!user) return;
+        try { showWho(store.get('keep.lastId') || user.email, await destinationFor(user), false); }
+        catch (err) { await auth.signOut().catch(() => {}); say($('si-msg'), err.message); }
+      });
+    }).catch(err => say($('si-msg'), err.message));
+  }
+
+  // ── Request free trial ───────────────────────────────────
+  const sheet = $('trial');
+  function openTrial() { $('t-form-wrap').hidden = false; $('t-sent').hidden = true; sheet.hidden = false; setTimeout(() => $('n-name').focus(), 50); }
+  function closeTrial() { sheet.hidden = true; $('open-trial').focus(); }
+  $('open-trial').onclick = openTrial;
+  $('close-trial').onclick = closeTrial;
+  sheet.addEventListener('click', e => { if (e.target === sheet) closeTrial(); });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape' && !sheet.hidden) closeTrial(); });
+  if (['#trial', '#free-trial'].includes(location.hash)) openTrial();
+  $('f-trial').addEventListener('submit', e => {
+    e.preventDefault();
+    const msg = $('n-msg'), name = $('n-name').value.trim(), phone = $('n-phone').value.trim(), biz = $('n-biz').value.trim();
+    if (!name) { say(msg, 'Enter your name.'); $('n-name').focus(); return; }
+    if (!/^\d{9,13}$/.test(phone.replace(/\D/g, ''))) { say(msg, 'Enter your WhatsApp number, like 0712 345 678.'); $('n-phone').focus(); return; }
+    if (!biz) { say(msg, 'Enter your business name.'); $('n-biz').focus(); return; }
+    say(msg, '');
+    const text = `Hello Keep, I'd like a free trial.\nName: ${name}\nWhatsApp: ${phone}\nBusiness: ${biz}\nType: ${$('n-type').value}\nTown: ${$('n-town').value.trim() || '-'}`;
+    $('wa-link').href = 'https://wa.me/255740116251?text=' + encodeURIComponent(text);
+    $('t-form-wrap').hidden = true; $('t-sent').hidden = false;
+  });
+
+  // ── Language ─────────────────────────────────────────────
+  const lb = $('lang-btn');
+  if (window.KeepLang) {
+    lb.textContent = KeepLang.lang === 'sw' ? 'EN' : 'SW';
+    lb.setAttribute('aria-label', KeepLang.lang === 'sw' ? 'Switch to English' : 'Badili kwenda Kiswahili');
+    lb.onclick = () => KeepLang.set(KeepLang.lang === 'sw' ? 'en' : 'sw');
+  } else lb.hidden = true;
+
+  // ── Install Keep as an app (computer or phone) ───────────
+  let installEvt = null;
+  const instBtn = $('install-app');
+  const isApp = matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+  if (isApp) instBtn.hidden = true;
+  window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); installEvt = e; });
+  const inst = $('inst');
+  function installSteps() {
+    const ua = navigator.userAgent;
+    const ios = /iPhone|iPad|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    const android = /Android/.test(ua);
+    const edge = /Edg\//.test(ua);
+    const chrome = /Chrome\//.test(ua) && !edge && !/OPR\//.test(ua);
+    let steps;
+    if (ios) steps = [
+      'Open <b>keep.co.tz</b> in <b>Safari</b>.',
+      'Tap the <b>Share</b> button (square with an arrow).',
+      'Tap <b>Add to Home Screen</b>, then <b>Add</b>.'];
+    else if (android) steps = [
+      'Tap the <b>⋮</b> menu at the top right of Chrome.',
+      'Tap <b>Add to Home screen</b> or <b>Install app</b>.',
+      'Tap <b>Install</b>.'];
+    else if (edge) steps = [
+      'Click the <b>…</b> menu at the top right of Edge.',
+      'Choose <b>Apps</b> → <b>Install Keep</b>.',
+      'Click <b>Install</b>. Keep appears on your desktop and Start menu.'];
+    else if (chrome) steps = [
+      'Click the <b>⋮</b> menu at the top right of Chrome.',
+      'Choose <b>Cast, save and share</b> → <b>Install page as app…</b> (or <b>Install Keep…</b>).',
+      'Click <b>Install</b>. Keep appears on your desktop and Start menu.'];
+    else steps = [
+      'Open <b>keep.co.tz</b> in <b>Google Chrome</b> or <b>Microsoft Edge</b>.',
+      'Click <b>Install app</b> again there.'];
+    $('i-steps').innerHTML = steps.map(s => '<li>' + s + '</li>').join('');
+    inst.hidden = false;
+  }
+  const closeInst = () => { inst.hidden = true; instBtn.focus(); };
+  $('close-inst').onclick = closeInst;
+  inst.addEventListener('click', e => { if (e.target === inst) closeInst(); });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape' && !inst.hidden) closeInst(); });
+  instBtn.onclick = async () => {
+    if (!installEvt) { installSteps(); return; }
+    installEvt.prompt();
+    let res = null;
+    try { res = await installEvt.userChoice; } catch (_) {}
+    installEvt = null;
+    if (res && res.outcome === 'accepted') instBtn.hidden = true;
+  };
+  window.addEventListener('appinstalled', () => { instBtn.hidden = true; });
+  if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
+    window.addEventListener('load', () => navigator.serviceWorker.register('/sw.js').catch(() => {}));
+  }
+})();
+</script>
+
+</body>
+</html>

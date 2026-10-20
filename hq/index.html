@@ -1,0 +1,1162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
+    <title>Keep HQ</title>
+    <meta name="theme-color" content="#0b0d12">
+    <link rel="manifest" href="/manifest.json">
+    <link rel="icon" type="image/png" href="/icon-192.png">
+    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@400;500;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --ink: #0b0d12; --ink2: #161b27; --blue: #1a56db; --yellow: #ffc72c; --light: #f2f4f8;
+            --green: #16a34a; --pos: #00875a; --gray: #6b7280; --red: #dc2626; --amber: #f59e0b; --line: #e3e8ef;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+        html { background: var(--ink); }
+        body { background: var(--ink); font-family: 'DM Sans', system-ui, sans-serif; color: var(--ink); min-height: 100vh; }
+        body.unlocked { background: var(--light); }
+        button { font-family: inherit; cursor: pointer; }
+        .hidden { display: none !important; }
+
+        /* login */
+        #loginPage { position: fixed; inset: 0; z-index: 100; background: radial-gradient(circle at 15% 0%, #16245a 0, var(--ink) 55%); display: flex; align-items: center; justify-content: center; padding: 20px; }
+        .login-card { background: #fff; width: 100%; max-width: 400px; padding: 30px 22px 22px; border-radius: 24px; text-align: center; box-shadow: 0 20px 60px rgba(0,0,0,.5); }
+        .logo { font-family: 'Syne', sans-serif; font-size: 1.9rem; letter-spacing: 6px; }
+        .logo span { color: var(--blue); margin-left: 10px; }
+        .bar { width: 56px; height: 4px; border-radius: 2px; background: var(--yellow); margin: 8px auto 6px; }
+        .sub { color: var(--gray); font-size: .75rem; margin-bottom: 20px; }
+        .login-field { width: 100%; padding: 14px; border: 2px solid var(--line); border-radius: 14px; font-size: 1rem; background: #f8fafc; outline: none; margin-bottom: 10px; font-family: inherit; }
+        .login-field:focus { border-color: var(--blue); background: #fff; }
+        #loginError { font-size: .78rem; min-height: 18px; margin-top: 10px; color: var(--red); }
+        .link-btn { background: none; border: none; color: var(--blue); font-weight: 800; font-size: .75rem; margin-top: 8px; }
+
+        /* shell */
+        #app { display: none; }
+        .topbar { position: sticky; top: 0; z-index: 600; background: var(--ink); padding-top: env(safe-area-inset-top); }
+        .brand { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px 6px; color: #fff; }
+        .brand .t { font-family: 'Syne', sans-serif; letter-spacing: 3px; color: var(--yellow); font-size: 1.05rem; }
+        .brand .t small { color: #60a5fa; letter-spacing: 2px; font-size: .7rem; margin-left: 6px; }
+        .icon-btn { background: none; border: none; color: rgba(255,255,255,.5); font-size: .9rem; padding: 4px 8px; border-radius: 8px; }
+        .tabs { display: flex; border-bottom: 3px solid var(--yellow); }
+        .tab { flex: 1; border: none; background: transparent; color: rgba(255,255,255,.45); font-size: .62rem; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; padding: 9px 4px 8px; display: flex; flex-direction: column; align-items: center; gap: 3px; }
+        .tab span { font-size: 1.1rem; }
+        .tab.active { color: var(--yellow); background: rgba(255,199,44,.08); }
+        .page { display: none; padding: 16px 16px 90px; max-width: 1000px; margin: auto; }
+        .page.active { display: block; }
+
+        /* building blocks */
+        .kpis { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 14px; }
+        @media (min-width: 760px) { .kpis { grid-template-columns: repeat(4, 1fr); } .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; } .shop-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; } .shop-grid .card { margin-bottom: 0; } }
+        .kpi { background: #fff; border-radius: 16px; padding: 14px; border-left: 4px solid var(--blue); box-shadow: 0 2px 8px rgba(0,0,0,.04); }
+        .kpi h4 { font-size: .58rem; color: var(--gray); text-transform: uppercase; letter-spacing: .5px; margin-bottom: 6px; }
+        .kpi p { font-size: 1.05rem; font-weight: 800; }
+        .kpi small { font-size: .65rem; color: var(--gray); }
+        .card { background: #fff; border-radius: 16px; padding: 14px; box-shadow: 0 2px 8px rgba(0,0,0,.04); margin-bottom: 12px; }
+        .section-label { font-size: .65rem; font-weight: 800; color: var(--gray); text-transform: uppercase; letter-spacing: 1px; display: block; margin: 4px 0 10px; }
+        .primary { background: var(--blue); color: #fff; border: none; border-radius: 14px; padding: 14px; font-weight: 800; font-size: .85rem; letter-spacing: 1px; text-transform: uppercase; width: 100%; box-shadow: 0 8px 20px rgba(26,86,219,.25); }
+        .primary.green { background: var(--pos); box-shadow: 0 8px 20px rgba(0,135,90,.25); }
+        .primary.red { background: var(--red); box-shadow: none; }
+        .primary:disabled { opacity: .6; }
+        .row-btns { display: flex; gap: 10px; margin-bottom: 12px; }
+        .btn { flex: 1; background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 11px; font-weight: 800; font-size: .74rem; color: var(--ink); }
+        .btn.red { color: var(--red); border-color: #fca5a5; }
+        .btn.blue { color: var(--blue); border-color: #bfd3fb; }
+        .btn.ghost { border: none; background: transparent; }
+        .tiny { background: #fff; border: 1px solid var(--line); border-radius: 8px; padding: 5px 9px; font-size: .7rem; font-weight: 700; }
+        .chip { display: inline-block; font-size: .6rem; font-weight: 800; padding: 3px 8px; border-radius: 20px; letter-spacing: .3px; white-space: nowrap; }
+        .chip.green { background: #dcfce7; color: #166534; } .chip.amber { background: #fef3c7; color: #92400e; } .chip.red { background: #fee2e2; color: #991b1b; }
+        .chip.blue { background: #e0e7ff; color: #3730a3; } .chip.gray { background: #f3f4f6; color: #4b5563; }
+        .filters { display: flex; gap: 6px; overflow-x: auto; margin-bottom: 12px; scrollbar-width: none; }
+        .filters::-webkit-scrollbar { display: none; }
+        .fchip { flex-shrink: 0; border: 1px solid var(--line); background: #fff; border-radius: 20px; padding: 6px 12px; font-size: .7rem; font-weight: 800; color: var(--gray); }
+        .fchip.on { background: var(--ink); color: var(--yellow); border-color: var(--ink); }
+        .shop-card { cursor: pointer; border-left: 4px solid var(--line); }
+        .shop-card.green { border-left-color: var(--green); } .shop-card.amber { border-left-color: var(--amber); } .shop-card.red { border-left-color: var(--red); } .shop-card.blue { border-left-color: var(--blue); }
+        .shop-top { display: flex; justify-content: space-between; gap: 8px; align-items: flex-start; }
+        .shop-name { font-weight: 800; font-size: .92rem; }
+        .meta { font-size: .7rem; color: var(--gray); margin-top: 3px; }
+        .line { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid #f0f2f5; font-size: .8rem; }
+        .line:last-child { border-bottom: none; }
+        .line .l { min-width: 0; flex: 1; }
+        .line b { white-space: nowrap; }
+        .empty { text-align: center; color: var(--gray); font-size: .82rem; padding: 22px 10px; }
+        .bars { display: flex; align-items: flex-end; gap: 6px; height: 120px; padding-top: 8px; }
+        .bars div { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; height: 100%; }
+        .bars i { display: block; width: 100%; max-width: 38px; background: var(--blue); border-radius: 6px 6px 2px 2px; min-height: 2px; }
+        .bars small { font-size: .55rem; color: var(--gray); margin-top: 4px; white-space: nowrap; }
+        .bars em { font-style: normal; font-size: .55rem; color: var(--ink); font-weight: 800; margin-bottom: 3px; white-space: nowrap; }
+        input, select, textarea { width: 100%; padding: 12px; border: 1.5px solid var(--line); border-radius: 12px; font-size: .92rem; background: #fafbfc; outline: none; font-family: inherit; color: var(--ink); }
+        input:focus, select:focus, textarea:focus { border-color: var(--blue); background: #fff; }
+        textarea { min-height: 76px; resize: vertical; }
+        .fg { margin-bottom: 12px; }
+        .fl { font-size: .63rem; font-weight: 800; color: var(--blue); text-transform: uppercase; letter-spacing: .5px; margin-bottom: 5px; display: block; }
+        .fr { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .hint { border-radius: 12px; padding: 10px 12px; font-size: .74rem; margin-bottom: 12px; background: #eff6ff; color: #1d4ed8; }
+        .hint.amber { background: #fef9c3; color: #854d0e; } .hint.red { background: #fee2e2; color: #991b1b; } .hint.green { background: #e6f6f0; color: #065f46; }
+        .plan-row { display: grid; grid-template-columns: 1fr 1fr 1fr auto; gap: 6px; margin-bottom: 10px; padding-bottom: 10px; border-bottom: 1px dashed var(--line); align-items: end; }
+        .plan-row .pn { grid-column: 1 / -1; }
+        .plan-row .svc { grid-column: 1 / -1; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; background: #f8fafc; border-radius: 10px; padding: 8px; }
+        .plan-row .svc select { width: 100%; padding: 9px; font-size: .82rem; border-radius: 8px; }
+        .plan-row .ck { display: flex; align-items: center; gap: 6px; font-size: .75rem; font-weight: 700; color: var(--ink); text-transform: none; grid-column: span 1; }
+        .plan-row .ck input { width: auto; }
+        @media (max-width: 520px) { .plan-row .svc { grid-template-columns: 1fr 1fr; } }
+        .plan-row label { display: block; font-size: .55rem; font-weight: 800; color: var(--blue); text-transform: uppercase; margin-bottom: 3px; }
+        .plan-row input { padding: 9px; font-size: .85rem; }
+
+        /* sheets */
+        .overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.55); z-index: 1500; justify-content: center; align-items: flex-end; backdrop-filter: blur(3px); }
+        .overlay.active { display: flex; }
+        .sheet { background: #fff; width: 100%; max-width: 560px; border-radius: 26px 26px 0 0; border-top: 5px solid var(--blue); padding: 20px 18px calc(28px + env(safe-area-inset-bottom)); max-height: 92vh; overflow-y: auto; animation: up .22s ease; }
+        @keyframes up { from { transform: translateY(40px); opacity: 0; } to { transform: none; opacity: 1; } }
+        .handle { width: 36px; height: 4px; border-radius: 2px; background: #ddd; margin: 0 auto 14px; }
+        .sheet-title { font-family: 'Syne', sans-serif; font-size: 1.08rem; text-align: center; margin-bottom: 14px; }
+        body.modal-open { overflow: hidden; }
+
+        .toast { position: fixed; top: calc(70px + env(safe-area-inset-top)); left: 50%; transform: translateX(-50%); background: var(--ink); color: #fff; padding: 11px 18px; border-radius: 12px; font-size: .8rem; font-weight: 700; z-index: 9998; opacity: 0; transition: opacity .3s; pointer-events: none; max-width: 92vw; text-align: center; }
+        .toast.show { opacity: 1; } .toast.err { background: var(--red); }
+        .loading { display: none; position: fixed; inset: 0; background: rgba(11,13,18,.8); z-index: 9999; color: #fff; align-items: center; justify-content: center; flex-direction: column; gap: 12px; font-size: .78rem; letter-spacing: 2px; }
+        .spin { width: 34px; height: 34px; border: 3px solid rgba(255,255,255,.2); border-top-color: var(--yellow); border-radius: 50%; animation: s .7s linear infinite; }
+        @keyframes s { to { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+<style>#loginPage{display:none!important}</style>
+<div class="loading" id="loading" style="display:flex;background:var(--ink)"><div class="spin"></div><div id="loadingText">OPENING KEEP HQ...</div></div>
+<div class="toast" id="toast"></div>
+
+<!-- LOGIN -->
+<div id="loginPage">
+    <div class="login-card">
+        <div class="logo">KEEP<span>HQ</span></div>
+        <div class="bar"></div>
+        <div class="sub">Vendor control centre — owner access only</div>
+        <input type="email" id="lgEmail" class="login-field" placeholder="Email" autocomplete="username" autocapitalize="none">
+        <input type="password" id="lgPass" class="login-field" placeholder="Password" autocomplete="current-password" onkeydown="if(event.key==='Enter') doLogin()">
+        <button class="primary" id="lgBtn" onclick="doLogin()">Sign in as owner</button>
+        <div id="loginError"></div>
+        <button class="link-btn" onclick="forgotPass()">Forgot password?</button>
+    </div>
+</div>
+
+<!-- APP -->
+<div id="app">
+    <div class="topbar">
+        <div class="brand">
+            <div class="t">KEEP<small>HQ</small></div>
+            <div>
+                <button class="icon-btn" onclick="location.reload()" title="Refresh">🔄</button>
+                <button class="icon-btn" onclick="auth.signOut()" title="Sign out">⏻</button>
+            </div>
+        </div>
+        <div class="tabs">
+            <button class="tab active" data-p="overview" onclick="go('overview')"><span>📊</span>Overview</button>
+            <button class="tab" data-p="shops" onclick="go('shops')"><span>🏪</span>Shops</button>
+            <button class="tab" data-p="payments" onclick="go('payments')"><span>💳</span>Payments</button>
+            <button class="tab" data-p="health" onclick="go('health')"><span>🩺</span>Health<b id="hBadge" style="display:none;margin-left:4px;background:var(--red);color:#fff;border-radius:9px;padding:0 6px;font-size:.62rem;"></b></button>
+            <button class="tab" data-p="settings" onclick="go('settings')"><span>⚙️</span>Settings</button>
+        </div>
+    </div>
+
+    <!-- OVERVIEW -->
+    <div class="page active" id="p-overview">
+        <div class="kpis">
+            <div class="kpi"><h4>Paying shops</h4><p id="kShops">–</p><small id="kShopsSub"></small></div>
+            <div class="kpi" style="border-left-color:var(--green);"><h4>Expected monthly</h4><p id="kMrr">–</p><small>from paying shops</small></div>
+            <div class="kpi" style="border-left-color:var(--yellow);"><h4>Collected this month</h4><p id="kCollected">–</p><small id="kCollectedSub"></small></div>
+            <div class="kpi" style="border-left-color:var(--red);"><h4>Unpaid / locked</h4><p id="kOverdue">–</p><small id="kOverdueSub"></small></div>
+        </div>
+        <div class="row-btns">
+            <button class="primary" onclick="openNewShop()">➕ New shop</button>
+            <button class="primary green" onclick="openPay()">💳 Record payment</button>
+        </div>
+        <div class="two-col">
+            <div>
+                <span class="section-label">Needs attention</span>
+                <div class="card" id="attention"></div>
+            </div>
+            <div>
+                <span class="section-label">Collections · last 6 months</span>
+                <div class="card"><div class="bars" id="chart"></div></div>
+                <span class="section-label">Platform activity</span>
+                <div class="card" id="activity"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- HEALTH -->
+    <div class="page" id="p-health">
+        <span class="section-label">Problems · last 7 days</span>
+        <div class="card" id="hProblems"><div class="empty">Loading…</div></div>
+        <span class="section-label">Tills · app version and last seen</span>
+        <div class="card" id="hTills"><div class="empty">Loading…</div></div>
+    </div>
+
+    <!-- SHOPS -->
+    <div class="page" id="p-shops">
+        <input type="text" id="shopSearch" placeholder="🔍 Search shop, code, owner, phone..." oninput="renderShops()" style="margin-bottom:10px;">
+        <div class="filters" id="shopFilters"></div>
+        <div class="shop-grid" id="shopList"></div>
+        <button class="primary" style="margin-top:12px;" onclick="openNewShop()">➕ New shop</button>
+    </div>
+
+    <!-- PAYMENTS -->
+    <div class="page" id="p-payments">
+        <div class="row-btns">
+            <input type="month" id="payMonth" onchange="renderPayments()" style="flex:1;">
+            <button class="primary green" style="flex:1;" onclick="openPay()">💳 Record payment</button>
+        </div>
+        <div class="kpis" id="payKpis"></div>
+        <div class="card" id="payList"></div>
+    </div>
+
+    <!-- SETTINGS -->
+    <div class="page" id="p-settings">
+        <div class="two-col">
+            <div>
+                <span class="section-label">Plans & limits</span>
+                <div class="card">
+                    <div style="font-size:.7rem;color:var(--gray);margin-bottom:8px;">What each plan includes. "Text or PDF" lets the shop owner pick the format in their till Settings. Staff and items: 0 = unlimited. Changing a plan here doesn't change existing shops until you re-save their plan (Shops → Edit).</div>
+                    <div id="planRows"></div>
+                    <div class="row-btns" style="margin-top:6px;margin-bottom:0;">
+                        <button class="btn" onclick="addPlanRow()">➕ Add plan</button>
+                        <button class="btn blue" onclick="savePlans()">💾 Save plans</button>
+                    </div>
+                </div>
+                <span class="section-label">Add-ons</span>
+                <div class="card">
+                    <div class="fr">
+                        <div class="fg"><span class="fl">Extra staff login (TZS / month)</span><input type="number" id="adStaff" inputmode="numeric"></div>
+                    </div>
+                    <div class="fr">
+                        <div class="fg"><span class="fl">Receipt top-up (receipts)</span><input type="number" id="adTopN" inputmode="numeric"></div>
+                        <div class="fg"><span class="fl">Top-up price (TZS)</span><input type="number" id="adTopP" inputmode="numeric"></div>
+                    </div>
+                    <div style="font-size:.7rem;color:var(--gray);margin-bottom:8px;">When a shop runs out of receipts, sales never stop: the till falls back to the free manual WhatsApp button.</div>
+                    <button class="btn blue" style="width:100%;" onclick="saveAddons()">💾 Save add-ons</button>
+                </div>
+                <span class="section-label">Billing</span>
+                <div class="card">
+                    <div class="fr">
+                        <div class="fg"><span class="fl">Free trial (days)</span><input type="number" id="cfTrial" inputmode="numeric"></div>
+                        <div class="fg"><span class="fl">Grace after due (days)</span><input type="number" id="cfGrace" inputmode="numeric"></div>
+                    </div>
+                    <div class="fg"><span class="fl">How shops pay you (shown in their till)</span>
+                        <textarea id="cfPayHow" placeholder="e.g. Lipa kwa M-Pesa: 5551234 (MATINYO). Reference: your shop code."></textarea></div>
+                    <div class="fr">
+                        <div class="fg"><span class="fl">Your support phone</span><input type="tel" id="cfPhone" placeholder="2557XXXXXXXX"></div>
+                        <div class="fg"><span class="fl">Till link</span><input type="text" id="cfTill"></div>
+                    </div>
+                    <div class="fg"><span class="fl">Receipt business details</span><input type="text" id="cfBiz" placeholder="Matinyo · BRELA reg no. · TIN · Zanzibar"></div>
+                    <button class="btn blue" style="width:100%;" onclick="saveBilling()">💾 Save billing settings</button>
+                </div>
+            </div>
+            <div>
+                <span class="section-label">Announcements to shops</span>
+                <div class="card">
+                    <div class="fg"><span class="fl">Title</span><input type="text" id="anTitle" placeholder="e.g. Scheduled maintenance"></div>
+                    <div class="fg"><span class="fl">Message</span><textarea id="anBody" placeholder="Shown at the top of their till"></textarea></div>
+                    <div class="fr">
+                        <div class="fg"><span class="fl">Type</span><select id="anLevel"><option value="info">ℹ️ Info</option><option value="warn">⚠️ Important</option></select></div>
+                        <div class="fg"><span class="fl">Show until</span><input type="date" id="anEnds"></div>
+                    </div>
+                    <div class="fg"><span class="fl">Shops (leave blank for all)</span><input type="text" id="anShops" placeholder="shop codes, separated by commas"></div>
+                    <button class="btn blue" style="width:100%;" onclick="saveAnnouncement()">📣 Publish announcement</button>
+                </div>
+                <div class="card" id="anList"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- SHEET: shop detail -->
+<div class="overlay" id="shShop" onclick="ovClose(event)"><div class="sheet"><div class="handle"></div><div id="shopBody"></div>
+    <button class="btn ghost" style="width:100%;margin-top:6px;" onclick="closeSheets()">CLOSE</button></div></div>
+
+<!-- SHEET: new shop -->
+<div class="overlay" id="shNew" onclick="ovClose(event)"><div class="sheet">
+    <div class="handle"></div><div class="sheet-title">➕ New shop</div>
+    <div class="fr">
+        <div class="fg"><span class="fl">Shop code</span><input type="text" id="nCode" placeholder="e.g. mwanza-store" autocapitalize="none"></div>
+        <div class="fg"><span class="fl">Business name</span><input type="text" id="nName" placeholder="e.g. Mwanza Minimart"></div>
+        <div class="fg"><span class="fl">Type of business</span><select id="nType"><option value="shop">Shop (minimarket, hardware, electronics…)</option><option value="barbershop">Barbershop / salon</option></select></div>
+    </div>
+    <div class="fr">
+        <div class="fg"><span class="fl">Plan</span><select id="nPlan" onchange="nPlanChanged()"></select></div>
+        <div class="fg"><span class="fl">Monthly fee (TZS)</span><input type="number" id="nFee" inputmode="numeric"></div>
+    </div>
+    <div class="fg"><span class="fl">Start with</span>
+        <select id="nStart"><option value="trial">Free trial</option><option value="paid">Paid — I'll record the first payment now</option></select></div>
+    <span class="section-label" style="margin-top:6px;">Shop owner</span>
+    <label style="display:flex;gap:8px;align-items:flex-start;font-size:.8rem;margin:2px 0 10px;"><input type="checkbox" id="nBranch" onchange="nBranchChanged()" style="margin-top:2px;"><span><b>This owner already uses Keep</b> — add this as another branch. They sign in with their usual phone/email and PIN and switch between branches in the till.</span></label>
+    <div class="fg hidden" id="nBranchWrap"><span class="fl">Their existing shop</span><select id="nBranchOf" onchange="nBranchPick()"></select></div>
+    <div class="hint" id="nOwnerHint">They get an email with a link to set their own PIN, then add their sellers from the till.</div>
+    <div class="fr">
+        <div class="fg"><span class="fl">Owner's name</span><input type="text" id="nOwner" placeholder="e.g. Asha Mohamed"></div>
+        <div class="fg"><span class="fl">Phone (optional)</span><input type="tel" id="nPhone" placeholder="07XX XXX XXX"></div>
+    </div>
+    <div class="fg"><span class="fl">Owner's email</span><input type="email" id="nEmail" placeholder="owner@example.com" autocapitalize="none"></div>
+    <div class="hint red hidden" id="nErr"></div>
+    <button class="primary" id="nBtn" onclick="createShop()">Create shop</button>
+    <button class="btn ghost" style="width:100%;margin-top:6px;" onclick="closeSheets()">CANCEL</button>
+</div></div>
+
+<!-- SHEET: record payment -->
+<div class="overlay" id="shPay" onclick="ovClose(event)"><div class="sheet" style="border-top-color:var(--pos);">
+    <div class="handle"></div><div class="sheet-title">💳 Record payment</div>
+    <div class="fg"><span class="fl">Shop</span><select id="pShop" onchange="payPreview(true)"></select></div>
+    <div class="fr">
+        <div class="fg"><span class="fl">Months paid</span><select id="pMonths" onchange="payPreview(true)"><option>1</option><option>2</option><option>3</option><option>6</option><option>12</option></select></div>
+        <div class="fg"><span class="fl">Amount received (TZS)</span><input type="number" id="pAmount" inputmode="numeric" oninput="payPreview()"></div>
+    </div>
+    <div class="fr">
+        <div class="fg"><span class="fl">Paid via</span><select id="pMethod"><option>M-Pesa</option><option>Mixx by Yas</option><option>Airtel Money</option><option>HaloPesa</option><option>Bank</option><option>Cash</option></select></div>
+        <div class="fg"><span class="fl">Reference / transaction ID</span><input type="text" id="pRef" placeholder="e.g. QJK7H2X9P1"></div>
+    </div>
+    <div class="fg"><span class="fl">Date received</span><input type="date" id="pDate"></div>
+    <div class="hint green" id="pPreview"></div>
+    <button class="primary green" id="pBtn" onclick="savePayment()">✅ Save & activate</button>
+    <button class="btn ghost" style="width:100%;margin-top:6px;" onclick="closeSheets()">CANCEL</button>
+</div></div>
+
+<!-- SHEET: edit owner / plan -->
+<div class="overlay" id="shEdit" onclick="ovClose(event)"><div class="sheet">
+    <div class="handle"></div><div class="sheet-title" id="eTitle">Edit shop</div>
+    <div class="fr">
+        <div class="fg"><span class="fl">Business name</span><input type="text" id="eName"></div>
+        <div class="fg"><span class="fl">Owner's name</span><input type="text" id="eOwner"></div>
+    </div>
+    <div class="fr">
+        <div class="fg"><span class="fl">Owner's phone</span><input type="tel" id="ePhone" placeholder="07XX XXX XXX"></div>
+        <div class="fg"><span class="fl">Owner's email</span><input type="email" id="eEmail" autocapitalize="none"></div>
+    </div>
+    <div class="fr">
+        <div class="fg"><span class="fl">Plan</span><select id="ePlan" onchange="ePlanChanged()"></select></div>
+        <div class="fg"><span class="fl">Monthly fee (TZS)</span><input type="number" id="eFee" inputmode="numeric"></div>
+    </div>
+    <div class="hint amber hidden" id="eEmailNote">Changing the email creates a new owner login and emails a "set your PIN" link to the new address. The old email stops working.</div>
+    <button class="primary" id="eBtn" onclick="saveEdit()">💾 Save changes</button>
+    <button class="btn ghost" style="width:100%;margin-top:6px;" onclick="closeSheets()">CANCEL</button>
+</div></div>
+
+<script src="../env.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script>
+// ════════════════════════════════════════════════
+//  SETUP
+// ════════════════════════════════════════════════
+const firebaseConfig = window.KEEP_ENV.firebaseConfig;   // live or test — see /env.js
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.firestore();
+const FV = firebase.firestore.FieldValue;
+const TS = d => firebase.firestore.Timestamp.fromDate(d);
+const VENDOR_EMAIL = 'maternusadriano@gmail.com';
+const SHOP_DOMAIN = 'tenants.matinyopos.app';
+const DEFAULT_CONFIG = {
+    plans: [
+        { id: 'starter', name: 'Starter', price: 10000, maxStaff: 2, maxProducts: 0,
+          services: { dailyReport: 'text', receipts: 'manual', receiptQuota: 0, debtReminders: false, alerts: false } },
+        { id: 'business', name: 'Business', price: 20000, maxStaff: 5, maxProducts: 0,
+          services: { dailyReport: 'both', receipts: 'text', receiptQuota: 300, debtReminders: true, alerts: false } },
+        { id: 'pro', name: 'Pro', price: 30000, maxStaff: 10, maxProducts: 0,
+          services: { dailyReport: 'both', receipts: 'both', receiptQuota: 600, debtReminders: true, alerts: true } }
+    ],
+    addons: { extraStaffPrice: 2000, topupReceipts: 250, topupPrice: 5000 },
+    trialDays: 14, graceDays: 3,
+    payHow: 'Lipa kwa M-Pesa. Reference: your shop code.',
+    supportPhone: '', tillUrl: window.KEEP_ENV.site, bizLine: 'Matinyo · Zanzibar, Tanzania'
+};
+
+const V = { tenants: [], payments: [], announcements: [], config: { ...DEFAULT_CONFIG }, filter: 'all', unsubs: [], openShop: null };
+
+// ════════════════════════════════════════════════
+//  HELPERS
+// ════════════════════════════════════════════════
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const n0 = v => Math.round(Number(v) || 0).toLocaleString('en-US');
+const fmt = v => n0(v) + ' TZS';
+const ms = x => x && x.toMillis ? x.toMillis() : x instanceof Date ? x.getTime() : null;
+const dstr = d => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+const pretty = x => { const m = ms(x); return m ? new Date(m).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '—'; };
+const ago = x => { const m = ms(x); if (!m) return 'never'; const d = Math.floor((Date.now() - m) / 864e5); return d <= 0 ? 'today' : d === 1 ? 'yesterday' : d + ' days ago'; };
+const monthName = m => new Date(m + '-15T12:00:00').toLocaleDateString('en-GB', { month: 'short', year: '2-digit' });
+const addDays = (d, n) => new Date(d.getTime() + n * 864e5);
+function addMonths(d, n) {
+    const x = new Date(d.getTime()), day = x.getDate();
+    x.setDate(1); x.setMonth(x.getMonth() + n);
+    x.setDate(Math.min(day, new Date(x.getFullYear(), x.getMonth() + 1, 0).getDate()));
+    return x;
+}
+function normPhone(v) {
+    let d = String(v || '').replace(/\D/g, '');
+    if (d.startsWith('0') && d.length === 10) d = '255' + d.slice(1);
+    else if (d.length === 9 && /^[67]/.test(d)) d = '255' + d;
+    return d;
+}
+const prettyPhone = p => p && p.startsWith('255') && p.length === 12 ? '0' + p.slice(3, 6) + ' ' + p.slice(6, 9) + ' ' + p.slice(9) : (p || '');
+function toast(msg, type) {
+    const t = $('toast'); t.textContent = msg; t.className = 'toast show' + (type === 'err' ? ' err' : '');
+    clearTimeout(t._h); t._h = setTimeout(() => t.classList.remove('show'), type === 'err' ? 4500 : 2600);
+}
+function loader(on, text) { $('loading').style.display = on ? 'flex' : 'none'; $('loadingText').textContent = text || 'LOADING...'; }
+const plans = () => (V.config.plans && V.config.plans.length ? V.config.plans : DEFAULT_CONFIG.plans);
+const planById = id => plans().find(p => p.id === id) || plans().find(p => p.name === id) || null;
+const SVC_DEFAULT = { dailyReport: 'off', receipts: 'manual', receiptQuota: 0, debtReminders: false, alerts: false };
+// Older saved plans used 'pdf'; a PDF plan always allows text too.
+const normSvc = sv => { sv = { ...SVC_DEFAULT, ...(sv || {}) }; if (sv.dailyReport === 'pdf') sv.dailyReport = 'both'; if (sv.receipts === 'pdf') sv.receipts = 'both'; return sv; };
+const planServices = p => normSvc(p && p.services);
+const planLimits = p => ({ maxStaff: Number(p.maxStaff) || 0, maxProducts: Number(p.maxProducts) || 0 });
+const RECEIPT_LABEL = { manual: 'WhatsApp button (manual)', text: 'Automatic · text', both: 'Automatic · text or PDF (shop chooses)' };
+const REPORT_LABEL = { off: 'Off', text: 'Text', both: 'Text or PDF (shop chooses)' };
+function servicesText(sv) {
+    sv = normSvc(sv);
+    const bits = [`Daily report: ${REPORT_LABEL[sv.dailyReport] || 'Off'}`,
+        `Receipts: ${RECEIPT_LABEL[sv.receipts] || 'Manual'}${sv.receipts !== 'manual' && sv.receiptQuota ? ' · ' + n0(sv.receiptQuota) + '/month' : ''}`];
+    if (sv.debtReminders) bits.push('Debt reminders');
+    if (sv.alerts) bits.push('Stock & cash-up alerts');
+    return bits.join(' · ');
+}
+const planName = t => (planById(t.planId || t.plan) || {}).name || t.plan || '—';
+
+function dialog(message, { yes = 'OK', no = 'Cancel', color = 'var(--blue)', input = null } = {}) {
+    return new Promise(resolve => {
+        const o = document.createElement('div');
+        o.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;';
+        o.innerHTML = `<div style="background:#fff;border-radius:20px;padding:22px;max-width:360px;width:100%;text-align:center;">
+            <div style="font-size:.88rem;font-weight:600;margin-bottom:14px;line-height:1.5;">${message}</div>
+            ${input ? `<input type="text" placeholder="${esc(input)}" style="margin-bottom:14px;text-align:center;">` : ''}
+            <div style="display:flex;gap:10px;">
+                ${no ? `<button data-a="no" style="flex:1;padding:12px;border-radius:12px;border:2px solid #e3e8ef;background:#fff;font-weight:800;">${no}</button>` : ''}
+                <button data-a="yes" style="flex:1;padding:12px;border-radius:12px;border:none;background:${color};color:#fff;font-weight:800;">${yes}</button>
+            </div></div>`;
+        document.body.appendChild(o);
+        const inp = o.querySelector('input'); if (inp) setTimeout(() => inp.focus(), 50);
+        o.addEventListener('click', e => {
+            const a = e.target.dataset && e.target.dataset.a; if (!a) return;
+            o.remove(); resolve(a === 'yes' ? (inp ? inp.value.trim() : true) : (inp ? null : false));
+        });
+    });
+}
+
+function openSheet(id) { closeSheets(); $(id).classList.add('active'); document.body.classList.add('modal-open'); }
+function closeSheets() { document.querySelectorAll('.overlay').forEach(o => o.classList.remove('active')); document.body.classList.remove('modal-open'); V.openShop = null; }
+function ovClose(e) { if (e.target.classList.contains('overlay')) closeSheets(); }
+
+// ════════════════════════════════════════════════
+//  SUBSCRIPTION STATE
+// ════════════════════════════════════════════════
+function state(t) {
+    if (t.status === 'archived') return { key: 'archived', label: 'Archived', cls: 'gray' };
+    if (t.status === 'suspended') return { key: 'suspended', label: 'Suspended', cls: 'red' };
+    const until = ms(t.paidUntil), lock = ms(t.lockAt), now = Date.now();
+    if (!until) return { key: 'nosub', label: 'No subscription', cls: 'gray' };
+    if (lock && now >= lock) return { key: 'locked', label: 'Locked · unpaid', cls: 'red' };
+    if (now > until) return { key: 'overdue', label: 'Overdue · grace', cls: 'amber' };
+    const days = Math.ceil((until - now) / 864e5);
+    if (t.trial) return { key: 'trial', label: `Trial · ${days}d left`, cls: 'blue', days };
+    if (days <= 7) return { key: 'due', label: `Due in ${days}d`, cls: 'amber', days };
+    return { key: 'active', label: 'Active', cls: 'green', days };
+}
+const isPaying = t => ['active', 'due', 'overdue'].includes(state(t).key);
+
+// ════════════════════════════════════════════════
+//  AUTH
+// ════════════════════════════════════════════════
+async function doLogin() {
+    $('loginError').textContent = '';
+    const btn = $('lgBtn'); btn.disabled = true; btn.textContent = 'Signing in...';
+    try { await auth.signInWithEmailAndPassword($('lgEmail').value.trim(), $('lgPass').value); }
+    catch (e) { const c = e.code || ''; $('loginError').textContent = c.includes('too-many') ? 'Too many attempts. Wait a few minutes.' : c.includes('network') ? 'No internet connection.' : 'Wrong email or password.'; }
+    finally { btn.disabled = false; btn.textContent = 'Sign in as owner'; }
+}
+async function forgotPass() {
+    const e = $('lgEmail').value.trim();
+    if (!e) { $('loginError').textContent = 'Type your email first.'; return; }
+    await auth.sendPasswordResetEmail(e, { url: window.KEEP_ENV.site }).catch(() => {});
+    $('loginError').style.color = 'var(--green)'; $('loginError').textContent = 'Reset link sent — check your email.';
+}
+auth.onAuthStateChanged(async user => {
+    V.unsubs.forEach(u => u()); V.unsubs = [];
+    if (!user) { location.replace('../'); return; }
+    if ((user.email || '').toLowerCase() !== VENDOR_EMAIL) {
+        try { sessionStorage.setItem('keep.msg', 'This account does not have Keep HQ access.'); } catch (x) {} await auth.signOut(); $('loginError').style.color = 'var(--red)'; $('loginError').textContent = 'This account does not have owner access.'; return;
+    }
+    loader(false);
+    $('loginPage').style.display = 'none'; $('app').style.display = 'block'; document.body.classList.add('unlocked');
+    $('payMonth').value = dstr(new Date()).slice(0, 7);
+    start();
+});
+
+// Plan usage list: every shop gets one, listing its switched-on staff and its items.
+// The database uses it to hold each shop to its plan's limits.
+async function buildUsage(id) {
+    const tr = db.collection('tenants').doc(id);
+    const [staff, prods] = await Promise.all([tr.collection('staff').get(), tr.collection('products').get()]);
+    const usage = { staff: {}, products: {}, updatedAt: FV.serverTimestamp() };
+    staff.docs.forEach(d => { const x = d.data(); if (x.active !== false && !x.replacedBy) usage.staff[d.id] = true; });
+    prods.docs.forEach(d => usage.products[d.id] = true);
+    const b = db.batch();
+    b.set(tr.collection('plan').doc('usage'), usage);
+    b.update(tr, { usageReady: true });
+    await b.commit();
+    return usage;
+}
+V.usageBusy = {};
+async function setupUsage() {
+    for (const t of V.tenants.filter(x => !x.usageReady && !V.usageBusy[x.id])) {
+        V.usageBusy[t.id] = true;
+        try { await buildUsage(t.id); } catch (e) { console.warn('usage', t.id, e); delete V.usageBusy[t.id]; }
+    }
+}
+function start() {
+    const err = e => toast('⚠️ ' + (e.code === 'permission-denied' ? 'Permission denied — publish the latest Firestore rules.' : e.message), 'err');
+    V.unsubs.push(db.collection('platform').doc('config').onSnapshot(s => {
+        V.config = { ...DEFAULT_CONFIG, ...(s.data() || {}) };
+        fillSettings(); renderAll();
+    }, err));
+    V.unsubs.push(db.collection('tenants').onSnapshot(s => {
+        V.tenants = s.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => (a.name || a.id).localeCompare(b.name || b.id));
+        setupUsage();
+        renderAll();
+        if (V.openShop) renderShopDetail(V.openShop, true);
+    }, err));
+    const since = TS(new Date(new Date().getFullYear() - 1, new Date().getMonth(), 1));
+    V.unsubs.push(db.collection('payments').where('paidAt', '>=', since).onSnapshot(s => {
+        V.payments = s.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => ms(b.paidAt) - ms(a.paidAt));
+        renderAll();
+        if (V.openShop) renderShopDetail(V.openShop, true);
+    }, err));
+    V.errors = []; V.pings = [];
+    const wk = TS(new Date(Date.now() - 7 * 864e5)), quiet = e => { console.warn('health', e); renderHealth(e); };
+    V.unsubs.push(db.collection('errors').where('at', '>=', wk).onSnapshot(s => { V.errors = s.docs.map(d => ({ id: d.id, ...d.data() })); renderHealth(); }, quiet));
+    V.unsubs.push(db.collection('pings').onSnapshot(s => { V.pings = s.docs.map(d => ({ id: d.id, ...d.data() })); renderHealth(); }, quiet));
+    V.unsubs.push(db.collection('announcements').onSnapshot(s => {
+        V.announcements = s.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => (ms(b.createdAt) || 9e15) - (ms(a.createdAt) || 9e15));
+        renderAnnouncements();
+    }, err));
+}
+
+function go(p) {
+    document.querySelectorAll('.page').forEach(x => x.classList.toggle('active', x.id === 'p-' + p));
+    document.querySelectorAll('.tab').forEach(x => x.classList.toggle('active', x.dataset.p === p));
+    window.scrollTo(0, 0);
+}
+function renderAll() { renderOverview(); renderShops(); renderPayments(); }
+
+// ════════════════════════════════════════════════
+//  HEALTH
+// ════════════════════════════════════════════════
+function renderHealth(err) {
+    if (err) { $('hProblems').innerHTML = $('hTills').innerHTML = `<div class="empty">Can't read health reports yet — publish Firestore rules v23.</div>`; return; }
+    const shopName = id => (V.tenants.find(t => t.id === id) || {}).name || id;
+    const latest = Math.max(0, ...V.pings.map(p => Number(p.appV) || 0));
+    // Problems grouped by message
+    const g = {};
+    V.errors.forEach(e => { const k = e.msg || '?'; (g[k] = g[k] || { msg: k, n: 0, shops: new Set(), last: 0, e }).n++; g[k].shops.add(e.shop); if (ms(e.at) > g[k].last) { g[k].last = ms(e.at); g[k].e = e; } });
+    const G = Object.values(g).sort((a, b) => b.last - a.last);
+    const badge = $('hBadge'); badge.textContent = G.length; badge.style.display = G.length ? 'inline' : 'none';
+    $('hProblems').innerHTML = G.length ? G.map(x => `
+        <details class="line" style="display:block;">
+            <summary style="cursor:pointer;list-style:none;display:flex;justify-content:space-between;gap:10px;">
+                <div class="l"><div style="font-weight:800;word-break:break-word;">${esc(x.msg)}</div>
+                <div class="meta">${[...x.shops].map(s => esc(shopName(s))).join(', ')} · ${esc(x.e.kind || '')} · v${esc(x.e.appV || '?')} · ${esc(x.e.name || '')} · ${new Date(x.last).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</div></div>
+                <span class="chip ${x.n > 2 ? 'red' : 'amber'}">${x.n}×</span></summary>
+            <pre style="white-space:pre-wrap;font-size:.68rem;color:#6b7280;margin:8px 0 0;">${esc([x.e.note, x.e.screen, x.e.online === false ? 'offline' : '', x.e.ua, x.e.stack].filter(Boolean).join('\n'))}</pre>
+        </details>`).join('') : '<div class="empty">✅ No problems reported in the last 7 days.</div>';
+    // Tills
+    const P = [...V.pings].sort((a, b) => shopName(a.shop).localeCompare(shopName(b.shop)) || (ms(b.at) || 0) - (ms(a.at) || 0));
+    $('hTills').innerHTML = P.length ? P.map(p => {
+        const old = (Number(p.appV) || 0) < latest, days = ms(p.at) ? Math.floor((Date.now() - ms(p.at)) / 864e5) : null;
+        return `<div class="line"><div class="l"><div style="font-weight:800;">${esc(shopName(p.shop))} · ${esc(p.name || '')}</div>
+            <div class="meta">${esc(p.role === 'admin' ? 'Owner/admin' : 'Seller')} · ${p.lang === 'sw' ? 'Kiswahili' : 'English'} · last seen ${days === null ? '—' : days === 0 ? 'today' : days + ' day' + (days > 1 ? 's' : '') + ' ago'}</div></div>
+            <span class="chip ${old ? 'amber' : 'green'}" title="${old ? 'Not on the newest version — ask them to refresh' : 'Up to date'}">v${esc(p.appV || '?')}</span></div>`;
+    }).join('') : '<div class="empty">No tills have reported yet. They appear after their next sign-in.</div>';
+}
+
+// ════════════════════════════════════════════════
+//  OVERVIEW
+// ════════════════════════════════════════════════
+function renderOverview() {
+    const T = V.tenants, live = T.filter(t => t.status !== 'archived');
+    const paying = live.filter(isPaying), trials = live.filter(t => state(t).key === 'trial');
+    const unpaid = live.filter(t => ['locked', 'overdue'].includes(state(t).key));
+    const thisM = dstr(new Date()).slice(0, 7);
+    const collected = V.payments.filter(p => !p.voided && dstr(new Date(ms(p.paidAt))).slice(0, 7) === thisM);
+    $('kShops').textContent = paying.length;
+    $('kShopsSub').textContent = `${trials.length} on trial · ${live.length} total`;
+    $('kMrr').textContent = fmt(paying.reduce((s, t) => s + (Number(t.monthlyFee) || 0), 0));
+    $('kCollected').textContent = fmt(collected.reduce((s, p) => s + (p.amount || 0), 0));
+    $('kCollectedSub').textContent = `${collected.length} payment${collected.length === 1 ? '' : 's'}`;
+    $('kOverdue').textContent = unpaid.length;
+    $('kOverdueSub').textContent = unpaid.length ? fmt(unpaid.reduce((s, t) => s + (Number(t.monthlyFee) || 0), 0)) + ' owed' : 'all paid up';
+
+    // needs attention
+    const items = [];
+    live.forEach(t => {
+        const s = state(t);
+        if (s.key === 'locked') items.push([0, t, '🔒 Locked — unpaid since ' + pretty(t.paidUntil), 'red']);
+        else if (s.key === 'overdue') items.push([1, t, '⏰ Overdue — locks ' + pretty(t.lockAt), 'amber']);
+        else if (s.key === 'due') items.push([2, t, `📅 Renewal due in ${s.days} day${s.days === 1 ? '' : 's'}`, 'amber']);
+        else if (s.key === 'trial' && s.days <= 3) items.push([3, t, `🧪 Trial ends in ${s.days} day${s.days === 1 ? '' : 's'}`, 'blue']);
+        else if (s.key === 'nosub') items.push([4, t, '❔ No subscription set', 'gray']);
+        if (t.status === 'active' && ms(t.lastSaleAt) && Date.now() - ms(t.lastSaleAt) > 3 * 864e5) items.push([5, t, '😴 No sales since ' + ago(t.lastSaleAt), 'gray']);
+        if (t.status === 'active' && !t.lastSaleAt && ms(t.createdAt) && Date.now() - ms(t.createdAt) > 3 * 864e5) items.push([5, t, '😴 Has never made a sale', 'gray']);
+    });
+    items.sort((a, b) => a[0] - b[0]);
+    $('attention').innerHTML = items.length ? items.slice(0, 12).map(([, t, msg, c]) => `
+        <div class="line" style="cursor:pointer;" onclick="openShop('${t.id}')">
+            <div class="l"><div style="font-weight:800;">${esc(t.name)}</div><div class="meta">${msg}</div></div>
+            <span class="chip ${c}">${esc(t.id)}</span>
+        </div>`).join('') : '<div class="empty">✅ Nothing needs attention.</div>';
+
+    // collections chart
+    const months = []; let d = new Date(); d.setDate(15);
+    for (let i = 5; i >= 0; i--) { const x = addMonths(d, -i); months.push(dstr(x).slice(0, 7)); }
+    const sums = months.map(m => V.payments.filter(p => !p.voided && dstr(new Date(ms(p.paidAt))).slice(0, 7) === m).reduce((s, p) => s + (p.amount || 0), 0));
+    const max = Math.max(1, ...sums);
+    $('chart').innerHTML = months.map((m, i) => `<div><em>${sums[i] ? (sums[i] >= 1e6 ? (sums[i] / 1e6).toFixed(1) + 'M' : Math.round(sums[i] / 1000) + 'k') : ''}</em><i style="height:${Math.max(2, sums[i] / max * 100)}%;${m === thisM ? 'background:var(--yellow);' : ''}"></i><small>${monthName(m)}</small></div>`).join('');
+
+    // activity
+    const tx = T.reduce((s, t) => s + (t.txnCount || 0), 0);
+    const activeToday = T.filter(t => ms(t.lastSaleAt) && Date.now() - ms(t.lastSaleAt) < 864e5).length;
+    $('activity').innerHTML = `
+        <div class="line"><span>Shops selling in last 24h</span><b>${activeToday} / ${live.length}</b></div>
+        <div class="line"><span>Sales recorded on the platform</span><b>${n0(tx)}</b></div>
+        <div class="line"><span>Active announcements</span><b>${V.announcements.filter(a => a.active).length}</b></div>`;
+}
+
+// ════════════════════════════════════════════════
+//  SHOPS LIST
+// ════════════════════════════════════════════════
+const FILTERS = [['all', 'All'], ['active', 'Active'], ['trial', 'Trial'], ['due', 'Due soon'], ['unpaid', 'Unpaid / locked'], ['suspended', 'Suspended'], ['archived', 'Archived']];
+function matchFilter(t) {
+    const k = state(t).key;
+    switch (V.filter) {
+        case 'all': return k !== 'archived';
+        case 'unpaid': return k === 'overdue' || k === 'locked';
+        default: return k === V.filter;
+    }
+}
+function renderShops() {
+    $('shopFilters').innerHTML = FILTERS.map(([k, l]) => {
+        const n = k === 'all' ? null : V.tenants.filter(t => { const s = state(t).key; return k === 'unpaid' ? s === 'overdue' || s === 'locked' : s === k; }).length;
+        return `<button class="fchip ${V.filter === k ? 'on' : ''}" onclick="V.filter='${k}';renderShops();">${l}${n ? ' · ' + n : ''}</button>`;
+    }).join('');
+    const q = ($('shopSearch').value || '').toLowerCase().trim();
+    const list = V.tenants.filter(matchFilter).filter(t => !q || [t.id, t.name, t.ownerName, t.ownerEmail, t.ownerPhone, prettyPhone(t.ownerPhone)].join(' ').toLowerCase().includes(q));
+    $('shopList').innerHTML = list.length ? list.map(t => {
+        const s = state(t);
+        return `<div class="card shop-card ${s.cls}" onclick="openShop('${t.id}')">
+            <div class="shop-top">
+                <div style="min-width:0;"><div class="shop-name">${esc(t.name)}</div><div class="meta">${esc(t.id)} · ${esc(planName(t))} · ${fmt(t.monthlyFee)}/mo</div></div>
+                <span class="chip ${s.cls}">${s.label}</span>
+            </div>
+            <div class="meta" style="margin-top:8px;">👤 ${esc(t.ownerName || '—')}${t.ownerPhone ? ' · ' + esc(prettyPhone(t.ownerPhone)) : ''}</div>
+            <div class="meta">📅 Paid until ${pretty(t.paidUntil)} · 🛒 last sale ${ago(t.lastSaleAt)}</div>
+        </div>`;
+    }).join('') : '<div class="card empty">No shops here.</div>';
+}
+
+// ════════════════════════════════════════════════
+//  SHOP DETAIL
+// ════════════════════════════════════════════════
+function openShop(id) { openSheet('shShop'); V.openShop = id; renderShopDetail(id); }
+async function renderShopDetail(id, refreshOnly) {
+    const t = V.tenants.find(x => x.id === id); if (!t) return;
+    const s = state(t), box = $('shopBody');
+    const pays = V.payments.filter(p => p.shop === id);
+    const pl = planById(t.planId || t.plan) || {};
+    const lim = t.limits || {};
+    box.innerHTML = `
+        <div class="sheet-title" style="margin-bottom:4px;">${esc(t.name)}</div>
+        <div style="text-align:center;margin-bottom:14px;"><span class="chip ${s.cls}">${s.label}</span> <span class="chip gray">${esc(t.id)}</span></div>
+
+        <span class="section-label">Subscription</span>
+        <div class="card" style="background:#f8fafc;box-shadow:none;">
+            <div class="line"><span>Plan</span><b>${esc(planName(t))} · ${fmt(t.monthlyFee)}/mo</b></div>
+            <div class="line"><span>Paid until</span><b>${pretty(t.paidUntil)}${t.trial ? ' (trial)' : ''}</b></div>
+            <div class="line"><span>Locks on</span><b>${pretty(t.lockAt)}</b></div>
+            <div class="line"><span>Limits</span><b>${lim.maxStaff ? lim.maxStaff + ' staff' : 'unlimited staff'} · ${lim.maxProducts ? lim.maxProducts + ' items' : 'unlimited items'}</b></div>
+            <div class="line"><span>WhatsApp</span><b style="text-align:right;">${esc(servicesText(t.services || pl.services))}</b></div>
+        </div>
+        <div class="row-btns">
+            <button class="btn" style="background:var(--pos);color:#fff;border:none;" onclick="openPay('${id}')">💳 Record payment</button>
+            <button class="btn" onclick="addFreeDays('${id}')">🎁 Add free days</button>
+        </div>
+        <div class="row-btns">
+            ${t.status === 'suspended' ? `<button class="btn blue" onclick="setStatus('${id}','active')">▶️ Reactivate</button>` : t.status !== 'archived' ? `<button class="btn red" onclick="setStatus('${id}','suspended')">⏸ Suspend</button>` : ''}
+            <button class="btn" onclick="openEdit('${id}')">✏️ Edit shop & owner</button>
+        </div>
+
+        <span class="section-label">Owner</span>
+        <div class="card" style="background:#f8fafc;box-shadow:none;">
+            <div class="line"><span>Name</span><b>${esc(t.ownerName || '—')}</b></div>
+            <div class="line"><span>Email</span><b style="white-space:normal;text-align:right;">${esc(t.ownerEmail || '—')}</b></div>
+            <div class="line"><span>Phone</span><b>${t.ownerPhone ? esc(prettyPhone(t.ownerPhone)) : '—'}</b></div>
+        </div>
+        <div class="row-btns">
+            <button class="btn blue" onclick="resendPin('${id}')">📧 Resend PIN email</button>
+            ${t.ownerPhone ? `<button class="btn" onclick="waOwner('${id}')">📲 WhatsApp owner</button>` : ''}
+        </div>
+
+        <span class="section-label">Usage · last 30 days</span>
+        <div class="card" style="background:#f8fafc;box-shadow:none;" id="usageBox"><div class="empty">Loading…</div></div>
+
+        <span class="section-label">Payments</span>
+        <div class="card" style="background:#f8fafc;box-shadow:none;">${pays.length ? pays.map(payLine).join('') : '<div class="empty">No payments recorded yet.</div>'}</div>
+
+        <span class="section-label">Danger zone</span>
+        <div class="row-btns">
+            ${t.status === 'archived' ? `<button class="btn blue" onclick="setStatus('${id}','active')">↩️ Restore shop</button>` : `<button class="btn" onclick="setStatus('${id}','archived')">🗄 Archive</button>`}
+            <button class="btn red" onclick="deleteShop('${id}')">🗑 Delete forever</button>
+        </div>`;
+    if (refreshOnly && V._usage && V._usage.id === id) { $('usageBox').innerHTML = V._usage.html; return; }
+    try {
+        const from = dstr(addDays(new Date(), -29));
+        const tr = db.collection('tenants').doc(id);
+        const [days, staff, products] = await Promise.all([tr.collection('days').where('day', '>=', from).get(), tr.collection('staff').get(), tr.collection('products').get()]);
+        const D = {}; days.docs.forEach(d => D[d.id] = d.data());
+        const keys = []; for (let i = 29; i >= 0; i--) keys.push(dstr(addDays(new Date(), -i)));
+        const vals = keys.map(k => (D[k] && D[k].sales) || 0), max = Math.max(1, ...vals);
+        const total = vals.reduce((a, b) => a + b, 0), tx = keys.reduce((a, k) => a + ((D[k] && D[k].txCount) || 0), 0);
+        const st = staff.docs.map(d => d.data()).filter(x => !x.replacedBy);
+        const activeStaff = st.filter(x => x.active !== false);
+        const html = `
+            <div class="bars" style="height:80px;gap:2px;">${vals.map((v, i) => `<div title="${keys[i]}: ${n0(v)}"><i style="height:${Math.max(2, v / max * 100)}%;max-width:none;border-radius:3px 3px 1px 1px;${i === 29 ? 'background:var(--yellow);' : ''}"></i></div>`).join('')}</div>
+            <div class="line"><span>Sales (30 days)</span><b>${fmt(total)}</b></div>
+            <div class="line"><span>POS transactions</span><b>${n0(tx)} · ${keys.filter((k, i) => vals[i] > 0).length} trading days</b></div>
+            <div class="line"><span>Last sale</span><b>${ago(t.lastSaleAt)}</b></div>
+            <div class="line"><span>Staff</span><b>${activeStaff.length}${lim.maxStaff ? ' / ' + lim.maxStaff : ''} active</b></div>
+            <div class="line"><span>Products</span><b>${products.size}${lim.maxProducts ? ' / ' + lim.maxProducts : ''}</b></div>
+            <div style="font-size:.68rem;color:var(--gray);margin-top:6px;">${st.map(x => `${esc(x.name)} (${x.role}${x.active === false ? ', off' : ''})`).join(' · ')}</div>`;
+        V._usage = { id, html };
+        if (V.openShop === id && $('usageBox')) $('usageBox').innerHTML = html;
+    } catch (e) { if ($('usageBox')) $('usageBox').innerHTML = `<div class="hint red">${esc(e.message)}</div>`; }
+}
+function payLine(p) {
+    return `<div class="line ${p.voided ? '' : ''}" style="${p.voided ? 'opacity:.5;text-decoration:line-through;' : ''}">
+        <div class="l"><div style="font-weight:800;">${fmt(p.amount)} · ${p.months} mo</div>
+            <div class="meta">${pretty(p.paidAt)} · ${esc(p.method)}${p.reference ? ' · ' + esc(p.reference) : ''} · ${esc(p.receiptNo || '')}</div></div>
+        <div style="display:flex;gap:4px;flex-shrink:0;">
+            <button class="tiny" onclick="receiptPdf('${p.id}')">🧾</button>
+            ${p.voided ? '' : `<button class="tiny" style="color:var(--red);" onclick="voidPayment('${p.id}')">↩️</button>`}
+        </div></div>`;
+}
+
+async function setStatus(id, status) {
+    const t = V.tenants.find(x => x.id === id);
+    const msg = { suspended: `Suspend <b>${esc(t.name)}</b>? All its tills lock straight away until you reactivate it.`, active: `Reactivate <b>${esc(t.name)}</b>?`, archived: `Archive <b>${esc(t.name)}</b>? It is locked and hidden from your main list. You can restore it later.` }[status];
+    if (!await dialog(msg, { yes: 'Yes', color: status === 'active' ? 'var(--pos)' : 'var(--red)' })) return;
+    await db.collection('tenants').doc(id).update({ status, statusChangedAt: FV.serverTimestamp() }).then(() => toast('✅ Updated')).catch(e => toast(e.message, 'err'));
+}
+async function addFreeDays(id) {
+    const t = V.tenants.find(x => x.id === id);
+    const v = await dialog(`Add free days to <b>${esc(t.name)}</b>?`, { yes: 'Add', input: 'Number of days, e.g. 7' });
+    const n = parseInt(v, 10); if (!n || n < 1) return;
+    const base = Math.max(Date.now(), ms(t.paidUntil) || 0);
+    const until = addDays(new Date(base), n);
+    await db.collection('tenants').doc(id).update({ paidUntil: TS(until), lockAt: TS(addDays(until, V.config.graceDays || 0)) })
+        .then(() => toast(`🎁 Paid until ${pretty(until)}`)).catch(e => toast(e.message, 'err'));
+}
+
+// ════════════════════════════════════════════════
+//  NEW SHOP
+// ════════════════════════════════════════════════
+function planOptions(sel) { return plans().map(p => `<option value="${esc(p.id)}" ${p.id === sel ? 'selected' : ''}>${esc(p.name)} — ${n0(p.price)} · ${p.maxStaff ? p.maxStaff + ' staff' : 'unlimited staff'}</option>`).join(''); }
+function openNewShop() {
+    ['nCode', 'nName', 'nOwner', 'nPhone', 'nEmail'].forEach(i => { $(i).value = ''; $(i).readOnly = false; });
+    $('nBranch').checked = false; $('nBranchWrap').classList.add('hidden');
+    $('nPlan').innerHTML = planOptions(plans()[0].id); nPlanChanged();
+    $('nStart').value = 'trial'; $('nStart').options[0].textContent = `Free trial — ${V.config.trialDays || 0} days`;
+    $('nErr').classList.add('hidden');
+    openSheet('shNew');
+}
+function nBranchChanged() {
+    const on = $('nBranch').checked;
+    $('nBranchWrap').classList.toggle('hidden', !on);
+    $('nOwnerHint').textContent = on ? 'No new login is made. The owner sees this branch in the till straight away.' : 'They get an email with a link to set their own PIN, then add their sellers from the till.';
+    if (on) {
+        $('nBranchOf').innerHTML = '<option value="">— choose —</option>' + V.tenants.filter(t => t.ownerUid).map(t => `<option value="${esc(t.id)}">${esc(t.name || t.id)} · ${esc(t.ownerName || '')}</option>`).join('');
+    }
+    ['nOwner', 'nPhone', 'nEmail'].forEach(i => $(i).readOnly = on);
+}
+function nBranchPick() {
+    const t = V.tenants.find(x => x.id === $('nBranchOf').value);
+    $('nOwner').value = t ? t.ownerName || '' : ''; $('nEmail').value = t ? t.ownerEmail || '' : ''; $('nPhone').value = t && t.ownerPhone ? '0' + String(t.ownerPhone).slice(-9) : '';
+}
+function nPlanChanged() { const p = planById($('nPlan').value); if (p) $('nFee').value = p.price; }
+async function createShop() {
+    const code = $('nCode').value.trim().toLowerCase(), name = $('nName').value.trim(), plan = planById($('nPlan').value);
+    const fee = Number($('nFee').value) || 0, ownerName = $('nOwner').value.trim(), ownerEmail = $('nEmail').value.trim().toLowerCase(), ownerPhone = normPhone($('nPhone').value);
+    const err = m => { $('nErr').textContent = m; $('nErr').classList.remove('hidden'); };
+    $('nErr').classList.add('hidden');
+    if (!/^[a-z0-9][a-z0-9-]{2,29}$/.test(code)) return err('Shop code: 3–30 lowercase letters, numbers or dashes.');
+    if (V.tenants.some(t => t.id === code)) return err('That shop code is already taken.');
+    if (!name) return err('Enter the business name.');
+    if (!ownerName) return err("Enter the owner's name.");
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(ownerEmail)) return err("Enter the owner's email.");
+    const branchOf = $('nBranch').checked ? V.tenants.find(x => x.id === $('nBranchOf').value) : null;
+    if ($('nBranch').checked && !branchOf) return err('Choose the shop this owner already has.');
+    if (ownerPhone && !/^\d{10,15}$/.test(ownerPhone)) return err('Phone number looks wrong — e.g. 0712 345 678.');
+    const btn = $('nBtn'); btn.disabled = true; btn.textContent = 'Creating...';
+    try {
+        if (!branchOf && ownerPhone && (await db.collection('logins').doc(ownerPhone).get()).exists) return err('That phone number is already used by another account. If it is the same owner, tick "This owner already uses Keep".');
+        const ownerUid = branchOf ? branchOf.ownerUid : await makeOwnerLogin(ownerEmail, name);
+        const trial = $('nStart').value === 'trial';
+        const until = trial ? addDays(new Date(), Number(V.config.trialDays) || 0) : new Date();
+        const b = db.batch();
+        const tr = db.collection('tenants').doc(code);
+        b.set(tr, {
+            name, type: ($('nType') && $('nType').value) || 'shop', planId: plan.id, plan: plan.name, monthlyFee: fee, limits: planLimits(plan), services: planServices(plan),
+            status: 'active', trial, paidUntil: TS(until), lockAt: TS(trial ? addDays(until, Number(V.config.graceDays) || 0) : addDays(until, 1)),
+            txnCount: 0, ownerName, ownerEmail, ownerPhone: ownerPhone || null, ownerUid, usageReady: true, createdAt: FV.serverTimestamp()
+        });
+        b.set(tr.collection('staff').doc(ownerUid), { name: ownerName, loginId: ownerEmail, role: 'admin', active: true, createdAt: FV.serverTimestamp(), createdBy: 'Keep' });
+        if (branchOf) {
+            // Same login, one more shop: the till lists every shop in "shops" and lets the owner switch.
+            const u = (await db.collection('users').doc(ownerUid).get()).data() || {};
+            const shops = { ...(u.shops || {}), [u.shop || branchOf.id]: (u.shops || {})[u.shop || branchOf.id] || (V.tenants.find(x => x.id === (u.shop || branchOf.id)) || {}).name || branchOf.name, [code]: name };
+            b.set(db.collection('users').doc(ownerUid), { shop: u.shop || branchOf.id, shops }, { merge: true });
+        } else b.set(db.collection('users').doc(ownerUid), { shop: code });
+        b.set(tr.collection('plan').doc('usage'), { staff: { [ownerUid]: true }, products: {}, updatedAt: FV.serverTimestamp() });
+        if (ownerPhone && !branchOf) b.set(db.collection('logins').doc(ownerPhone), { email: ownerEmail, shop: code, uid: ownerUid });
+        await b.commit();
+        if (branchOf) {
+            closeSheets();
+            const t = { id: code, name, ownerName, ownerEmail, ownerPhone };
+            if (!trial) { toast('✅ Branch created — now record the first payment'); setTimeout(() => openPay(code), 400); return; }
+            if (ownerPhone && await dialog(`✅ <b>${esc(name)}</b> is ready as another branch for ${esc(ownerName)}.<br><br>Tell them on WhatsApp?`, { yes: '📲 WhatsApp', no: 'Not now', color: 'var(--pos)' })) {
+                const text = `Habari ${ownerName.split(' ')[0]}! Your new branch *${name}* is ready on Keep.\n\nSign in as usual at ${V.config.tillUrl || 'https://keep.co.tz/'} — then tap your name at the top → *Switch branch*.`;
+                window.open(`https://wa.me/${ownerPhone}?text=${encodeURIComponent(text)}`, '_blank');
+            }
+            return;
+        }
+        await auth.sendPasswordResetEmail(ownerEmail, { url: window.KEEP_ENV.site });
+        closeSheets();
+        const t = { id: code, name, ownerName, ownerEmail, ownerPhone };
+        if (!trial) { toast('✅ Shop created — now record the first payment'); setTimeout(() => openPay(code), 400); }
+        else await afterInvite(t, true);
+    } catch (e) {
+        err((e.code || '').includes('email-already-in-use') ? 'That email already has a Keep account. Use another email, or delete the old user in Firebase → Authentication → Users.' : 'Could not create shop: ' + e.message);
+    } finally { btn.disabled = false; btn.textContent = 'Create shop'; }
+}
+// Creates a Firebase login with a random temporary password (you stay signed in here)
+async function makeOwnerLogin(email, shopName) {
+    const helper = firebase.apps.find(a => a.name === 'provisioner') || firebase.initializeApp(firebaseConfig, 'provisioner');
+    await helper.auth().setPersistence(firebase.auth.Auth.Persistence.NONE);
+    const temp = Array.from(crypto.getRandomValues(new Uint8Array(18))).map(b => b.toString(36)).join('');
+    const cred = await helper.auth().createUserWithEmailAndPassword(email, temp);
+    // The shop name appears in the "set your PIN" email (%DISPLAY_NAME%)
+    if (shopName) await cred.user.updateProfile({ displayName: shopName }).catch(() => {});
+    await helper.auth().signOut();
+    return cred.user.uid;
+}
+async function afterInvite(t, isNew) {
+    const msg = `${isNew ? '✅ <b>' + esc(t.name) + '</b> is ready.<br><br>' : ''}A link to set ${isNew ? 'a' : 'a new'} PIN was emailed to <b>${esc(t.ownerEmail)}</b>.`;
+    if (!t.ownerPhone) return dialog(msg + '<br><br><span style="font-size:.75rem;color:#6b7280;">Ask them to check spam if it does not arrive.</span>', { no: null, yes: 'Done' });
+    if (await dialog(msg + '<br><br>Also send the sign-in steps on WhatsApp?', { yes: '📲 WhatsApp', no: 'Not now', color: 'var(--pos)' })) waOwner(t.id, isNew);
+}
+function waOwner(id, isNew) {
+    const t = V.tenants.find(x => x.id === id) || {}; const first = String(t.ownerName || '').split(' ')[0];
+    const text = `Habari ${first}! ${isNew ? `Your shop *${t.name}* is ready on Keep POS.` : `Keep POS — *${t.name}*`}\n\n1. Open the email we sent to ${t.ownerEmail} (check spam) and set your PIN.\n2. Open the till: ${V.config.tillUrl}\n3. Sign in with your email or this phone number, and your PIN.`;
+    window.open(`https://wa.me/${t.ownerPhone}?text=${encodeURIComponent(text)}`, '_blank');
+}
+async function resendPin(id) {
+    const t = V.tenants.find(x => x.id === id);
+    if (!t.ownerEmail) return toast('No owner email on record — edit the shop to add one.', 'err');
+    if (!await dialog(`Email <b>${esc(t.ownerName || 'the owner')}</b> a new "set your PIN" link at <b>${esc(t.ownerEmail)}</b>?`, { yes: 'Send' })) return;
+    try { await auth.sendPasswordResetEmail(t.ownerEmail, { url: window.KEEP_ENV.site }); await afterInvite(t, false); } catch (e) { toast(e.message, 'err'); }
+}
+
+// ════════════════════════════════════════════════
+//  EDIT SHOP & OWNER
+// ════════════════════════════════════════════════
+function openEdit(id) {
+    const t = V.tenants.find(x => x.id === id); V.editing = id;
+    $('eTitle').textContent = 'Edit ' + t.name;
+    $('eName').value = t.name || ''; $('eOwner').value = t.ownerName || ''; $('ePhone').value = prettyPhone(t.ownerPhone || ''); $('eEmail').value = t.ownerEmail || '';
+    $('ePlan').innerHTML = planOptions((planById(t.planId || t.plan) || {}).id); $('eFee').value = t.monthlyFee || 0;
+    $('eEmail').oninput = () => $('eEmailNote').classList.toggle('hidden', $('eEmail').value.trim().toLowerCase() === (t.ownerEmail || ''));
+    $('eEmailNote').classList.add('hidden');
+    openSheet('shEdit');
+}
+function ePlanChanged() { const p = planById($('ePlan').value); if (p) $('eFee').value = p.price; }
+async function saveEdit() {
+    const id = V.editing, t = V.tenants.find(x => x.id === id);
+    const name = $('eName').value.trim(), ownerName = $('eOwner').value.trim(), phone = normPhone($('ePhone').value), email = $('eEmail').value.trim().toLowerCase();
+    const plan = planById($('ePlan').value), fee = Number($('eFee').value) || 0;
+    if (!name || !ownerName) return toast('Name and owner name are required.', 'err');
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return toast('Enter a valid owner email.', 'err');
+    if (phone && !/^\d{10,15}$/.test(phone)) return toast('Phone number looks wrong.', 'err');
+    const btn = $('eBtn'); btn.disabled = true; btn.textContent = 'Saving...';
+    try {
+        const tr = db.collection('tenants').doc(id);
+        if (phone && phone !== t.ownerPhone) {
+            const taken = await db.collection('logins').doc(phone).get();
+            if (taken.exists && taken.data().shop !== id) throw new Error('That phone number is already used by another account.');
+        }
+        let ownerUid = t.ownerUid;
+        const emailChanged = email !== (t.ownerEmail || '');
+        const b = db.batch();
+        if (emailChanged) {
+            // New owner login for the new email; the old login is switched off.
+            const newUid = await makeOwnerLogin(email, name);
+            b.set(tr.collection('staff').doc(newUid), { name: ownerName, loginId: email, role: 'admin', active: true, createdAt: FV.serverTimestamp(), createdBy: 'Keep', previousUid: ownerUid || null });
+            if (ownerUid) { b.set(tr.collection('staff').doc(ownerUid), { active: false, replacedBy: newUid }, { merge: true }); b.delete(db.collection('users').doc(ownerUid)); }
+            const up = { [`staff.${newUid}`]: true, updatedAt: FV.serverTimestamp() };
+            if (ownerUid) up[`staff.${ownerUid}`] = FV.delete();
+            if (t.usageReady) b.update(tr.collection('plan').doc('usage'), up);
+            b.set(db.collection('users').doc(newUid), { shop: id });
+            ownerUid = newUid;
+        } else if (ownerUid) {
+            b.set(tr.collection('staff').doc(ownerUid), { name: ownerName }, { merge: true });
+        }
+        if (t.ownerPhone && t.ownerPhone !== phone) b.delete(db.collection('logins').doc(t.ownerPhone));
+        if (phone && ownerUid) b.set(db.collection('logins').doc(phone), { email, shop: id, uid: ownerUid });
+        b.update(tr, {
+            name, ownerName, ownerEmail: email, ownerPhone: phone || null, ownerUid: ownerUid || null,
+            planId: plan.id, plan: plan.name, monthlyFee: fee, limits: planLimits(plan), services: planServices(plan)
+        });
+        await b.commit();
+        if (emailChanged) { await auth.sendPasswordResetEmail(email, { url: window.KEEP_ENV.site }); closeSheets(); await afterInvite({ ...t, name, ownerName, ownerEmail: email, ownerPhone: phone }, false); }
+        else { closeSheets(); toast('✅ Saved'); }
+    } catch (e) {
+        toast((e.code || '').includes('email-already-in-use') ? 'That email already has a Keep account.' : e.message, 'err');
+    } finally { btn.disabled = false; btn.textContent = '💾 Save changes'; }
+}
+
+// ════════════════════════════════════════════════
+//  DELETE SHOP
+// ════════════════════════════════════════════════
+async function deleteShop(id) {
+    const t = V.tenants.find(x => x.id === id);
+    const typed = await dialog(`This permanently deletes <b>${esc(t.name)}</b> — products, sales, accounts and staff. It cannot be undone.<br><br>Type the shop code <b>${esc(id)}</b> to confirm.`, { yes: 'Delete forever', color: 'var(--red)', input: id });
+    if (typed !== id) { if (typed !== null) toast('Shop code did not match — nothing deleted.', 'err'); return; }
+    loader(true, 'DELETING...');
+    try {
+        const tr = db.collection('tenants').doc(id);
+        const staff = await tr.collection('staff').get();
+        for (const c of ['products', 'costs', 'sales', 'customers', 'serials', 'cashups', 'movements', 'entries', 'days', 'meta', 'months', 'payments', 'plan', 'staff']) {
+            const snap = await tr.collection(c).get();
+            for (let i = 0; i < snap.docs.length; i += 400) {
+                const b = db.batch(); snap.docs.slice(i, i + 400).forEach(d => b.delete(d.ref)); await b.commit();
+            }
+        }
+        const logins = await db.collection('logins').where('shop', '==', id).get();
+        const b = db.batch();
+        logins.docs.forEach(d => b.delete(d.ref));
+        for (const d of staff.docs) {
+            const uref = db.collection('users').doc(d.id), u = (await uref.get()).data();
+            const others = u && u.shops ? Object.keys(u.shops).filter(k => k !== id) : [];
+            if (!others.length) { b.delete(uref); continue; }
+            const shops = { ...u.shops }; delete shops[id];
+            b.set(uref, { shop: u.shop === id ? others[0] : u.shop, shops }, { merge: false });
+        }
+        b.delete(tr);
+        await b.commit();
+        closeSheets();
+        await dialog(`🗑 ${esc(t.name)} deleted. Its payment records are kept for your accounts.<br><br><span style="font-size:.75rem;color:#6b7280;">The old logins can't open anything now. To tidy up fully, delete them in Firebase → Authentication → Users.</span>`, { no: null, yes: 'OK' });
+    } catch (e) { toast('Delete stopped: ' + e.message, 'err'); }
+    finally { loader(false); }
+}
+
+// ════════════════════════════════════════════════
+//  PAYMENTS
+// ════════════════════════════════════════════════
+function openPay(id) {
+    const shops = V.tenants.filter(t => t.status !== 'archived');
+    if (!shops.length) return toast('Create a shop first.', 'err');
+    $('pShop').innerHTML = shops.map(t => `<option value="${t.id}" ${t.id === id ? 'selected' : ''}>${esc(t.name)} (${esc(t.id)})</option>`).join('');
+    $('pMonths').value = '1'; $('pRef').value = ''; $('pDate').value = dstr(new Date()); $('pMethod').value = 'M-Pesa';
+    openSheet('shPay'); payPreview(true);
+}
+function payCalc() {
+    const t = V.tenants.find(x => x.id === $('pShop').value), months = Number($('pMonths').value);
+    // Past due: the new period starts today. Otherwise it continues from the current end date (trial days are kept).
+    const from = new Date(Math.max(Date.now(), ms(t.paidUntil) || 0));
+    const until = addMonths(from, months);
+    return { t, months, from, until, lockAt: addDays(until, Number(V.config.graceDays) || 0) };
+}
+function payPreview(resetAmount) {
+    const c = payCalc();
+    if (resetAmount) $('pAmount').value = (Number(c.t.monthlyFee) || 0) * c.months;
+    const expected = (Number(c.t.monthlyFee) || 0) * c.months, amt = Number($('pAmount').value) || 0;
+    $('pPreview').innerHTML = `${esc(c.t.name)} will be active until <b>${pretty(c.until)}</b>.` +
+        (state(c.t).key === 'locked' || c.t.status === 'suspended' ? '<br>The shop unlocks as soon as you save.' : '') +
+        (amt !== expected ? `<br>⚠️ Expected ${fmt(expected)} for ${c.months} month${c.months > 1 ? 's' : ''}.` : '');
+}
+async function savePayment() {
+    const c = payCalc(), amount = Number($('pAmount').value) || 0;
+    if (amount <= 0) return toast('Enter the amount received.', 'err');
+    const btn = $('pBtn'); btn.disabled = true; btn.textContent = 'Saving...';
+    try {
+        const paidOn = new Date($('pDate').value + 'T12:00:00');
+        const payRef = db.collection('payments').doc();
+        let receiptNo = '';
+        await db.runTransaction(async tx => {
+            const cRef = db.collection('platform').doc('counters');
+            const cs = await tx.get(cRef);
+            const n = ((cs.exists && cs.data().receipt) || 0) + 1;
+            receiptNo = 'MAT-' + String(n).padStart(5, '0');
+            const pay = {
+                shop: c.t.id, shopName: c.t.name, ownerName: c.t.ownerName || '', plan: planName(c.t), months: c.months, amount,
+                method: $('pMethod').value, reference: $('pRef').value.trim(), paidAt: TS(paidOn),
+                periodFrom: TS(c.from), periodTo: TS(c.until), receiptNo, voided: false, recordedAt: FV.serverTimestamp()
+            };
+            tx.set(cRef, { receipt: n }, { merge: true });
+            tx.set(payRef, pay);
+            tx.set(db.collection('tenants').doc(c.t.id).collection('payments').doc(payRef.id), pay);
+            tx.update(db.collection('tenants').doc(c.t.id), {
+                paidUntil: TS(c.until), lockAt: TS(c.lockAt), trial: false,
+                status: c.t.status === 'archived' ? 'archived' : 'active', lastPaymentAt: TS(paidOn)
+            });
+        });
+        closeSheets();
+        const go = await dialog(`✅ ${fmt(amount)} recorded for <b>${esc(c.t.name)}</b>.<br>Active until <b>${pretty(c.until)}</b>.<br>Receipt <b>${receiptNo}</b>`, { yes: '🧾 Receipt', no: 'Done', color: 'var(--pos)' });
+        if (go) setTimeout(() => receiptPdf(payRef.id, true), 300);
+    } catch (e) { toast('Not saved: ' + e.message, 'err'); }
+    finally { btn.disabled = false; btn.textContent = '✅ Save & activate'; }
+}
+async function voidPayment(pid) {
+    const p = V.payments.find(x => x.id === pid), t = V.tenants.find(x => x.id === p.shop);
+    if (!await dialog(`Void receipt <b>${esc(p.receiptNo)}</b> (${fmt(p.amount)})?<br><span style="font-size:.75rem;color:#6b7280;">Use this for mistakes. The shop's paid-until date moves back ${p.months} month${p.months > 1 ? 's' : ''}.</span>`, { yes: 'Void', color: 'var(--red)' })) return;
+    const b = db.batch();
+    b.update(db.collection('payments').doc(pid), { voided: true });
+    b.set(db.collection('tenants').doc(p.shop).collection('payments').doc(pid), { voided: true }, { merge: true });
+    if (t && ms(t.paidUntil)) {
+        const until = addMonths(new Date(ms(t.paidUntil)), -p.months);
+        b.update(db.collection('tenants').doc(p.shop), { paidUntil: TS(until), lockAt: TS(addDays(until, Number(V.config.graceDays) || 0)) });
+    }
+    await b.commit().then(() => toast('↩️ Payment voided')).catch(e => toast(e.message, 'err'));
+}
+function renderPayments() {
+    const m = $('payMonth').value || dstr(new Date()).slice(0, 7);
+    const list = V.payments.filter(p => dstr(new Date(ms(p.paidAt))).slice(0, 7) === m);
+    const ok = list.filter(p => !p.voided);
+    const byMethod = {}; ok.forEach(p => byMethod[p.method] = (byMethod[p.method] || 0) + p.amount);
+    $('payKpis').innerHTML = `
+        <div class="kpi" style="border-left-color:var(--green);"><h4>Collected</h4><p>${fmt(ok.reduce((s, p) => s + p.amount, 0))}</p><small>${ok.length} payments</small></div>
+        ${Object.entries(byMethod).slice(0, 3).map(([k, v]) => `<div class="kpi"><h4>${esc(k)}</h4><p>${fmt(v)}</p></div>`).join('')}`;
+    $('payList').innerHTML = list.length ? list.map(p => `<div style="border-bottom:1px solid #f0f2f5;"><div class="meta" style="margin-top:8px;font-weight:800;color:var(--ink);cursor:pointer;" onclick="openShop('${p.shop}')">${esc(p.shopName || p.shop)}</div>${payLine(p)}</div>`).join('') : '<div class="empty">No payments in this month.</div>';
+}
+
+// Receipt PDF (also used by shop owners in the till)
+async function receiptPdf(pid, share) {
+    const p = V.payments.find(x => x.id === pid); if (!p) return;
+    if (!window.jspdf) return toast('PDF tool did not load — check your connection.', 'err');
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({ unit: 'mm', format: 'a5' }), W = 148;
+    doc.setFillColor(11, 13, 18); doc.rect(0, 0, W, 30, 'F');
+    doc.setTextColor(255, 199, 44); doc.setFont('helvetica', 'bold'); doc.setFontSize(18); doc.text('KEEP', 12, 15);
+    doc.setTextColor(96, 165, 250); doc.setFontSize(9); doc.text('POS SUBSCRIPTION', 12, 22);
+    doc.setTextColor(255, 255, 255); doc.setFontSize(11); doc.text('RECEIPT', W - 12, 15, { align: 'right' });
+    doc.setFontSize(9); doc.setFont('helvetica', 'normal'); doc.text(p.receiptNo || '', W - 12, 22, { align: 'right' });
+    doc.setFillColor(26, 86, 219); doc.rect(0, 30, W, 1.5, 'F');
+    let y = 44;
+    const row = (l, v, bold) => { doc.setTextColor(110, 116, 128); doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.text(l, 12, y); doc.setTextColor(11, 13, 18); doc.setFont('helvetica', bold ? 'bold' : 'normal'); doc.setFontSize(bold ? 11 : 9.5); doc.text(String(v), W - 12, y, { align: 'right' }); y += 8; };
+    row('Date paid', pretty(p.paidAt));
+    row('Received from', p.shopName || p.shop);
+    if (p.ownerName) row('Owner', p.ownerName);
+    row('Shop code', p.shop);
+    row('Plan', `${p.plan} · ${p.months} month${p.months > 1 ? 's' : ''}`);
+    row('Period', `${pretty(p.periodFrom)} – ${pretty(p.periodTo)}`);
+    row('Paid via', p.method + (p.reference ? ' · ' + p.reference : ''));
+    y += 2; doc.setDrawColor(227, 232, 239); doc.line(12, y - 5, W - 12, y - 5);
+    row('Amount', fmt(p.amount), true);
+    if (p.voided) { doc.setTextColor(220, 38, 38); doc.setFontSize(26); doc.setFont('helvetica', 'bold'); doc.text('VOID', W / 2, 110, { align: 'center', angle: 20 }); }
+    doc.setTextColor(110, 116, 128); doc.setFont('helvetica', 'normal'); doc.setFontSize(8);
+    doc.text('Thank you for your business.', W / 2, 180, { align: 'center' });
+    doc.text(V.config.bizLine || 'Matinyo', W / 2, 186, { align: 'center' });
+    if (V.config.supportPhone) doc.text('Support: ' + prettyPhone(V.config.supportPhone), W / 2, 192, { align: 'center' });
+    doc.save(`${p.receiptNo || 'receipt'}_${p.shop}.pdf`);
+    if (share) {
+        const t = V.tenants.find(x => x.id === p.shop);
+        if (t && t.ownerPhone && await dialog('Send the payment confirmation to the owner on WhatsApp?', { yes: '📲 WhatsApp', no: 'No', color: 'var(--pos)' })) {
+            const text = `Asante! We received ${fmt(p.amount)} for *${p.shopName}* (${p.months} month${p.months > 1 ? 's' : ''}).\nReceipt: ${p.receiptNo}\nYour Keep POS is active until ${pretty(p.periodTo)}.`;
+            window.open(`https://wa.me/${t.ownerPhone}?text=${encodeURIComponent(text)}`, '_blank');
+        }
+    }
+}
+
+// ════════════════════════════════════════════════
+//  SETTINGS: plans, billing, announcements
+// ════════════════════════════════════════════════
+function fillSettings() {
+    const c = V.config;
+    if (document.activeElement && document.activeElement.closest && document.activeElement.closest('#p-settings')) return;
+    $('planRows').innerHTML = plans().map(planRow).join('');
+    $('cfTrial').value = c.trialDays; $('cfGrace').value = c.graceDays; $('cfPayHow').value = c.payHow || '';
+    $('cfPhone').value = c.supportPhone || ''; $('cfTill').value = c.tillUrl || ''; $('cfBiz').value = c.bizLine || '';
+    const ad = { ...DEFAULT_CONFIG.addons, ...(c.addons || {}) };
+    $('adStaff').value = ad.extraStaffPrice; $('adTopN').value = ad.topupReceipts; $('adTopP').value = ad.topupPrice;
+}
+async function saveAddons() {
+    const addons = { extraStaffPrice: Number($('adStaff').value) || 0, topupReceipts: Number($('adTopN').value) || 0, topupPrice: Number($('adTopP').value) || 0 };
+    await db.collection('platform').doc('config').set({ addons }, { merge: true }).then(() => toast('✅ Add-ons saved')).catch(e => toast(e.message, 'err'));
+}
+const opt = (val, cur, label) => `<option value="${val}" ${val === cur ? 'selected' : ''}>${label}</option>`;
+const planRow = p => { const sv = planServices(p); return `<div class="plan-row" data-id="${esc(p.id || '')}">
+    <div class="pn"><label>Plan name</label><input data-k="name" value="${esc(p.name)}" placeholder="e.g. Business"></div>
+    <div><label>Price / month</label><input data-k="price" type="number" inputmode="numeric" value="${p.price || 0}"></div>
+    <div><label>Staff logins</label><input data-k="maxStaff" type="number" inputmode="numeric" value="${p.maxStaff || 0}"></div>
+    <div><label>Items</label><input data-k="maxProducts" type="number" inputmode="numeric" value="${p.maxProducts || 0}"></div>
+    <button class="tiny" style="color:var(--red);padding:9px;" title="Remove plan" onclick="this.parentElement.remove()">✕</button>
+    <div class="svc">
+        <div><label>Daily report</label><select data-k="dailyReport">${opt('off', sv.dailyReport, 'Off')}${opt('text', sv.dailyReport, 'Text only')}${opt('both', sv.dailyReport, 'Text or PDF')}</select></div>
+        <div><label>Receipts</label><select data-k="receipts">${opt('manual', sv.receipts, 'Manual button only')}${opt('text', sv.receipts, 'Automatic · text only')}${opt('both', sv.receipts, 'Automatic · text or PDF')}</select></div>
+        <div><label>Receipts / month</label><input data-k="receiptQuota" type="number" inputmode="numeric" value="${sv.receiptQuota || 0}"></div>
+        <label class="ck"><input type="checkbox" data-k="debtReminders" ${sv.debtReminders ? 'checked' : ''}> Debt reminders</label>
+        <label class="ck"><input type="checkbox" data-k="alerts" ${sv.alerts ? 'checked' : ''}> Stock & cash-up alerts</label>
+    </div></div>`; };
+function addPlanRow() { $('planRows').insertAdjacentHTML('beforeend', planRow({ name: '', price: 0, maxStaff: 0, maxProducts: 0, services: SVC_DEFAULT })); }
+async function savePlans() {
+    const rows = [...document.querySelectorAll('#planRows .plan-row')].map(r => {
+        const v = k => r.querySelector(`[data-k=${k}]`).value.trim();
+        const name = v('name');
+        const ck = k => r.querySelector(`[data-k=${k}]`).checked;
+        return { id: r.dataset.id || name.toLowerCase().replace(/[^a-z0-9]+/g, '-'), name, price: Number(v('price')) || 0, maxStaff: Number(v('maxStaff')) || 0, maxProducts: Number(v('maxProducts')) || 0,
+            services: { dailyReport: v('dailyReport'), receipts: v('receipts'), receiptQuota: v('receipts') === 'manual' ? 0 : Number(v('receiptQuota')) || 0, debtReminders: ck('debtReminders'), alerts: ck('alerts') } };
+    }).filter(p => p.name);
+    if (!rows.length) return toast('Keep at least one plan.', 'err');
+    await db.collection('platform').doc('config').set({ plans: rows }, { merge: true }).then(() => toast('✅ Plans saved. Existing shops keep their fee until you change their plan.')).catch(e => toast(e.message, 'err'));
+}
+async function saveBilling() {
+    await db.collection('platform').doc('config').set({
+        trialDays: Number($('cfTrial').value) || 0, graceDays: Number($('cfGrace').value) || 0, payHow: $('cfPayHow').value.trim(),
+        supportPhone: normPhone($('cfPhone').value), tillUrl: $('cfTill').value.trim(), bizLine: $('cfBiz').value.trim()
+    }, { merge: true }).then(() => toast('✅ Billing settings saved')).catch(e => toast(e.message, 'err'));
+}
+async function saveAnnouncement() {
+    const title = $('anTitle').value.trim(), body = $('anBody').value.trim();
+    if (!title || !body) return toast('Add a title and a message.', 'err');
+    const shops = $('anShops').value.split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
+    const ends = $('anEnds').value ? TS(new Date($('anEnds').value + 'T23:59:59')) : null;
+    await db.collection('announcements').add({ title, body, level: $('anLevel').value, shops, endsAt: ends, active: true, createdAt: FV.serverTimestamp() })
+        .then(() => { ['anTitle', 'anBody', 'anShops', 'anEnds'].forEach(i => $(i).value = ''); toast('📣 Published to tills'); }).catch(e => toast(e.message, 'err'));
+}
+function renderAnnouncements() {
+    const L = V.announcements;
+    $('anList').innerHTML = '<span class="section-label">Published</span>' + (L.length ? L.map(a => {
+        const expired = ms(a.endsAt) && ms(a.endsAt) < Date.now();
+        return `<div class="line"><div class="l"><div style="font-weight:800;">${a.level === 'warn' ? '⚠️' : 'ℹ️'} ${esc(a.title)}</div>
+            <div class="meta">${esc(a.body).slice(0, 90)}</div>
+            <div class="meta">${a.shops && a.shops.length ? 'Shops: ' + esc(a.shops.join(', ')) : 'All shops'} · ${a.endsAt ? 'until ' + pretty(a.endsAt) : 'no end date'}</div></div>
+            <div style="display:flex;flex-direction:column;gap:4px;align-items:flex-end;">
+                <span class="chip ${a.active && !expired ? 'green' : 'gray'}">${a.active ? (expired ? 'Ended' : 'Live') : 'Off'}</span>
+                <div style="display:flex;gap:4px;"><button class="tiny" onclick="toggleAnn('${a.id}', ${!a.active})">${a.active ? 'Turn off' : 'Turn on'}</button>
+                <button class="tiny" style="color:var(--red);" onclick="delAnn('${a.id}')">🗑</button></div></div></div>`;
+    }).join('') : '<div class="empty">No announcements yet.</div>');
+}
+const toggleAnn = (id, on) => db.collection('announcements').doc(id).update({ active: on }).catch(e => toast(e.message, 'err'));
+async function delAnn(id) { if (await dialog('Delete this announcement?', { yes: 'Delete', color: 'var(--red)' })) db.collection('announcements').doc(id).delete().catch(e => toast(e.message, 'err')); }
+
+loader(true, 'STARTING...');
+</script>
+</body>
+</html>
