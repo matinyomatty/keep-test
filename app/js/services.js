@@ -175,3 +175,98 @@ async function payStaff(i) {
     await commit(b, `✅ ${tl('Paid')} ${r.p.name} ${n0(amount)}`, { label: `Staff pay ${r.p.name} ${n0(amount)}` });
     loadStaffPay();
 }
+
+// ── Barbershop till: tap a service → who did it → how they paid → done ──
+// No cart. The same sale record as the shop till, so reports, cash-up and
+// staff pay all keep working.
+const isBarberMode = () => (S.tenantInfo || {}).type === 'barbershop';
+
+function renderBarberList(list) {
+    const row = p => {
+        const svc = isService(p), out = !svc && (Number(p.stock) || 0) <= 0;
+        return `<button class="svc-row ${out ? 'out' : ''}" ${out ? 'disabled' : ''} onclick="quickSell('${p.id}')">
+            <span class="sr-emoji">${esc(p.emoji || (svc ? '✂️' : '📦'))}</span>
+            <span class="sr-name"><span class="notr">${esc(p.name)}</span>${svc ? '' : `<small>${out ? '❌ Out of stock' : stockTxt(p)}</small>`}</span>
+            <b class="sr-price">${n0(linePriceOf(p))}</b></button>`;
+    };
+    const svcs = list.filter(isService), goods = list.filter(p => !isService(p));
+    return (svcs.length ? `<div class="sr-head">${tl('Services')}</div>` + svcs.map(row).join('') : '')
+        + (goods.length ? `<div class="sr-head">${tl('Products')}</div>` + goods.map(row).join('') : '');
+}
+const linePriceOf = p => Number(p.sellPrice) || 0;
+
+async function quickSell(id) {
+    if (S.qsOpen) return;
+    S.cart = {}; S.lineMeta = {}; S.saleDisc = null; S.saleCustomer = null; S.payTouched = false;
+    if (!(await qsAdd(id))) { S.cart = {}; S.lineMeta = {}; return; }
+    qsPay();
+}
+
+async function qsAdd(id) {
+    const p = productById(id); if (!p) return false;
+    if (isService(p)) {
+        const who = await askWho(p); if (!who) return false;
+        if (S.cart[id] && meta(id).by !== who) { toast(`⚠️ ${tl('Record that as a separate client.')}`, 'err'); return true; }
+        S.cart[id] = (S.cart[id] || 0) + 1; meta(id).by = who; S.lastDoer = who;
+    } else {
+        const q = S.cart[id] || 0;
+        if (q + 1 > (Number(p.stock) || 0) + 1e-9) { toast(`⚠️ Only ${qtyTxt(p.stock, p)} ${p.name} in stock`, 'err'); return !!Object.keys(S.cart).length; }
+        S.cart[id] = q + 1;
+    }
+    return true;
+}
+
+async function askWho(p) {
+    const list = (await loadStaffOnce()).filter(x => x.active !== false);
+    if (!list.length) return S.me.uid;
+    if (list.length === 1) return list[0].uid;
+    const me = S.me.uid, last = S.lastDoer;
+    list.sort((a, b) => (b.uid === me) - (a.uid === me));
+    const opts = list.map(x => [x.uid, esc(x.name) + (x.uid === me ? ` (${tl('me')})` : ''), x.uid === last ? '#0b0d12' : '#1a56db']);
+    return choose(`✂️ ${tl('Who did')} <b class="notr">${esc(p.name)}</b>?`, opts);
+}
+
+function qsPay() {
+    S.qsOpen = true;
+    const o = document.createElement('div'); o.id = 'qsBox';
+    o.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:9998;display:flex;align-items:flex-end;justify-content:center;';
+    const draw = () => {
+        const lines = Object.keys(S.cart).map(id => {
+            const p = productById(id) || {}, by = meta(id).by;
+            return `<div class="qs-line"><span class="sr-emoji">${esc(p.emoji || '✂️')}</span>
+                <span class="qs-what"><b class="notr">${esc(p.name)}${S.cart[id] > 1 ? ' × ' + S.cart[id] : ''}</b>${by ? `<small>✂️ <span class="notr">${esc(staffName(by))}</span></small>` : ''}</span>
+                <button class="qs-price" data-a="price" data-id="${id}">${n0(lineSub(id))} ✏️</button>
+                <button class="qs-x" data-a="drop" data-id="${id}" aria-label="Remove">✕</button></div>`;
+        }).join('');
+        o.innerHTML = `<div class="qs-card">
+            ${lines}
+            <button class="qs-more" data-a="more">➕ ${tl('Add another service')}</button>
+            <div class="qs-total"><span>${tl('Total')}</span><b>${fmt(cartTotal())}</b></div>
+            <div class="qs-pay"><button data-a="cash" style="background:var(--pos);">💵 ${tl('Cash')}</button><button data-a="mobile" style="background:#1a56db;">📱 ${tl('Mobile money')}</button></div>
+            <button class="qs-cancel" data-a="cancel">${tl('Cancel')}</button></div>`;
+    };
+    const close = () => { o.remove(); S.qsOpen = false; };
+    draw(); document.body.appendChild(o);
+    o.addEventListener('click', async e => {
+        const t = e.target.closest('[data-a]'); if (!t && e.target === o) { close(); S.cart = {}; S.lineMeta = {}; return; }
+        if (!t) return;
+        const a = t.dataset.a, id = t.dataset.id;
+        if (a === 'cancel') { close(); S.cart = {}; S.lineMeta = {}; renderPOS(); return; }
+        if (a === 'price') { await editLinePrice(id); draw(); return; }
+        if (a === 'drop') { delete S.cart[id]; delete S.lineMeta[id]; if (!Object.keys(S.cart).length) { close(); renderPOS(); return; } draw(); return; }
+        if (a === 'more') {
+            o.style.display = 'none';
+            const items = S.products.filter(p => isService(p) || (Number(p.stock) || 0) > 0).sort((x, y) => isService(y) - isService(x));
+            const k = await choose(tl('Add another service'), items.map(p => [p.id, `${esc(p.emoji || '')} <span class="notr">${esc(p.name)}</span> · ${n0(p.sellPrice)}`, isService(p) ? '#0b0d12' : '#5b6474']));
+            if (k) await qsAdd(k);
+            o.style.display = 'flex'; draw(); return;
+        }
+        if (a === 'cash' || a === 'mobile') {
+            const t0 = cartTotal();
+            $('payCash').value = a === 'cash' ? t0 : 0; $('payMobile').value = a === 'mobile' ? t0 : 0; $('payCredit').value = 0;
+            close();
+            await confirmSale();
+            if (Object.keys(S.cart).length) { qsPay(); }   // the sale was stopped (e.g. a price below the limit): keep the client open
+        }
+    });
+}

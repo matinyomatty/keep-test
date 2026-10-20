@@ -118,6 +118,8 @@ function renderPOS() {
             : `<div class="icon">📦</div>No items yet.<br><span style="font-size:0.78rem;">${isAdmin() ? 'Go to <b>Stock → + ADD ITEM</b> to add your products.' : 'Ask the shop owner to add products.'}</span>`;
     } else {
         empty.classList.add('hidden');
+        $('posGrid').classList.toggle('svc-list', isBarberMode());
+        if (isBarberMode()) { $('posGrid').innerHTML = renderBarberList(list); updateCartBar(); return; }
         $('posGrid').innerHTML = list.map(p => {
             const qty = S.cart[p.id] || 0, stock = Number(p.stock) || 0, svc = isService(p);
             const out = !svc && stock <= 0, low = !svc && !out && stock <= (Number(p.reorderLevel) || 5);
@@ -232,7 +234,7 @@ function updateCartBar() {
     const ids = Object.keys(S.cart);
     const names = ids.slice(0, 2).map(id => (productById(id) || {}).name || '').map(x => x.split(' ')[0]);
     $('cartSummary').textContent = n ? names.join(', ') + (ids.length > 2 ? ` +${ids.length - 2} more` : '') : 'No items';
-    $('cartBar').classList.toggle('show', n > 0);
+    $('cartBar').classList.toggle('show', n > 0 && !isBarberMode());
     if ($('sheetCart').classList.contains('docked')) renderCart();
 }
 

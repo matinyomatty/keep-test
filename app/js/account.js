@@ -268,7 +268,7 @@ function choose(message, options) {
             ${options.map(([k, l, c]) => `<button data-k="${k}" style="width:100%;padding:13px;border-radius:12px;border:none;background:${c};color:#fff;font-weight:800;margin-bottom:8px;cursor:pointer;">${l}</button>`).join('')}
             <button data-k="" style="width:100%;padding:11px;border-radius:12px;border:2px solid #e3e8ef;background:#fff;font-weight:800;cursor:pointer;">Cancel</button></div>`;
         document.body.appendChild(o);
-        o.addEventListener('click', e => { const k = e.target.dataset && e.target.dataset.k; if (k === undefined) return; o.remove(); resolve(k || null); });
+        o.addEventListener('click', e => { const t = e.target.closest && e.target.closest('[data-k]'); if (!t) return; o.remove(); resolve(t.dataset.k || null); });
     });
 }
 function askValue(message, placeholder, okLabel = 'Save', opt = {}) {

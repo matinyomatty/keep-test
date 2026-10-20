@@ -374,6 +374,29 @@
         .cat-chip.active { background: var(--yellow); color: var(--ink); border-color: var(--yellow); }
         .pos-items { padding: 12px 12px 0; max-width: 480px; margin: auto; }
         .pos-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        /* Barbershop till: one tap per service */
+        .pos-grid.svc-list { grid-template-columns: 1fr; gap: 8px; }
+        .sr-head { font-size: .68rem; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--gray); margin: 8px 2px 0; }
+        .svc-row { display: flex; align-items: center; gap: 14px; width: 100%; background: #fff; border: 2px solid transparent; border-radius: 16px;
+            padding: 16px 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); cursor: pointer; text-align: left; transition: transform .12s; font: inherit; color: var(--ink); }
+        .svc-row:active { transform: scale(0.98); border-color: var(--pos); }
+        .svc-row.out { opacity: .45; }
+        .sr-emoji { font-size: 1.8rem; width: 40px; text-align: center; flex-shrink: 0; }
+        .sr-name { flex: 1; font-weight: 800; font-size: 1rem; line-height: 1.2; }
+        .sr-name small { display: block; font-weight: 600; font-size: .68rem; color: var(--gray); margin-top: 2px; }
+        .sr-price { font-size: 1.05rem; color: var(--pos); white-space: nowrap; }
+        .qs-card { background: #fff; width: 100%; max-width: 480px; border-radius: 22px 22px 0 0; padding: 20px 18px calc(18px + env(safe-area-inset-bottom)); }
+        .qs-line { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid #eef1f5; }
+        .qs-what { flex: 1; font-size: .95rem; }
+        .qs-what small { display: block; color: var(--gray); font-size: .75rem; margin-top: 2px; }
+        .qs-price { background: none; border: none; font-weight: 800; font-size: .95rem; color: var(--ink); cursor: pointer; }
+        .qs-x { background: #f3f4f6; border: none; border-radius: 50%; width: 28px; height: 28px; color: var(--gray); cursor: pointer; }
+        .qs-more { width: 100%; background: none; border: 2px dashed #d5dbe4; border-radius: 12px; padding: 11px; margin: 12px 0 4px; font-weight: 800; color: var(--gray); cursor: pointer; }
+        .qs-total { display: flex; justify-content: space-between; align-items: baseline; margin: 12px 2px 14px; font-weight: 800; }
+        .qs-total b { font-size: 1.6rem; color: var(--pos); }
+        .qs-pay { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .qs-pay button { border: none; border-radius: 14px; padding: 18px 8px; color: #fff; font-weight: 800; font-size: 1rem; cursor: pointer; }
+        .qs-cancel { width: 100%; background: none; border: none; padding: 14px; font-weight: 800; color: var(--gray); cursor: pointer; }
         .item-card {
             background: #fff; border-radius: 16px; padding: 14px 12px 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); cursor: pointer;
             transition: transform .12s; position: relative; border: 2px solid transparent; overflow: hidden; text-align: left; width: 100%;

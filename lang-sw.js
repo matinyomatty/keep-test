@@ -411,4 +411,5 @@ KeepLang.add({
   'Set how this person is paid to see what they are owed.': 'Weka jinsi mtu huyu anavyolipwa ili kuona anachodai.', 'Total money from services': 'Jumla ya pesa za huduma',
   'Total paid to staff': 'Jumla iliyolipwa kwa wafanyakazi', 'How is': 'Analipwaje',
   'Edit service': 'Hariri huduma', 'Add a service': 'Ongeza huduma', 'Cost to you (TZS, optional)': 'Gharama yako (TZS, si lazima)',
+  'Add another service': 'Ongeza huduma nyingine', 'Record that as a separate client.': 'Rekodi hiyo kama mteja mwingine.', 'me': 'mimi',
 }, [[/^Today · (.+)$/, (m, a) => 'Leo · ' + KeepLang.tl(a)], [/^(\d+) clients?$/, 'wateja $1']]);

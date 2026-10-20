@@ -36,11 +36,13 @@ function posSearchEnter() {
     const q = $('posSearch').value.trim(); if (!q) return;
     if (!productByCode(q) && S.serialsIn[serialId(q)]) { sellByCode(q); $('posSearch').value = ''; renderPOS(); return; }
     const byCode = productByCode(q);
-    const shown = [...document.querySelectorAll('#posGrid .item-card:not(.out)')];
+    const shown = [...document.querySelectorAll('#posGrid .item-card:not(.out), #posGrid .svc-row:not(.out)')];
     const pick = byCode || (shown.length === 1 ? productById((shown[0].getAttribute('onclick') || '').match(/'([^']+)'/)?.[1]) : null);
     if (!pick) return toast(shown.length ? 'Several items match — keep typing or tap one' : 'No item with that name or barcode', 'err');
+    $('posSearch').value = '';
+    if (isBarberMode()) { renderPOS(); return quickSell(pick.id); }
     addToCart(pick.id);
-    $('posSearch').value = ''; renderPOS();
+    renderPOS();
 }
 document.addEventListener('keydown', e => {
     if (SC.on && e.key === 'Escape') { closeScanner(); return; }
