@@ -586,3 +586,27 @@
             .modal-overlay.docked { width: 330px; }
             body.cart-docked #page-pos, body.cart-docked #noticeBar { margin-right: 330px; }
         }
+
+        /* ── Barbershop layout ── */
+        body:not(.barber) .barber-only { display: none !important; }
+        body.barber .shop-only { display: none !important; }
+        body.barber .svc-toggle { display: none !important; }
+        body.barber #sheetItem.is-svc .svc-hide { display: none !important; }
+        .svc-col { display: grid; gap: 8px; }
+        .svc-row .sr-edit { font-size: .85rem; opacity: .5; margin-left: 2px; }
+        .svc-row.small { padding: 12px 16px; }
+        #barberToday { margin-top: 18px; }
+        .bt-row { display: flex; align-items: center; gap: 12px; background: #fff; border-radius: 14px; padding: 12px 14px; margin-top: 8px; box-shadow: 0 1px 4px rgba(0,0,0,0.05); }
+        .bt-time { font-size: .75rem; font-weight: 800; color: var(--gray); width: 40px; flex-shrink: 0; }
+        .bt-what { flex: 1; font-size: .88rem; line-height: 1.25; }
+        .bt-what small { display: block; color: var(--gray); font-size: .72rem; margin-top: 2px; }
+        .bt-amt { font-weight: 800; text-align: right; white-space: nowrap; }
+        .bt-amt small { display: block; font-size: .75rem; }
+        .barber-card { background: #fff; border-radius: 18px; padding: 16px; margin-bottom: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+        .bc-top { display: flex; align-items: center; gap: 12px; }
+        .bc-top small { display: block; color: var(--gray); font-size: .72rem; margin-top: 2px; }
+        .bc-av { width: 42px; height: 42px; border-radius: 50%; background: var(--ink); color: var(--yellow); display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 1.1rem; flex-shrink: 0; }
+        .bc-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 12px; }
+        .bc-stats > div { background: #f6f8fb; border-radius: 12px; padding: 10px 12px; }
+        .bc-stats b { font-size: 1.15rem; display: block; }
+        .bc-stats small { color: var(--gray); font-size: .7rem; }

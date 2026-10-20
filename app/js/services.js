@@ -23,6 +23,7 @@ function applyServiceMode() {
     const on = isServiceShop();
     document.querySelectorAll('.shop-svc').forEach(e => e.classList.toggle('hidden', !on || !isAdmin()));
     document.body.classList.toggle('svc-shop', on);
+    applyBarberShell();
 }
 
 // ── Staff list (names for "done by") ─────────────────
@@ -55,6 +56,16 @@ function serviceChanged() {
     const svc = $('itemService').checked;
     document.querySelectorAll('#sheetItem .goods-only').forEach(e => e.classList.toggle('hidden', svc));
     document.querySelectorAll('#sheetItem .svc-only').forEach(e => e.classList.toggle('hidden', !svc));
+    $('sheetItem').classList.toggle('is-svc', svc);
+    const bs = isBarberMode() && svc, nameLbl = $('itemName').previousElementSibling, payLbl = $('itemStaffPay').previousElementSibling;
+    nameLbl.textContent = bs ? 'Service name' : 'Item name';
+    $('itemName').placeholder = bs ? 'e.g. Haircut, Shave, Kids cut' : 'e.g. Samsung 25W charger, Bosch drill, Cement 50kg';
+    payLbl.textContent = bs ? 'Barber gets per service (TZS, optional)' : 'Staff member gets per service (TZS, optional)';
+    $('itemStaffPay').placeholder = bs ? 'Only for barbers paid per service' : 'Only for staff paid per service';
+    document.querySelector('#sheetItem .save-bar .primary-cta').textContent = bs ? 'SAVE SERVICE' : 'SAVE ITEM';
+    $('itemDeleteBtn').textContent = bs ? 'DELETE SERVICE' : 'DELETE ITEM';
+    if (isBarberMode() && svc && !$('itemCat').value) $('itemCat').value = 'Services';
+    buildEmojiPicker();
     const editing = !!$('itemId').value;
     $('itemTitle').textContent = svc ? (editing ? 'Edit service' : 'Add a service') : (editing ? 'Edit Item' : 'Add New Item');
     if ($('itemUnit').value) unitChanged(true);

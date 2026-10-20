@@ -412,4 +412,10 @@ KeepLang.add({
   'Total paid to staff': 'Jumla iliyolipwa kwa wafanyakazi', 'How is': 'Analipwaje',
   'Edit service': 'Hariri huduma', 'Add a service': 'Ongeza huduma', 'Cost to you (TZS, optional)': 'Gharama yako (TZS, si lazima)',
   'Add another service': 'Ongeza huduma nyingine', 'Record that as a separate client.': 'Rekodi hiyo kama mteja mwingine.', 'me': 'mimi',
+  'Business': 'Biashara', 'Barbers': 'Vinyozi', 'SERVICES': 'HUDUMA', 'BARBERS': 'VINYOZI', 'ADD SERVICE': 'ONGEZA HUDUMA', 'ADD BARBER': 'ONGEZA KINYOZI', 'PAY': 'LIPA',
+  'client': 'mteja', 'clients': 'wateja', 'Money today': 'Pesa leo', 'No barbers yet.': 'Bado hakuna vinyozi.', 'Products you also sell (optional)': 'Bidhaa unazouza pia (si lazima)',
+  'Your services and prices': 'Huduma zako na bei', 'ADD A PRODUCT': 'ONGEZA BIDHAA', 'Barber gets': 'Kinyozi anapata', 'No services yet.': 'Bado hakuna huduma.',
+  'Add your services and prices — haircut, shave, kids cut…': 'Ongeza huduma zako na bei — kunyoa, ndevu, watoto…', 'Tap a service above when a client is done.': 'Gusa huduma hapo juu mteja akimaliza.',
+  'Service name': 'Jina la huduma', 'e.g. Haircut, Shave, Kids cut': 'mfano Kunyoa, Ndevu, Watoto', 'Barber gets per service (TZS, optional)': 'Kinyozi anapata kwa kila huduma (TZS, si lazima)',
+  'Only for barbers paid per service': 'Kwa vinyozi wanaolipwa kwa kila huduma tu', 'SAVE SERVICE': 'HIFADHI HUDUMA', 'DELETE SERVICE': 'FUTA HUDUMA',
 }, [[/^Today · (.+)$/, (m, a) => 'Leo · ' + KeepLang.tl(a)], [/^(\d+) clients?$/, 'wateja $1']]);

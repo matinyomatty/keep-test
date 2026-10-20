@@ -69,7 +69,8 @@ function renderInventory() {
 }
 
 function buildEmojiPicker() {
-    $('emojiPicker').innerHTML = (isServiceShop() ? ['💈','✂️','💇','💇‍♀️','🧔','🪒','💅','💆','🧖','🪮', ...EMOJIS] : EMOJIS).map(e => `<button type="button" class="emoji-opt ${e === S.emoji ? 'sel' : ''}" onclick="pickEmoji(this)">${e}</button>`).join('');
+    const svcForm = $('itemService') && $('itemService').checked;
+    $('emojiPicker').innerHTML = (isBarberMode() && svcForm ? BARBER_ICONS : isServiceShop() ? ['💈','✂️','💇','💇‍♀️','🧔','🪒','💅','💆','🧖','🪮', ...EMOJIS] : EMOJIS).map(e => `<button type="button" class="emoji-opt ${e === S.emoji ? 'sel' : ''}" onclick="pickEmoji(this)">${e}</button>`).join('');
 }
 function pickEmoji(el) {
     S.emoji = el.textContent;

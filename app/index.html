@@ -117,7 +117,9 @@
     <div class="tab-nav">
         <button class="tab-btn role-admin" id="tab-dashboard" onclick="switchTab('dashboard')"><span class="tab-icon">📊</span>Dashboard</button>
         <button class="tab-btn" id="tab-pos" onclick="switchTab('pos')"><span class="tab-icon">🛒</span>Point of Sale</button>
-        <button class="tab-btn" id="tab-inventory" onclick="switchTab('inventory')"><span class="tab-icon">📦</span>Stock</button>
+        <button class="tab-btn shop-only" id="tab-inventory" onclick="switchTab('inventory')"><span class="tab-icon">📦</span>Stock</button>
+        <button class="tab-btn role-admin barber-only" id="tab-services" onclick="switchTab('services')"><span class="tab-icon">✂️</span>Services</button>
+        <button class="tab-btn role-admin barber-only" id="tab-barbers" onclick="switchTab('barbers')"><span class="tab-icon">👥</span>Barbers</button>
     </div>
 
     <div id="noticeBar"></div>
@@ -160,7 +162,7 @@
             <div style="height:14px;"></div>
             <div class="summary-grid">
                 <div class="stat-card"><h4 id="lblMSales">Sales · Month</h4><p id="mSales">—</p></div>
-                <div class="stat-card"><h4 id="lblMStock">Stock · Month</h4><p id="mStock">—</p></div>
+                <div class="stat-card shop-only"><h4 id="lblMStock">Stock · Month</h4><p id="mStock">—</p></div>
                 <div class="stat-card"><h4 id="lblMExp">Expenses · Month</h4><p id="mExp">—</p></div>
                 <div class="stat-card" style="border-left-color:var(--yellow);"><h4 id="lblMProfit">Profit · Month</h4><p id="mProfit">—</p></div>
             </div>
@@ -172,8 +174,8 @@
                 <button class="btn-sec" style="border-color:var(--yellow);" onclick="openCashups()">🧾 CASH-UPS<span class="badge hidden" id="cuBadge">0</span></button>
                 <button class="btn-sec" style="border-color:var(--red);color:var(--red);" onclick="openCloseDay()">🔒 CLOSE DAY</button>
             </div>
-            <button class="btn-sec wide shop-svc hidden" style="border-color:var(--ink);" onclick="openStaffPay()">✂️ STAFF PAY &amp; CLIENTS</button>
-            <button class="btn-sec wide" style="border-color:var(--amber);" onclick="openCustomers('manage')">📒 CUSTOMERS & CREDIT <span id="dashOwed" style="color:var(--red);"></span></button>
+            <button class="btn-sec wide shop-svc shop-only hidden" style="border-color:var(--ink);" onclick="openStaffPay()">✂️ STAFF PAY &amp; CLIENTS</button>
+            <button class="btn-sec wide shop-only" style="border-color:var(--amber);" onclick="openCustomers('manage')">📒 CUSTOMERS & CREDIT <span id="dashOwed" style="color:var(--red);"></span></button>
             <button class="btn-sec wide" style="border-color:var(--blue);color:var(--blue);margin-bottom:18px;" onclick="openMonth()">📅 MONTHLY PROFIT & CLOSE MONTH</button>
 
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
@@ -190,7 +192,7 @@
     <div class="tab-page" id="page-pos">
         <div class="pos-header">
             <div class="header-top">
-                <div class="pos-logo">POS · <span class="shop-name" style="color:#fff;">KEEP</span></div>
+                <div class="pos-logo"><span class="shop-only">POS · </span><span class="shop-name" style="color:#fff;">KEEP</span></div>
                 <div class="header-meta">
                     <span class="hdr-date today-label"></span>
                     <button class="me-chip" onclick="openMeMenu(event)" title="My account"><span class="me-av"></span><span class="me-name"></span><svg class="me-caret" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button>
@@ -201,19 +203,20 @@
                 <button class="strip-btn ghost" id="stExpense" onclick="openSellerExpense()">💸 Expense</button>
             </div>
             <div class="pos-strip"><span id="posStrip">Today: <b>0</b> sales</span>
-                <span style="display:flex;gap:6px;"><button class="strip-btn ghost" onclick="openCustomers('manage')">👥 Customers</button><button class="strip-btn" onclick="openShiftEnd()">🔒 END SHIFT</button></span></div>
-            <div class="search-wrap">
+                <span style="display:flex;gap:6px;"><button class="strip-btn ghost shop-only" onclick="openCustomers('manage')">👥 Customers</button><button class="strip-btn" onclick="openShiftEnd()">🔒 END SHIFT</button></span></div>
+            <div class="search-wrap shop-only">
                 <span class="search-icon">🔍</span>
                 <input type="text" class="dark-search" id="posSearch" placeholder="Search or scan barcode..." oninput="renderPOS()" autocomplete="off" style="padding-right:58px !important;">
                 <button class="scan-btn" onclick="scanToSell()" title="Scan with camera">📷</button>
             </div>
-            <div class="kb-hint">⌨️ <b>/</b> search · <b>Enter</b> add item · <b>F2</b> confirm sale · <b>Esc</b> close · barcode scanners work anywhere on this screen</div>
+            <div class="kb-hint shop-only">⌨️ <b>/</b> search · <b>Enter</b> add item · <b>F2</b> confirm sale · <b>Esc</b> close · barcode scanners work anywhere on this screen</div>
         </div>
-        <div class="cat-filter" id="catFilter"></div>
+        <div class="cat-filter shop-only" id="catFilter"></div>
         <div id="lastSaleBar" class="last-sale hidden"></div>
         <div class="pos-items">
             <div class="pos-grid" id="posGrid"></div>
             <div id="posEmpty" class="empty-state hidden"></div>
+            <div id="barberToday" class="barber-only"></div>
         </div>
         <div class="cart-bar" id="cartBar">
             <button class="cart-bar-inner" onclick="openCart()">
@@ -250,8 +253,34 @@
             <div id="invList"></div>
         </div>
     </div>
-</div>
 
+    <!-- ── BARBERSHOP: SERVICES (owner) ── -->
+    <div class="tab-page role-admin" id="page-services">
+        <div class="inv-header">
+            <div class="inv-logo">SERVICES</div>
+            <div class="stock-actions"><button class="hdr-chip yellow" onclick="newService()"><i>➕</i>ADD SERVICE</button></div>
+        </div>
+        <div class="inv-list">
+            <span class="section-label">Your services and prices</span>
+            <div id="svcList" class="svc-col"></div>
+            <span class="section-label" style="margin-top:22px;">Products you also sell (optional)</span>
+            <div id="svcGoods" class="svc-col"></div>
+            <button class="btn-sec wide" style="margin-top:8px;" onclick="newProduct()">➕ ADD A PRODUCT</button>
+        </div>
+    </div>
+
+    <!-- ── BARBERSHOP: BARBERS (owner) ── -->
+    <div class="tab-page role-admin" id="page-barbers">
+        <div class="inv-header">
+            <div class="inv-logo">BARBERS</div>
+            <div class="stock-actions">
+                <button class="hdr-chip" onclick="openStaffPay()"><i>💵</i>PAY</button>
+                <button class="hdr-chip yellow" onclick="addBarber()"><i>➕</i>ADD BARBER</button>
+            </div>
+        </div>
+        <div class="inv-list"><div id="barberList"></div></div>
+    </div>
+</div>
 <!-- ══════════════ SHEETS ══════════════ -->
 
 <!-- Cart -->
@@ -295,8 +324,8 @@
         <input type="hidden" id="itemId">
         <div class="field-group"><span class="field-label">Icon</span><div class="emoji-row" id="emojiPicker"></div></div>
         <div class="field-group"><span class="field-label">Item name</span><input type="text" id="itemName" placeholder="e.g. Samsung 25W charger, Bosch drill, Cement 50kg"></div>
-        <div class="field-group"><span class="field-label">Category</span><input type="text" id="itemCat" placeholder="e.g. Phones, Accessories, Power tools, Paint..." list="catList"><datalist id="catList"></datalist></div>
-        <label class="check" style="padding-top:0;"><input type="checkbox" id="itemService" onchange="serviceChanged()"><span>✂️ This is a service (haircut, shave, repair…) — no stock</span></label>
+        <div class="field-group svc-hide"><span class="field-label">Category</span><input type="text" id="itemCat" placeholder="e.g. Phones, Accessories, Power tools, Paint..." list="catList"><datalist id="catList"></datalist></div>
+        <label class="check svc-toggle" style="padding-top:0;"><input type="checkbox" id="itemService" onchange="serviceChanged()"><span>✂️ This is a service (haircut, shave, repair…) — no stock</span></label>
         <div class="field-group svc-only hidden"><span class="field-label">Staff member gets per service (TZS, optional)</span><input type="number" id="itemStaffPay" inputmode="numeric" placeholder="Only for staff paid per service"></div>
         <div class="form-row goods-only">
             <div class="field-group"><span class="field-label">Sold by</span><select id="itemUnit" onchange="unitChanged()"></select></div>
@@ -305,7 +334,7 @@
         <label class="check goods-only" style="padding-top:0;"><input type="checkbox" id="itemPart"><span>Can sell part units (e.g. 2.5 m, 0.5 kg)</span></label>
         <div class="form-row">
             <div class="field-group"><span class="field-label" id="lblSell">Sell price / piece (TZS)</span><input type="number" id="itemSell" inputmode="decimal" placeholder="0"></div>
-            <div class="field-group"><span class="field-label" id="lblCost">Cost / piece (TZS)</span><input type="number" id="itemCost" inputmode="decimal" placeholder="0"></div>
+            <div class="field-group svc-hide"><span class="field-label" id="lblCost">Cost / piece (TZS)</span><input type="number" id="itemCost" inputmode="decimal" placeholder="0"></div>
         </div>
         <div class="form-row goods-only">
             <div class="field-group"><span class="field-label" id="lblStock">In stock</span><input type="number" id="itemStock" inputmode="decimal" placeholder="0"></div>
@@ -915,6 +944,7 @@
 <script src="js/account.js"></script>
 <script src="js/excel-labels.js"></script>
 <script src="js/services.js"></script>
+<script src="js/barbershop.js"></script>
 <script src="js/boot.js"></script>
 </body>
 </html>

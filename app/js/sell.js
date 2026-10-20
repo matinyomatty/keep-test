@@ -92,6 +92,10 @@ function renderPosStrip() {
     const live = S.todaySales.filter(s => !s.voided && s.kind !== 'repay');
     const pos = live.filter(s => s.kind !== 'manual' && s.kind !== 'return');
     const mine = pos.filter(s => S.me && s.staffUid === S.me.uid);
+    if (isBarberMode()) {
+        $('posStrip').innerHTML = `${tl('Today')}: <b>${pos.length}</b> ${tl(pos.length === 1 ? 'client' : 'clients')}` + (isAdmin() ? ` · <b>${fmt(live.reduce((a, s) => a + (s.kind === 'return' ? -1 : 1) * (s.total || 0), 0))}</b>` : '');
+        return;
+    }
     $('posStrip').innerHTML = `Today: <b>${pos.length}</b> sale${pos.length === 1 ? '' : 's'}` +
         (isAdmin() ? ` · <b>${fmt(live.reduce((a, s) => a + (s.kind === 'return' ? -1 : 1) * (s.total || 0), 0))}</b>` : '') +
         (mine.length !== pos.length ? ` · you: <b>${mine.length}</b>` : '');
@@ -119,7 +123,7 @@ function renderPOS() {
     } else {
         empty.classList.add('hidden');
         $('posGrid').classList.toggle('svc-list', isBarberMode());
-        if (isBarberMode()) { $('posGrid').innerHTML = renderBarberList(list); updateCartBar(); return; }
+        if (isBarberMode()) { $('posGrid').innerHTML = renderBarberList(list); updateCartBar(); renderBarberToday(); return; }
         $('posGrid').innerHTML = list.map(p => {
             const qty = S.cart[p.id] || 0, stock = Number(p.stock) || 0, svc = isService(p);
             const out = !svc && stock <= 0, low = !svc && !out && stock <= (Number(p.reorderLevel) || 5);

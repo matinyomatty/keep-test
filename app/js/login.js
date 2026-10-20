@@ -298,7 +298,7 @@ function startListeners() {
     L(tRef(), s => {
         S.tenantInfo = s.data() || {};
         if (subState(S.tenantInfo).locked) { showLocked(); return; }
-        renderShopName(); renderNotices(); renderSellerTools(); if (isAdmin()) renderDashboard();
+        renderShopName(); renderNotices(); renderSellerTools(); applyServiceMode(); renderPOS(); if (isAdmin()) renderDashboard();
     });
     L(col('staff').doc(S.me.uid), s => {
         const d = s.data();
@@ -309,11 +309,11 @@ function startListeners() {
         S.products = s.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => (a.name || '').localeCompare(b.name || ''));
         applyServiceMode();
         Object.keys(S.cart).forEach(id => { if (!productById(id)) delete S.cart[id]; });
-        renderPOS(); renderInventory(); renderNotices(); if (isAdmin()) renderDashboard();
+        renderPOS(); renderInventory(); renderServicesPage(); renderNotices(); if (isAdmin()) renderDashboard();
     });
     L(col('sales').where('day', '==', S.today), s => {
         S.todaySales = s.docs.map(d => ({ id: d.id, ...d.data() }));
-        renderPosStrip(); if (isAdmin()) renderDashboard();
+        renderPosStrip(); renderBarberToday(); if ($('page-barbers').classList.contains('active')) renderBarbersPage(); if (isAdmin()) renderDashboard();
     });
     L(db.collection('announcements').where('active', '==', true), s => {
         S.announcements = s.docs.map(d => ({ id: d.id, ...d.data() }));
@@ -371,6 +371,8 @@ function renderShopName() {
 // ════════════════════════════════════════════════
 function switchTab(tab) {
     if (tab === 'dashboard' && !isAdmin()) tab = 'pos';
+    if ((tab === 'services' || tab === 'barbers') && (!isAdmin() || !isBarberMode())) tab = 'pos';
+    if (tab === 'inventory' && isBarberMode()) tab = isAdmin() ? 'services' : 'pos';
     document.querySelectorAll('.tab-page').forEach(p => p.classList.remove('active'));
     document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
     $('page-' + tab).classList.add('active');
@@ -381,6 +383,8 @@ function switchTab(tab) {
     if (tab === 'pos') renderPOS();
     if (tab === 'inventory') renderInventory();
     if (tab === 'dashboard') renderDashboard();
+    if (tab === 'services') renderServicesPage();
+    if (tab === 'barbers') renderBarbersPage();
 }
 
 // ════════════════════════════════════════════════
