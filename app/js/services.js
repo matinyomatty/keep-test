@@ -11,6 +11,8 @@ const isServiceShop = () => (S.tenantInfo || {}).type === 'barbershop' || S.prod
 //   salary  — a fixed monthly salary; Keep just counts their clients
 //   rent    — keeps their takings and pays the shop chair rent per day worked
 const shareOf = (p, qty) => Math.round((Number((p || {}).staffPay) || 0) * (Number(qty) || 0));
+// The share kept on the sale; if none was set then, the service's share now
+const itemShare = (i, qty) => Number(i.share) > 0 ? Number(i.share) : shareOf(productById(i.productId), qty);
 const PAY_TYPES = [
     ['service', 'Per service', 'Gets the "barber gets" amount set on each service'],
     ['percent', 'Percentage', 'Gets a % of the money they bring in'],
@@ -208,7 +210,7 @@ function staffPayRows(sales, entries, staff) {
             if (i.service) {
                 r.services += q;
                 // the share is kept on the sale, so changing a service's share later doesn't rewrite the past
-                r.shares += (i.share != null ? Number(i.share) || 0 : shareOf(productById(i.productId), qty)) * (q / qty);
+                r.shares += itemShare(i, qty) * (q / qty);
             }
             r.days.add(s.day);
             if (!seen.has(i.by)) { seen.add(i.by); r.clients++; }

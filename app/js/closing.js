@@ -60,7 +60,8 @@ function poRowHtml() {
 }
 function addPaidOut() { $('poRows').insertAdjacentHTML('beforeend', poRowHtml()); }
 
-function openShiftEnd() {
+async function openShiftEnd() {
+    if (isBarberMode() && !(await payBarbersToday(true, 'shift'))) return;
     ['shCash', 'shMobile', 'shNote'].forEach(id => $(id).value = '');
     $('poRows').innerHTML = '';
     openSheet('sheetShift');
@@ -92,7 +93,7 @@ function renderShiftInfo() {
 
 async function submitShift() {
     if ($('shCash').value.trim() === '') return toast('⚠️ Count the cash in the drawer and type it.', 'err');
-    if (isBarberMode() && $('shCloseDay') && $('shCloseDay').checked) {
+    if (isBarberMode()) {
         const owed = (await barbersOwedToday()).filter(r => r.owed > 0);
         if (owed.length) { toast('⚠️ ' + tl('Pay the barbers first, then count the drawer again.'), 'err'); payBarbersToday(true); return; }
     }

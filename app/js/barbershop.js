@@ -73,7 +73,7 @@ async function renderBarbersPage() {
         today.forEach(s => {
             const mine = (s.items || []).filter(i => i.service && i.by === x.uid);
             if (mine.length) clients++;
-            mine.forEach(i => { money += Number(i.subtotal) || 0; earned += i.share != null ? Number(i.share) || 0 : shareOf(productById(i.productId), i.qty); });
+            mine.forEach(i => { money += Number(i.subtotal) || 0; earned += itemShare(i, i.qty); });
         });
         return `<div class="barber-card">
             <div class="bc-top"><span class="bc-av">${esc((x.name || '?').trim()[0] || '?').toUpperCase()}</span>
@@ -128,7 +128,7 @@ function barberDay(sales) {
             const r = by[i.by] = by[i.by] || { uid: i.by, name: i.byName || staffName(i.by) || '?', clients: 0, money: 0, share: 0 };
             if (!seen.has(i.by)) { seen.add(i.by); r.clients++; }
             r.money += Number(i.subtotal) || 0;
-            r.share += i.share != null ? Number(i.share) || 0 : shareOf(productById(i.productId), i.qty);
+            r.share += itemShare(i, i.qty);
         });
     });
     return Object.values(by).sort((a, b) => b.money - a.money);
@@ -271,12 +271,16 @@ async function barbersOwedToday() {
     const keep = S.spRange; S.spRange = {};
     const rows = staffPayRows(S.todaySales || [], entries, list.map(b => ({ uid: b.id, name: b.name, pay: b.pay })));
     S.spRange = keep;
-    return rows.filter(r => ids.has(r.p.uid) && (r.earned > 0 || r.paid > 0));
+    return rows.filter(r => ids.has(r.p.uid) && (r.clients > 0 || r.earned > 0 || r.paid > 0));
 }
 // Shows the list; resolves true once everyone is paid (or nobody is owed)
-async function payBarbersToday(forClosing) {
+async function payBarbersToday(forClosing, what) {
     const rows = await barbersOwedToday();
-    if (!rows.some(r => r.owed > 0) && forClosing) return true;
+    // services sold today with no "barber gets" amount, done by a barber paid per service
+    const perSvc = new Set(barbersAll().filter(b => payOf(b).type === 'service').map(b => b.id));
+    const noShare = [...new Set((S.todaySales || []).filter(s => s.kind === 'pos' && !s.voided).flatMap(s => s.items || [])
+        .filter(i => i.service && perSvc.has(i.by) && !(Number(i.share) > 0) && !(Number((productById(i.productId) || {}).staffPay) > 0)).map(i => i.name))];
+    if (!rows.some(r => r.owed > 0) && !noShare.length && forClosing) return true;
     return new Promise(resolve => {
         const o = document.createElement('div'); o.id = 'payTodayBox';
         o.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:9997;display:flex;align-items:flex-end;justify-content:center;';
@@ -284,7 +288,8 @@ async function payBarbersToday(forClosing) {
             const left = rows.filter(r => r.owed > 0);
             o.innerHTML = `<div class="qs-card" style="max-height:88vh;overflow:auto;">
                 <div class="qs-confirm-title">💈 ${tl('Pay barbers for today')}</div>
-                <div class="hint gray" style="margin:4px 0 10px;">${tl(forClosing ? 'Pay each barber paid daily what they earned today before closing the day. Weekly, monthly and salaried barbers are paid by the owner.' : 'Barbers paid daily — what they earned today. Weekly, monthly and salaried barbers are paid by the owner.')}</div>
+                ${noShare.length ? `<div class="hint amber" style="margin:4px 0 8px;">⚠️ ${tl('No "barber gets" amount on')}: <b class="notr">${noShare.map(esc).join(', ')}</b>. ${tl(isAdmin() ? 'Set it in Services, then come back.' : 'Ask the owner to set it in Services.')}</div>` : ''}
+                <div class="hint gray" style="margin:4px 0 10px;">${tl(!forClosing ? 'Barbers paid daily — what they earned today. Weekly, monthly and salaried barbers are paid by the owner.' : what === 'shift' ? 'Pay each barber paid daily what they earned today before ending the shift. Weekly, monthly and salaried barbers are paid by the owner.' : 'Pay each barber paid daily what they earned today before closing the day. Weekly, monthly and salaried barbers are paid by the owner.')}</div>
                 ${rows.length ? rows.map((r, i) => `<div class="pt-row ${r.owed > 0 ? '' : 'done'}">
                     <div class="pt-top"><b class="notr">${esc(r.p.name)}</b><small>${esc(payLabel(r.p))}</small></div>
                     <div class="pt-nums"><span>${tl('Clients')} <b>${r.clients}</b></span><span>${tl('Earned')} <b>${n0(r.earned)}</b></span><span>${tl('Paid')} <b>${n0(r.paid)}</b></span></div>
@@ -292,7 +297,8 @@ async function payBarbersToday(forClosing) {
                         <button data-a="cash" data-i="${i}" style="background:var(--pos);">💵 ${tl('Cash')}</button><button data-a="mobile" data-i="${i}" style="background:#1a56db;">📱 ${tl('Mobile')}</button></div>`
                         : `<div class="pt-ok">✅ ${tl('Paid')}</div>`}
                 </div>`).join('') : `<div class="hint gray">${tl('No barber earnings today.')}</div>`}
-                ${forClosing ? `<button class="qs-ok" data-a="go" ${left.length ? 'disabled style="opacity:.45;"' : ''}>${left.length ? tl('Pay everyone first') : '✅ ' + tl('Continue closing the day')}</button>` : ''}
+                ${forClosing ? `<button class="qs-ok" data-a="go" ${left.length ? 'disabled style="opacity:.45;"' : ''}>${left.length ? tl('Pay everyone first') : '✅ ' + tl(what === 'shift' ? 'Continue to end the shift' : 'Continue closing the day')}</button>` : ''}
+                ${isAdmin() && noShare.length ? `<button class="qs-cancel" data-a="svc" style="color:var(--blue);">✂️ ${tl('Open Services')}</button>` : ''}
                 <button class="qs-cancel" data-a="x">${tl(forClosing ? 'Cancel' : 'Close')}</button></div>`;
         };
         draw(); document.body.appendChild(o);
@@ -300,6 +306,7 @@ async function payBarbersToday(forClosing) {
             const t = e.target.closest('[data-a]'); if (!t) return;
             const a = t.dataset.a;
             if (a === 'x') { o.remove(); return resolve(false); }
+            if (a === 'svc') { o.remove(); closeModals(); switchTab('services'); return resolve(false); }
             if (a === 'go') { if (rows.some(r => r.owed > 0)) return; o.remove(); return resolve(true); }
             if (a === 'cash' || a === 'mobile') {
                 const r = rows[+t.dataset.i]; if (!r || !(r.owed > 0)) return;
