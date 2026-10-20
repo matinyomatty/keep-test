@@ -29,7 +29,7 @@ function earnedBy(x, w) {
     return Math.round(type === 'service' ? w.shares : type === 'percent' ? w.money * rate / 100 : type === 'salary' ? rate * (w.months || 0) : w.money - rate * (w.days || 0));
 }
 async function setStaffPay(uid) {
-    const x = (S.staffAll || []).find(y => y.uid === uid) || (S.staff || []).find(y => y.uid === uid); if (!x) return;
+    const x = (await doersList()).find(y => y.uid === uid) || (S.staff || []).find(y => y.uid === uid); if (!x) return;
     const cur = payOf(x);
     const type = await choose(`${tl('How is this person paid?')}<br><b class="notr">${esc(x.name)}</b>`, PAY_TYPES.map(([k, l, d]) => [k, `${tl(l)}<br><small style="font-weight:500;opacity:.85;">${tl(d)}</small>`, cur.type === k ? '#0b0d12' : '#1a56db']));
     if (!type) return;
@@ -42,9 +42,10 @@ async function setStaffPay(uid) {
         if (!(rate > 0)) return toast('⚠️ ' + tl('Enter an amount.'), 'err');
         if (type === 'percent' && rate > 100) return toast('⚠️ ' + tl('A share cannot be more than 100%.'), 'err');
     }
+    x.pay = { type, rate };
+    if (isBarberMode()) return saveBarbers(barbersAll().map(b => b.id === uid ? { ...b, pay: { type, rate } } : b), '✅ ' + tl('Pay method saved'));
     const b = db.batch();
     b.set(col('staff').doc(uid), { pay: { type, rate }, updatedAt: now() }, { merge: true });
-    x.pay = { type, rate };
     await commit(b, '✅ ' + tl('Pay method saved'));
 }
 
@@ -67,12 +68,28 @@ async function loadStaffOnce(force) {
     } catch (e) { S.staffAll = S.staffAll || [{ uid: S.me.uid, name: S.me.name }]; }
     return S.staffAll;
 }
-const staffName = uid => ((S.staffAll || []).find(p => p.uid === uid) || (uid === S.me.uid ? S.me : {})).name || '';
+const staffName = uid => { const b = barbersAll().find(x => x.id === uid); return b ? b.name : ((S.staffAll || []).find(p => p.uid === uid) || (uid === S.me.uid ? S.me : {})).name || ''; };
+
+// ── Barbers: the people who do the services ──
+// In a barbershop these are just names with a pay method — no login, no phone needed.
+// Logins (Team) are separate: they are for whoever uses the till.
+const barbersAll = () => (((S.tenantInfo || {}).settings || {}).barbers) || [];
+async function doersList(force) {
+    if (isBarberMode()) return barbersAll().filter(b => b.active !== false).map(b => ({ uid: b.id, name: b.name, pay: b.pay, phone: b.phone || '' }));
+    return loadStaffOnce(force);
+}
+function saveBarbers(list, msg) {
+    S.tenantInfo.settings = S.tenantInfo.settings || {};
+    S.tenantInfo.settings.barbers = list;
+    const b = db.batch();
+    b.update(tRef(), { 'settings.barbers': list });
+    return commit(b, msg);
+}
 
 // Who did this service? Sellers default to themselves; the owner picks.
-function defaultDoer() { return !isAdmin() ? S.me.uid : (S.lastDoer || null); }
+function defaultDoer() { return isBarberMode() ? (S.lastDoer || null) : !isAdmin() ? S.me.uid : (S.lastDoer || null); }
 async function pickDoer(id) {
-    const list = await loadStaffOnce();
+    const list = await doersList();
     const p = productById(id);
     const opts = list.map(x => [x.uid, (meta(id).by === x.uid ? '✓ ' : '') + esc(x.name), meta(id).by === x.uid ? '#0b0d12' : '#1a56db']);
     const k = await choose(`${tl('Who did')} <b>${esc(p ? p.name : '')}</b>?`, opts);
@@ -127,7 +144,7 @@ async function loadStaffPay() {
         [sales, entries, staff] = await Promise.all([
             col('sales').where('day', '>=', from).where('day', '<=', to).get().then(s => s.docs.map(d => ({ id: d.id, ...d.data() }))),
             col('entries').where('day', '>=', from).where('day', '<=', to).get().then(s => s.docs.map(d => ({ id: d.id, ...d.data() }))),
-            loadStaffOnce(true)
+            doersList(true)
         ]);
     } catch (e) { box.innerHTML = `<div class="hint amber">${esc(friendlyErr(e))}</div>`; return; }
     S.spRange = { from, to };
@@ -248,12 +265,15 @@ async function qsAdd(id) {
 }
 
 async function askWho(p) {
-    const list = (await loadStaffOnce()).filter(x => x.active !== false);
-    if (!list.length) return S.me.uid;
+    const list = (await doersList()).filter(x => x.active !== false);
+    if (!list.length) {
+        if (isBarberMode()) { toast('⚠️ ' + tl(isAdmin() ? 'Add your barbers first — Barbers tab.' : 'No barbers listed yet. Ask the owner to add them.'), 'err'); if (isAdmin()) switchTab('barbers'); return null; }
+        return S.me.uid;
+    }
     if (list.length === 1) return list[0].uid;
     const me = S.me.uid, last = S.lastDoer;
     list.sort((a, b) => (b.uid === me) - (a.uid === me));
-    const opts = list.map(x => [x.uid, esc(x.name) + (x.uid === me ? ` (${tl('me')})` : ''), x.uid === last ? '#0b0d12' : '#1a56db']);
+    const opts = list.map(x => [x.uid, `<span class="notr">${esc(x.name)}</span>` + (x.uid === me ? ` (${tl('me')})` : ''), x.uid === last ? '#0b0d12' : '#1a56db']);
     return choose(`✂️ ${tl('Who did')} <b class="notr">${esc(p.name)}</b>?`, opts);
 }
 

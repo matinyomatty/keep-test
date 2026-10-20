@@ -628,3 +628,7 @@
         .qs-ok { width: 100%; border: none; border-radius: 14px; padding: 18px; background: var(--pos); color: #fff; font-weight: 800; font-size: 1.05rem; cursor: pointer; }
         .qs-split { width: 100%; margin-top: 10px; border: 2px solid #d5dbe4; background: #fff; border-radius: 14px; padding: 13px; font-weight: 800; color: var(--ink); cursor: pointer; }
         .qs-method.split { background: #f3f4f6; color: var(--ink); }
+        .bc-pay { width: 100%; margin-top: 10px; background: #f6f8fb; border: none; border-radius: 12px; padding: 11px 12px; text-align: left; font: inherit; font-size: .8rem; color: var(--gray); cursor: pointer; }
+        .bc-pay b { color: var(--ink); }
+        .login-note { margin-top: 14px; font-size: .78rem; color: var(--gray); background: #fff; border: 1px dashed #d5dbe4; border-radius: 14px; padding: 12px 14px; line-height: 1.45; }
+        .login-note a { color: var(--blue); font-weight: 800; }

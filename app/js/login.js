@@ -298,7 +298,7 @@ function startListeners() {
     L(tRef(), s => {
         S.tenantInfo = s.data() || {};
         if (subState(S.tenantInfo).locked) { showLocked(); return; }
-        renderShopName(); renderNotices(); renderSellerTools(); applyServiceMode(); renderPOS(); if (isAdmin()) renderDashboard();
+        renderShopName(); renderNotices(); renderSellerTools(); applyServiceMode(); renderPOS(); if ($('page-barbers').classList.contains('active')) renderBarbersPage(); if (isAdmin()) renderDashboard();
     });
     L(col('staff').doc(S.me.uid), s => {
         const d = s.data();

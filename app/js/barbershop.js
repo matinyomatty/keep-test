@@ -60,7 +60,7 @@ function newProduct() { openItem(); $('itemService').checked = false; serviceCha
 // ── Barbers tab (owner) ──
 async function renderBarbersPage() {
     const box = $('barberList'); if (!box) return;
-    const staff = await loadStaffOnce(true);
+    const staff = await doersList();
     const today = (S.todaySales || []).filter(s => s.kind === 'pos' && !s.voided);
     const rows = staff.filter(x => x.active !== false).map(x => {
         let clients = 0, money = 0, earned = 0;
@@ -71,12 +71,13 @@ async function renderBarbersPage() {
         });
         return `<div class="barber-card">
             <div class="bc-top"><span class="bc-av">${esc((x.name || '?').trim()[0] || '?').toUpperCase()}</span>
-                <div style="flex:1;"><b class="notr">${esc(x.name)}</b><small>${esc(payLabel(x))}</small></div>
-                <button class="tiny-btn" onclick="setStaffPay('${x.uid}').then(renderBarbersPage)">✏️ ${tl('Pay method')}</button></div>
+                <div style="flex:1;"><b class="notr">${esc(x.name)}</b>${x.phone ? `<small class="notr">${esc(x.phone)}</small>` : ''}</div>
+                <button class="tiny-btn" onclick="editBarber('${x.uid}')">✏️</button></div>
+            <button class="bc-pay" onclick="setStaffPay('${x.uid}').then(renderBarbersPage)">💵 ${tl('Pay method')}: <b>${esc(payLabel(x))}</b></button>
             <div class="bc-stats three"><div><b>${clients}</b><small>${tl('Clients today')}</small></div><div><b>${n0(money)}</b><small>${tl('Money today')}</small></div><div><b>${todayShareTxt(x, { money, shares: earned, clients })}</b><small>${tl('Their share')}</small></div></div>
         </div>`;
     });
-    box.innerHTML = (rows.join('') || `<div class="empty-state"><div class="icon">💈</div>${tl('No barbers yet.')}</div>`)
+    box.innerHTML = (rows.join('') || `<div class="empty-state"><div class="icon">💈</div>${tl('No barbers yet.')}<br><span style="font-size:.78rem;">${tl('Add the people who cut hair — just a name and how they are paid.')}</span></div>`)
         + `<div class="hint gray" style="margin-top:4px;">${tl('Barbers paid per service earn the "barber gets" amount set on each service. Tap Pay method to use a percentage, a salary or chair rent instead.')}</div>`;
 }
 // Today's share for one barber, by their pay method
@@ -85,7 +86,32 @@ function todayShareTxt(x, w) {
     if (t === 'salary') return `<span style="font-size:.8rem;">${tl('Salary')}</span>`;
     return n0(earnedBy(x, { money: w.money, shares: w.shares, days: w.clients ? 1 : 0, months: 0 }));
 }
-function addBarber() { openTeam(); setTimeout(() => toggleAddStaff(true), 50); }
+// Add a barber: a name and how they are paid. No login.
+async function addBarber() {
+    const name = await askValue(`💈 ${tl('Barber name')}`, tl('e.g. Baraka'), tl('Next'), { type: 'text' });
+    if (!name) return;
+    if (barbersAll().some(b => b.active !== false && (b.name || '').toLowerCase() === name.toLowerCase())) return toast('⚠️ ' + tl('A barber with that name is already listed.'), 'err');
+    const id = 'b' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5);
+    await saveBarbers([...barbersAll(), { id, name, pay: { type: 'service', rate: 0 }, active: true }], `✅ ${name} ${tl('added')}`);
+    renderBarbersPage();
+    await setStaffPay(id);                         // straight on to how they are paid
+    renderBarbersPage();
+}
+async function editBarber(id) {
+    const x = barbersAll().find(b => b.id === id); if (!x) return;
+    const k = await choose(`<b class="notr">${esc(x.name)}</b>`, [['name', '✏️ ' + tl('Change name'), '#1a56db'], ['phone', '📞 ' + tl('Phone number (optional)'), '#1a56db'], ['off', '⛔ ' + tl('Remove from the list'), '#e02424']]);
+    if (k === 'name') {
+        const v = await askValue(tl('Barber name'), '', tl('Save'), { type: 'text', value: x.name }); if (!v) return;
+        await saveBarbers(barbersAll().map(b => b.id === id ? { ...b, name: v } : b), '✅ ' + tl('Saved'));
+    } else if (k === 'phone') {
+        const v = await askValue(tl('Phone number (optional)'), '07…', tl('Save'), { value: x.phone || '' }); if (v === null) return;
+        await saveBarbers(barbersAll().map(b => b.id === id ? { ...b, phone: v } : b), '✅ ' + tl('Saved'));
+    } else if (k === 'off') {
+        if (!(await showConfirm(`${tl('Remove')} <b class="notr">${esc(x.name)}</b>?<br><small>${tl('Their past clients and pay stay in the records.')}</small>`, tl('Remove')))) return;
+        await saveBarbers(barbersAll().map(b => b.id === id ? { ...b, active: false } : b), '✅ ' + tl('Removed'));
+    }
+    renderBarbersPage();
+}
 
 // ── Business page: what each barber did today — clients, money brought in, their share ──
 function barberDay(sales) {
@@ -105,9 +131,8 @@ function renderDashBarbers() {
     const box = $('dashBarbers'); if (!box) return;
     if (!isBarberMode() || !isAdmin()) { box.innerHTML = ''; return; }
     const R = barberDay(S.todaySales || []);
-    if (!S.staffAll) loadStaffOnce().then(() => { if (S.staffAll) renderDashBarbers(); });
     R.forEach(r => {
-        const x = (S.staffAll || []).find(y => y.uid === r.uid) || {};
+        const x = (barbersAll().find(y => y.id === r.uid)) || {};
         r.salary = payOf(x).type === 'salary';
         r.share = r.salary ? 0 : earnedBy(x, { money: r.money, shares: r.share, days: r.clients ? 1 : 0, months: 0 });
     });
