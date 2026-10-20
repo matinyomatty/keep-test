@@ -383,6 +383,7 @@ function switchTab(tab) {
     if (tab === 'pos') renderPOS();
     if (tab === 'inventory') renderInventory();
     if (tab === 'dashboard') renderDashboard();
+    if (tab === 'dashboard') renderDashBarbers();
     if (tab === 'services') renderServicesPage();
     if (tab === 'barbers') renderBarbersPage();
 }

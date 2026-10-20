@@ -22,6 +22,7 @@ function applyBarberShell() {
 
 // ── Today: clients served today, under the services list ──
 function renderBarberToday() {
+    renderDashBarbers();
     const box = $('barberToday'); if (!box) return;
     if (!isBarberMode()) { box.innerHTML = ''; return; }
     let list = (S.todaySales || []).filter(s => s.kind === 'pos' && !s.voided);
@@ -44,7 +45,7 @@ function renderServicesPage() {
     $('svcList').innerHTML = svcs.length ? svcs.map(p => `
         <button class="svc-row" onclick="openItem('${p.id}')">
             <span class="sr-emoji">${esc(p.emoji || '✂️')}</span>
-            <span class="sr-name"><span class="notr">${esc(p.name)}</span>${p.staffPay ? `<small>${tl('Barber gets')} ${n0(p.staffPay)}</small>` : ''}</span>
+            <span class="sr-name"><span class="notr">${esc(p.name)}</span>${p.staffPay ? `<small>${tl('Barber gets')} ${n0(p.staffPay)} · ${tl('Shop keeps')} ${n0((Number(p.sellPrice) || 0) - p.staffPay)}</small>` : `<small style="color:var(--red);">${tl('Barber share not set')}</small>`}</span>
             <b class="sr-price">${n0(p.sellPrice)}</b><span class="sr-edit">✏️</span></button>`).join('')
         : `<div class="empty-state"><div class="icon">✂️</div>${tl('No services yet.')}<br><span style="font-size:.78rem;">${tl('Add your services and prices — haircut, shave, kids cut…')}</span></div>`;
     $('svcGoods').innerHTML = goods.map(p => `
@@ -62,19 +63,47 @@ async function renderBarbersPage() {
     const staff = await loadStaffOnce(true);
     const today = (S.todaySales || []).filter(s => s.kind === 'pos' && !s.voided);
     const rows = staff.filter(x => x.active !== false).map(x => {
-        let clients = 0, money = 0;
+        let clients = 0, money = 0, earned = 0;
         today.forEach(s => {
             const mine = (s.items || []).filter(i => i.service && i.by === x.uid);
             if (mine.length) clients++;
-            mine.forEach(i => money += Number(i.subtotal) || 0);
+            mine.forEach(i => { money += Number(i.subtotal) || 0; earned += i.share != null ? Number(i.share) || 0 : shareOf(productById(i.productId), i.qty); });
         });
         return `<div class="barber-card">
             <div class="bc-top"><span class="bc-av">${esc((x.name || '?').trim()[0] || '?').toUpperCase()}</span>
-                <div style="flex:1;"><b class="notr">${esc(x.name)}</b><small>${esc(payLabel(x))}</small></div>
-                <button class="tiny-btn" onclick="setStaffPay('${x.uid}').then(renderBarbersPage)">✏️ ${tl('Pay rule')}</button></div>
-            <div class="bc-stats"><div><b>${clients}</b><small>${tl('Clients today')}</small></div><div><b>${n0(money)}</b><small>${tl('Money today')}</small></div></div>
+                <div style="flex:1;"><b class="notr">${esc(x.name)}</b><small>${tl('Today')}</small></div></div>
+            <div class="bc-stats three"><div><b>${clients}</b><small>${tl('Clients')}</small></div><div><b>${n0(money)}</b><small>${tl('Money')}</small></div><div><b>${n0(earned)}</b><small>${tl('Their share')}</small></div></div>
         </div>`;
     });
     box.innerHTML = rows.join('') || `<div class="empty-state"><div class="icon">💈</div>${tl('No barbers yet.')}</div>`;
 }
 function addBarber() { openTeam(); setTimeout(() => toggleAddStaff(true), 50); }
+
+// ── Business page: what each barber did today — clients, money brought in, their share ──
+function barberDay(sales) {
+    const by = {};
+    sales.filter(s => s.kind === 'pos' && !s.voided).forEach(s => {
+        const seen = new Set();
+        (s.items || []).filter(i => i.service && i.by).forEach(i => {
+            const r = by[i.by] = by[i.by] || { uid: i.by, name: i.byName || staffName(i.by) || '?', clients: 0, money: 0, share: 0 };
+            if (!seen.has(i.by)) { seen.add(i.by); r.clients++; }
+            r.money += Number(i.subtotal) || 0;
+            r.share += i.share != null ? Number(i.share) || 0 : shareOf(productById(i.productId), i.qty);
+        });
+    });
+    return Object.values(by).sort((a, b) => b.money - a.money);
+}
+function renderDashBarbers() {
+    const box = $('dashBarbers'); if (!box) return;
+    if (!isBarberMode() || !isAdmin()) { box.innerHTML = ''; return; }
+    const R = barberDay(S.todaySales || []);
+    const t = R.reduce((a, r) => ({ c: a.c + r.clients, m: a.m + r.money, s: a.s + r.share }), { c: 0, m: 0, s: 0 });
+    box.innerHTML = `<div class="dash-barbers">
+        <div class="db-head"><span>💈 ${tl('Barbers today')}</span><button class="link-btn" style="margin:0;" onclick="switchTab('barbers')">${tl('See all')} →</button></div>
+        <div class="db-row db-cols"><span></span><span>${tl('Clients')}</span><span>${tl('Money')}</span><span>${tl('Their share')}</span></div>
+        ${R.length ? R.map(r => `<div class="db-row"><b class="notr">${esc(r.name)}</b><span>${r.clients}</span><span>${n0(r.money)}</span><span class="db-share">${n0(r.share)}</span></div>`).join('')
+            : `<div class="hint gray" style="margin:6px 0 0;">${tl('No clients yet today.')}</div>`}
+        ${R.length ? `<div class="db-row db-total"><b>${tl('Total')}</b><span>${t.c}</span><span>${n0(t.m)}</span><span class="db-share">${n0(t.s)}</span></div>
+        <div class="db-keep">${tl('Shop keeps')} <b>${n0(t.m - t.s)}</b></div>` : ''}
+    </div>`;
+}

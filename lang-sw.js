@@ -418,4 +418,11 @@ KeepLang.add({
   'Add your services and prices — haircut, shave, kids cut…': 'Ongeza huduma zako na bei — kunyoa, ndevu, watoto…', 'Tap a service above when a client is done.': 'Gusa huduma hapo juu mteja akimaliza.',
   'Service name': 'Jina la huduma', 'e.g. Haircut, Shave, Kids cut': 'mfano Kunyoa, Ndevu, Watoto', 'Barber gets per service (TZS, optional)': 'Kinyozi anapata kwa kila huduma (TZS, si lazima)',
   'Only for barbers paid per service': 'Kwa vinyozi wanaolipwa kwa kila huduma tu', 'SAVE SERVICE': 'HIFADHI HUDUMA', 'DELETE SERVICE': 'FUTA HUDUMA',
+  'Their share': 'Sehemu yake', 'Paid too much': 'Amelipwa zaidi', 'No barber share set on': 'Sehemu ya kinyozi haijawekwa kwenye', 'Set it in Services.': 'Iweke kwenye Huduma.',
+  "Barbers' shares": 'Sehemu za vinyozi', 'Shop keeps': 'Duka linabaki na', 'Barber share not set': 'Sehemu ya kinyozi haijawekwa', 'Money': 'Pesa',
+  'Barber gets from each one (TZS)': 'Kinyozi anapata kwa kila moja (TZS)', 'Staff member gets from each one (TZS)': 'Mfanyakazi anapata kwa kila moja (TZS)',
+  'The barber cannot get more than the price.': 'Kinyozi hawezi kupata zaidi ya bei.',
+  'Barbers today': 'Vinyozi leo',
+  'See all': 'Ona wote',
+  'No clients yet today.': 'Bado hakuna wateja leo.',
 }, [[/^Today · (.+)$/, (m, a) => 'Leo · ' + KeepLang.tl(a)], [/^(\d+) clients?$/, 'wateja $1']]);

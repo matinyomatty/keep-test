@@ -352,7 +352,7 @@ async function confirmSale() {
         const unitPrice = linePrice(id);
         items.push({ productId: id, name: p.name, emoji: p.emoji || '📦', unit: unitOf(p), qty: q3(qty), listPrice: Number(p.sellPrice) || 0, unitPrice,
             subtotal: lineSub(id), serials, warrantyMonths: Number(p.warrantyMonths) || 0,
-            ...(isService(p) ? { service: true } : {}), ...(meta(id).by ? { by: meta(id).by, byName: staffName(meta(id).by) } : {}) });
+            ...(isService(p) ? { service: true, share: shareOf(p, qty) } : {}), ...(meta(id).by ? { by: meta(id).by, byName: staffName(meta(id).by) } : {}) });
     }
     const total = cartTotal(), list = Math.round(cartList());
     const cash = num($('payCash').value), mobile = num($('payMobile').value);

@@ -124,6 +124,7 @@ function saveItem() {
     const sellPrice = num($('itemSell').value), cost = num($('itemCost').value);
     if (sellPrice <= 0) return toast('⚠️ Enter a selling price.', 'err');
     const svc = $('itemService').checked;
+    if (svc && num($('itemStaffPay').value) > sellPrice) return toast('⚠️ ' + tl('The barber cannot get more than the price.'), 'err');
     if (svc) { $('itemStock').value = '0'; $('itemSerial').checked = false; $('itemPart').checked = false; $('itemPack').value = ''; $('itemWarranty').value = ''; $('itemExpiry').value = ''; }
     const part = $('itemPart').checked, serial = $('itemSerial').checked;
     const roundQ = v => part ? q3(v) : Math.round(v);

@@ -157,8 +157,9 @@
         <div class="container">
             <div class="row-btns" style="margin-top:2px;">
                 <button class="primary-cta" style="flex:1;margin-bottom:0;" onclick="openEntry()">📒 Accounting</button>
-                <button class="primary-cta green" style="flex:1;margin-bottom:0;" onclick="openManualSale()">✍️ Manual Sale</button>
+                <button class="primary-cta green shop-only" style="flex:1;margin-bottom:0;" onclick="openManualSale()">✍️ Manual Sale</button>
             </div>
+            <div id="dashBarbers" class="barber-only"></div>
             <div style="height:14px;"></div>
             <div class="summary-grid">
                 <div class="stat-card"><h4 id="lblMSales">Sales · Month</h4><p id="mSales">—</p></div>
@@ -199,7 +200,7 @@
                 </div>
             </div>
             <div id="sellerTools" class="seller-tools hidden">
-                <button class="strip-btn ghost" id="stManual" onclick="openManualSale()">✍️ Manual sale</button>
+                <button class="strip-btn ghost shop-only" id="stManual" onclick="openManualSale()">✍️ Manual sale</button>
                 <button class="strip-btn ghost" id="stExpense" onclick="openSellerExpense()">💸 Expense</button>
             </div>
             <div class="pos-strip"><span id="posStrip">Today: <b>0</b> sales</span>
@@ -326,16 +327,16 @@
         <div class="field-group"><span class="field-label">Item name</span><input type="text" id="itemName" placeholder="e.g. Samsung 25W charger, Bosch drill, Cement 50kg"></div>
         <div class="field-group svc-hide"><span class="field-label">Category</span><input type="text" id="itemCat" placeholder="e.g. Phones, Accessories, Power tools, Paint..." list="catList"><datalist id="catList"></datalist></div>
         <label class="check svc-toggle" style="padding-top:0;"><input type="checkbox" id="itemService" onchange="serviceChanged()"><span>✂️ This is a service (haircut, shave, repair…) — no stock</span></label>
-        <div class="field-group svc-only hidden"><span class="field-label">Staff member gets per service (TZS, optional)</span><input type="number" id="itemStaffPay" inputmode="numeric" placeholder="Only for staff paid per service"></div>
         <div class="form-row goods-only">
             <div class="field-group"><span class="field-label">Sold by</span><select id="itemUnit" onchange="unitChanged()"></select></div>
             <div class="field-group"><span class="field-label">Pack size (optional)</span><input type="number" id="itemPack" inputmode="numeric" placeholder="e.g. 12 per box"></div>
         </div>
         <label class="check goods-only" style="padding-top:0;"><input type="checkbox" id="itemPart"><span>Can sell part units (e.g. 2.5 m, 0.5 kg)</span></label>
         <div class="form-row">
-            <div class="field-group"><span class="field-label" id="lblSell">Sell price / piece (TZS)</span><input type="number" id="itemSell" inputmode="decimal" placeholder="0"></div>
+            <div class="field-group"><span class="field-label" id="lblSell">Sell price / piece (TZS)</span><input type="number" id="itemSell" inputmode="decimal" placeholder="0" oninput="shopKeeps()"></div>
             <div class="field-group svc-hide"><span class="field-label" id="lblCost">Cost / piece (TZS)</span><input type="number" id="itemCost" inputmode="decimal" placeholder="0"></div>
         </div>
+        <div class="field-group svc-only hidden"><span class="field-label">Staff member gets per service (TZS, optional)</span><input type="number" id="itemStaffPay" inputmode="numeric" placeholder="e.g. 2000" oninput="shopKeeps()"><div id="svcKeeps" class="svc-keeps"></div></div>
         <div class="form-row goods-only">
             <div class="field-group"><span class="field-label" id="lblStock">In stock</span><input type="number" id="itemStock" inputmode="decimal" placeholder="0"></div>
             <div class="field-group"><span class="field-label">Warn when below</span><input type="number" id="itemReorder" inputmode="decimal" placeholder="5"></div>
