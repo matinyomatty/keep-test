@@ -384,7 +384,14 @@ const fmt = v => n0(v) + ' TZS';
 const ms = x => x && x.toMillis ? x.toMillis() : x instanceof Date ? x.getTime() : null;
 const dstr = d => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
 const pretty = x => { const m = ms(x); return m ? new Date(m).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '—'; };
-const ago = x => { const m = ms(x); if (!m) return 'never'; const d = Math.floor((Date.now() - m) / 864e5); return d <= 0 ? 'today' : d === 1 ? 'yesterday' : d + ' days ago'; };
+// Calendar days in Tanzania time (not 24-hour blocks), with the clock time so it can be checked.
+const tzDay = m => new Date(m + 3 * 3600e3).toISOString().slice(0, 10);
+const ago = x => {
+    const m = ms(x); if (!m) return 'never';
+    const d = Math.round((Date.parse(tzDay(Date.now())) - Date.parse(tzDay(m))) / 864e5);
+    const time = new Date(m).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', timeZone: 'Africa/Dar_es_Salaam' });
+    return d <= 0 ? 'today ' + time : d === 1 ? 'yesterday ' + time : d + ' days ago (' + new Date(m).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', timeZone: 'Africa/Dar_es_Salaam' }) + ')';
+};
 const monthName = m => new Date(m + '-15T12:00:00').toLocaleDateString('en-GB', { month: 'short', year: '2-digit' });
 const addDays = (d, n) => new Date(d.getTime() + n * 864e5);
 function addMonths(d, n) {
@@ -624,9 +631,9 @@ function renderOverview() {
 
     // activity
     const tx = T.reduce((s, t) => s + (t.txnCount || 0), 0);
-    const activeToday = T.filter(t => ms(t.lastSaleAt) && Date.now() - ms(t.lastSaleAt) < 864e5).length;
+    const activeToday = T.filter(t => ms(t.lastSaleAt) && tzDay(ms(t.lastSaleAt)) === tzDay(Date.now())).length;
     $('activity').innerHTML = `
-        <div class="line"><span>Shops selling in last 24h</span><b>${activeToday} / ${live.length}</b></div>
+        <div class="line"><span>Shops selling today</span><b>${activeToday} / ${live.length}</b></div>
         <div class="line"><span>Sales recorded on the platform</span><b>${n0(tx)}</b></div>
         <div class="line"><span>Active announcements</span><b>${V.announcements.filter(a => a.active).length}</b></div>`;
 }

@@ -2864,6 +2864,7 @@ function saveManualSale() {
     b.set(col('days').doc(day), { day, month, sales: inc(total), cash: inc(cash), mobile: inc(mobile), src: why, updatedAt: now() }, { merge: true });
     b.set(col('meta').doc('balances'), { cash: inc(cash), mobile: inc(mobile), src: why, updatedAt: now() }, { merge: true });
     closeModals();
+    b.update(tRef(), { lastSaleAt: now() });   // so Keep HQ sees the shop is trading
     commit(b, `✅ Manual sale of ${fmt(total)} recorded`);
 }
 
