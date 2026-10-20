@@ -386,7 +386,7 @@ async function confirmSale() {
     clearCart();
     renderLastSale();
     navigator.vibrate?.(80);
-    commit(b, `✅ ${tl('Sale recorded')} · ${fmt(total)}`, { label: `Sale ${receiptNo} · ${fmt(total)} · ${items.map(i => qtyTxt(i.qty, { unit: i.unit }) + ' × ' + i.name).join(', ')}${credit ? ' · credit ' + n0(credit) + ' to ' + cust.name : ''}` });
+    commit(b, `✅ ${tl(isBarberMode() ? 'Client recorded' : 'Sale recorded')} · ${fmt(total)}`, { label: `Sale ${receiptNo} · ${fmt(total)} · ${items.map(i => qtyTxt(i.qty, { unit: i.unit }) + ' × ' + i.name).join(', ')}${credit ? ' · credit ' + n0(credit) + ' to ' + cust.name : ''}` });
 }
 function renderLastSale() {
     const s = S.lastSale, bar = $('lastSaleBar');

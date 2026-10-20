@@ -520,4 +520,5 @@ KeepLang.add({
   'Help, guide & FAQ': 'Msaada, mwongozo na maswali',
   'Count all the cash in the drawer, including change.': 'Hesabu pesa zote zilizo kwenye droo, pamoja na chenji.',
   'Other expenses': 'Matumizi mengine',
+  'Client recorded': 'Mteja amerekodiwa',
 }, [[/^Today · (.+)$/, (m, a) => 'Leo · ' + KeepLang.tl(a)], [/^(\d+) clients?$/, 'wateja $1'], [/^([\d,.]+) left$/, 'zimebaki $1']]);
