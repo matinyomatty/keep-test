@@ -124,7 +124,7 @@ function renderPOS() {
     } else {
         empty.classList.add('hidden');
         $('posGrid').classList.toggle('svc-list', isBarberMode());
-        if (isBarberMode()) { $('posGrid').innerHTML = renderBarberList(list); updateCartBar(); renderBarberToday(); return; }
+        if (isBarberMode()) { $('posGrid').innerHTML = renderBarberList(list); updateCartBar(); renderBarberToday(); renderSvcBar(); return; }
         $('posGrid').innerHTML = list.map(p => {
             const qty = S.cart[p.id] || 0, stock = Number(p.stock) || 0, svc = isService(p);
             const out = !svc && stock <= 0, low = !svc && !out && stock <= (Number(p.reorderLevel) || 5);

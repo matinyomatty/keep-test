@@ -17,11 +17,17 @@ const PAY_TYPES = [
     ['salary', 'Salary', 'A fixed monthly salary — Keep counts their clients'],
     ['rent', 'Chair rent', 'Keeps their money and pays the shop rent per day worked']
 ];
-const payOf = x => { const p = (x && x.pay) || {}; return PAY_TYPES.some(t => t[0] === p.type) ? { type: p.type, rate: Number(p.rate) || 0 } : { type: 'service', rate: 0 }; };
+const PAY_EVERY = [['day', 'Daily', 'Paid at the end of each day — front desk pays before closing'], ['week', 'Weekly', 'The owner pays once a week'], ['month', 'Monthly', 'The owner pays at the end of the month']];
+const payOf = x => {
+    const p = (x && x.pay) || {}, ok = PAY_TYPES.some(t => t[0] === p.type), type = ok ? p.type : 'service';
+    return { type, rate: ok ? Number(p.rate) || 0 : 0, every: type === 'salary' ? 'month' : (['day', 'week', 'month'].includes(p.every) ? p.every : 'day') };
+};
+const everyWord = e => ({ day: 'daily', week: 'weekly', month: 'monthly' })[e] || 'daily';
 const payLabel = x => {
-    const { type, rate } = payOf(x);
-    return type === 'service' ? tl('Per service') + ' · ' + tl('share set on each service') : type === 'percent' ? `${tl('Percentage')} · ${rate}%`
+    const { type, rate, every } = payOf(x);
+    const how = type === 'service' ? tl('Per service') : type === 'percent' ? `${tl('Percentage')} · ${rate}%`
         : type === 'salary' ? `${tl('Salary')} · ${n0(rate)} / ${tl('month')}` : `${tl('Chair rent')} · ${n0(rate)} / ${tl('day')}`;
+    return type === 'salary' ? how : `${how} · ${tl('paid ' + everyWord(every))}`;
 };
 // What a barber earned from some work: money brought in, service shares, days worked, salary months
 function earnedBy(x, w) {
@@ -42,10 +48,15 @@ async function setStaffPay(uid) {
         if (!(rate > 0)) return toast('⚠️ ' + tl('Enter an amount.'), 'err');
         if (type === 'percent' && rate > 100) return toast('⚠️ ' + tl('A share cannot be more than 100%.'), 'err');
     }
-    x.pay = { type, rate };
-    if (isBarberMode()) return saveBarbers(barbersAll().map(b => b.id === uid ? { ...b, pay: { type, rate } } : b), '✅ ' + tl('Pay method saved'));
+    let every = 'month';
+    if (type !== 'salary') {
+        every = await choose(`${tl('How often is')} <b class="notr">${esc(x.name)}</b> ${tl('paid?')}`, PAY_EVERY.map(([k, l, d]) => [k, `${tl(l)}<br><small style="font-weight:500;opacity:.85;">${tl(d)}</small>`, cur.every === k ? '#0b0d12' : '#1a56db']));
+        if (!every) return;
+    }
+    x.pay = { type, rate, every };
+    if (isBarberMode()) return saveBarbers(barbersAll().map(b => b.id === uid ? { ...b, pay: { type, rate, every } } : b), '✅ ' + tl('Pay method saved'));
     const b = db.batch();
-    b.set(col('staff').doc(uid), { pay: { type, rate }, updatedAt: now() }, { merge: true });
+    b.set(col('staff').doc(uid), { pay: { type, rate, every }, updatedAt: now() }, { merge: true });
     await commit(b, '✅ ' + tl('Pay method saved'));
 }
 
@@ -239,7 +250,8 @@ const isBarberMode = () => (S.tenantInfo || {}).type === 'barbershop';
 function renderBarberList(list) {
     const row = p => {
         const svc = isService(p), out = !svc && (Number(p.stock) || 0) <= 0;
-        return `<button class="svc-row ${out ? 'out' : ''}" ${out ? 'disabled' : ''} onclick="quickSell('${p.id}')">
+        const on = S.qsSel.includes(p.id);
+        return `<button class="svc-row ${out ? 'out' : ''} ${on ? 'picked' : ''}" ${out ? 'disabled' : ''} onclick="toggleSvc('${p.id}')"><span class="sr-tick">${on ? '✓' : ''}</span>
             <span class="sr-emoji">${esc(p.emoji || (svc ? '✂️' : '📦'))}</span>
             <span class="sr-name"><span class="notr">${esc(p.name)}</span>${svc ? '' : `<small>${out ? '❌ Out of stock' : stockTxt(p)}</small>`}</span>
             <b class="sr-price">${n0(linePriceOf(p))}</b></button>`;
@@ -271,7 +283,7 @@ async function qsAdd(id) {
     return true;
 }
 
-async function askWho(p) {
+async function askWho(p, n) {
     const list = (await doersList()).filter(x => x.active !== false);
     if (!list.length) {
         if (isBarberMode()) { toast('⚠️ ' + tl(isAdmin() ? 'Add your barbers first — Barbers tab.' : 'No barbers listed yet. Ask the owner to add them.'), 'err'); if (isAdmin()) switchTab('barbers'); return null; }
@@ -281,7 +293,7 @@ async function askWho(p) {
     const me = S.me.uid, last = S.lastDoer;
     list.sort((a, b) => (b.uid === me) - (a.uid === me));
     const opts = list.map(x => [x.uid, `<span class="notr">${esc(x.name)}</span>` + (x.uid === me ? ` (${tl('me')})` : ''), x.uid === last ? '#0b0d12' : '#1a56db']);
-    return choose(`✂️ ${tl('Who did')} <b class="notr">${esc(p.name)}</b>?`, opts);
+    return choose(n ? `✂️ ${tl('Who did these')} ${n} ${tl('services')}?` : `✂️ ${tl('Who did')} <b class="notr">${esc(p.name)}</b>?`, opts);
 }
 
 function qsPay() {
@@ -292,7 +304,7 @@ function qsPay() {
         const lines = Object.keys(S.cart).map(id => {
             const p = productById(id) || {}, by = meta(id).by;
             return `<div class="qs-line"><span class="sr-emoji">${esc(p.emoji || '✂️')}</span>
-                <span class="qs-what"><b class="notr">${esc(p.name)}${S.cart[id] > 1 ? ' × ' + S.cart[id] : ''}</b>${by ? `<small>✂️ <span class="notr">${esc(staffName(by))}</span></small>` : ''}</span>
+                <span class="qs-what"><b class="notr">${esc(p.name)}${S.cart[id] > 1 ? ' × ' + S.cart[id] : ''}</b>${by ? `<small class="qs-who" data-a="who" data-id="${id}">✂️ <span class="notr">${esc(staffName(by))}</span> · ${tl('change')}</small>` : ''}</span>
                 <button class="qs-price" data-a="price" data-id="${id}">${n0(lineSub(id))} ✏️</button>
                 <button class="qs-x" data-a="drop" data-id="${id}" aria-label="Remove">✕</button></div>`;
         }).join('');
@@ -324,6 +336,7 @@ function qsPay() {
         const a = t.dataset.a, id = t.dataset.id;
         if (a === 'cancel') { close(); S.cart = {}; S.lineMeta = {}; renderPOS(); return; }
         if (a === 'price') { await editLinePrice(id); draw(); return; }
+        if (a === 'who') { o.style.display = 'none'; const w = await askWho(productById(id)); o.style.display = 'flex'; if (w) { meta(id).by = w; S.lastDoer = w; } draw(); return; }
         if (a === 'drop') { delete S.cart[id]; delete S.lineMeta[id]; if (!Object.keys(S.cart).length) { close(); renderPOS(); return; } draw(); return; }
         if (a === 'more') {
             o.style.display = 'none';

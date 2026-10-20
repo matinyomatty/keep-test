@@ -40,7 +40,7 @@ function posSearchEnter() {
     const pick = byCode || (shown.length === 1 ? productById((shown[0].getAttribute('onclick') || '').match(/'([^']+)'/)?.[1]) : null);
     if (!pick) return toast(shown.length ? 'Several items match — keep typing or tap one' : 'No item with that name or barcode', 'err');
     $('posSearch').value = '';
-    if (isBarberMode()) { renderPOS(); return quickSell(pick.id); }
+    if (isBarberMode()) { toggleSvc(pick.id); return; }
     addToCart(pick.id);
     renderPOS();
 }

@@ -92,6 +92,10 @@ function renderShiftInfo() {
 
 async function submitShift() {
     if ($('shCash').value.trim() === '') return toast('⚠️ Count the cash in the drawer and type it.', 'err');
+    if (isBarberMode() && $('shCloseDay') && $('shCloseDay').checked) {
+        const owed = (await barbersOwedToday()).filter(r => r.owed > 0);
+        if (owed.length) { toast('⚠️ ' + tl('Pay the barbers first, then count the drawer again.'), 'err'); payBarbersToday(true); return; }
+    }
     const countedCash = num($('shCash').value);
     const countedMobile = $('shMobile').value.trim() === '' ? null : num($('shMobile').value);
     const paidOuts = [];
@@ -270,8 +274,9 @@ async function loadCdCashups() {
     box.innerHTML = (S.cdCashups.length ? S.cdCashups.map(cashupLine).join('') : `<div class="hint gray">${isBarberMode() ? tl('Nobody has ended a shift on this day yet. You can still close the day.') : 'No seller has ended a shift on this day yet. You can still close the day.'}</div>`)
         + (pend ? `<div class="hint amber">⚠️ ${pend} cash-up${pend > 1 ? 's' : ''} not checked yet. Tap ${pend > 1 ? 'each one' : 'it'} to review before closing.</div>` : '');
 }
-function confirmCloseDay() {
+async function confirmCloseDay() {
     const d = $('cdDate').value || dayStr();
+    if (isBarberMode() && d === dayStr() && !(await payBarbersToday(true))) return;
     const val = id => $(id).value.trim() === '' ? null : num($(id).value);
     const counted = { cash: val('cdCash'), mobile: val('cdMobile'), bank: val('cdBank') };
     const x = dayFig(d), bal = S.balances;

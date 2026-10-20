@@ -381,6 +381,7 @@ function switchTab(tab) {
     window.scrollTo(0, 0);
     syncCartDock();
     if (tab === 'pos') renderPOS();
+    if (typeof renderSvcBar === 'function') renderSvcBar();
     if (tab === 'inventory') renderInventory();
     if (tab === 'dashboard') renderDashboard();
     if (tab === 'dashboard') renderDashBarbers();

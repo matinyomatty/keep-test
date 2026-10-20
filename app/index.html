@@ -205,7 +205,7 @@
                 <button class="strip-btn ghost" id="stExpense" onclick="openSellerExpense()">💸 Expense</button>
             </div>
             <div class="pos-strip"><span id="posStrip">Today: <b>0</b> sales</span>
-                <span style="display:flex;gap:6px;"><button class="strip-btn ghost shop-only" onclick="openCustomers('manage')">👥 Customers</button><button class="strip-btn" onclick="openShiftEnd()">🔒 END SHIFT</button></span></div>
+                <span style="display:flex;gap:6px;"><button class="strip-btn ghost shop-only" onclick="openCustomers('manage')">👥 Customers</button><button class="strip-btn ghost barber-only" onclick="payBarbersToday(false)">💵 Pay barbers</button><button class="strip-btn" onclick="openShiftEnd()">🔒 END SHIFT</button></span></div>
             <div class="search-wrap shop-only">
                 <span class="search-icon">🔍</span>
                 <input type="text" class="dark-search" id="posSearch" placeholder="Search or scan barcode..." oninput="renderPOS()" autocomplete="off" style="padding-right:58px !important;">

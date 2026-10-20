@@ -98,7 +98,7 @@ async function addBarber() {
     if (!name) return;
     if (barbersAll().some(b => b.active !== false && (b.name || '').toLowerCase() === name.toLowerCase())) return toast('⚠️ ' + tl('A barber with that name is already listed.'), 'err');
     const id = 'b' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5);
-    await saveBarbers([...barbersAll(), { id, name, pay: { type: 'service', rate: 0 }, active: true }], `✅ ${name} ${tl('added')}`);
+    await saveBarbers([...barbersAll(), { id, name, pay: { type: 'service', rate: 0, every: 'day' }, active: true }], `✅ ${name} ${tl('added')}`);
     renderBarbersPage();
     await setStaffPay(id);                         // straight on to how they are paid
     renderBarbersPage();
@@ -208,4 +208,113 @@ function barberDayCut(day) {
     const d = barberMonthData(day.slice(0, 7));
     if (!d) { loadBarberMonth(day.slice(0, 7)); return { cost: 0, paidOut: 0 }; }
     return barberCut(d.sales.filter(s => s.day === day), d.entries.filter(e => e.day === day));
+}
+
+// ════════════════════════════════════════════════
+//  PICK SEVERAL SERVICES AT ONCE
+//  Tap services to tick them, then Next → who did it (once) → pay.
+// ════════════════════════════════════════════════
+S.qsSel = [];
+function toggleSvc(id) {
+    const p = productById(id); if (!p) return;
+    if (!isService(p) && (Number(p.stock) || 0) <= 0) return toast(`⚠️ ${p.name} — ${tl('none left')}`, 'err');
+    const i = S.qsSel.indexOf(id);
+    if (i >= 0) S.qsSel.splice(i, 1); else S.qsSel.push(id);
+    navigator.vibrate?.(15);
+    renderPOS();
+}
+function renderSvcBar() {
+    let bar = $('svcBar');
+    if (!bar) { bar = document.createElement('div'); bar.id = 'svcBar'; bar.className = 'svc-bar'; $('page-pos').appendChild(bar); }
+    S.qsSel = S.qsSel.filter(id => productById(id));
+    const on = isBarberMode() && S.qsSel.length > 0 && $('page-pos').classList.contains('active');
+    bar.classList.toggle('show', on);
+    if (!on) return;
+    const total = S.qsSel.reduce((a, id) => a + (Number(productById(id).sellPrice) || 0), 0);
+    bar.innerHTML = `<button class="sb-clear" onclick="S.qsSel=[];renderPOS()">✕</button>
+        <div class="sb-info"><b>${S.qsSel.length} ${tl(S.qsSel.length === 1 ? 'chosen' : 'chosen')}</b><small>${fmt(total)}</small></div>
+        <button class="sb-next" onclick="qsNext()">${tl('Next')} →</button>`;
+}
+async function qsNext() {
+    if (S.qsOpen || !S.qsSel.length) return;
+    const ids = S.qsSel.slice();
+    S.cart = {}; S.lineMeta = {}; S.saleDisc = null; S.saleCustomer = null; S.payTouched = false;
+    const svcs = ids.filter(id => isService(productById(id)));
+    let who = null;
+    if (svcs.length) {
+        who = await askWho(productById(svcs[0]), svcs.length > 1 ? svcs.length : 0);
+        if (!who) { S.cart = {}; S.lineMeta = {}; return; }
+        S.lastDoer = who;
+    }
+    ids.forEach(id => { S.cart[id] = 1; if (isService(productById(id))) meta(id).by = who; });
+    S.qsSel = [];
+    renderPOS();
+    qsPay();
+}
+
+// ════════════════════════════════════════════════
+//  PAY THE BARBERS BEFORE CLOSING THE DAY
+//  Barbers on commission, percentage, a fixed amount per service or chair rent
+//  are paid what they earned today before the day can be closed.
+//  Salaried barbers never appear here — only the owner pays them (Barbers → Pay).
+// ════════════════════════════════════════════════
+async function barbersOwedToday() {
+    if (!isBarberMode()) return [];
+    const today = dayStr();
+    let entries = [];
+    try {
+        const q = isAdmin() ? col('entries').where('day', '==', today) : col('entries').where('staffUid', '==', S.me.uid).where('day', '==', today);
+        entries = (await q.get()).docs.map(d => d.data());
+    } catch (e) {}
+    const list = barbersAll().filter(b => b.active !== false && payOf(b).type !== 'salary' && payOf(b).every === 'day');
+    const ids = new Set(list.map(b => b.id));
+    const keep = S.spRange; S.spRange = {};
+    const rows = staffPayRows(S.todaySales || [], entries, list.map(b => ({ uid: b.id, name: b.name, pay: b.pay })));
+    S.spRange = keep;
+    return rows.filter(r => ids.has(r.p.uid) && (r.earned > 0 || r.paid > 0));
+}
+// Shows the list; resolves true once everyone is paid (or nobody is owed)
+async function payBarbersToday(forClosing) {
+    const rows = await barbersOwedToday();
+    if (!rows.some(r => r.owed > 0) && forClosing) return true;
+    return new Promise(resolve => {
+        const o = document.createElement('div'); o.id = 'payTodayBox';
+        o.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:9997;display:flex;align-items:flex-end;justify-content:center;';
+        const draw = () => {
+            const left = rows.filter(r => r.owed > 0);
+            o.innerHTML = `<div class="qs-card" style="max-height:88vh;overflow:auto;">
+                <div class="qs-confirm-title">💈 ${tl('Pay barbers for today')}</div>
+                <div class="hint gray" style="margin:4px 0 10px;">${tl(forClosing ? 'Pay each barber paid daily what they earned today before closing the day. Weekly, monthly and salaried barbers are paid by the owner.' : 'Barbers paid daily — what they earned today. Weekly, monthly and salaried barbers are paid by the owner.')}</div>
+                ${rows.length ? rows.map((r, i) => `<div class="pt-row ${r.owed > 0 ? '' : 'done'}">
+                    <div class="pt-top"><b class="notr">${esc(r.p.name)}</b><small>${esc(payLabel(r.p))}</small></div>
+                    <div class="pt-nums"><span>${tl('Clients')} <b>${r.clients}</b></span><span>${tl('Earned')} <b>${n0(r.earned)}</b></span><span>${tl('Paid')} <b>${n0(r.paid)}</b></span></div>
+                    ${r.owed > 0 ? `<div class="pt-pay"><span>${tl('To pay')} <b>${fmt(r.owed)}</b></span>
+                        <button data-a="cash" data-i="${i}" style="background:var(--pos);">💵 ${tl('Cash')}</button><button data-a="mobile" data-i="${i}" style="background:#1a56db;">📱 ${tl('Mobile')}</button></div>`
+                        : `<div class="pt-ok">✅ ${tl('Paid')}</div>`}
+                </div>`).join('') : `<div class="hint gray">${tl('No barber earnings today.')}</div>`}
+                ${forClosing ? `<button class="qs-ok" data-a="go" ${left.length ? 'disabled style="opacity:.45;"' : ''}>${left.length ? tl('Pay everyone first') : '✅ ' + tl('Continue closing the day')}</button>` : ''}
+                <button class="qs-cancel" data-a="x">${tl(forClosing ? 'Cancel' : 'Close')}</button></div>`;
+        };
+        draw(); document.body.appendChild(o);
+        o.addEventListener('click', async e => {
+            const t = e.target.closest('[data-a]'); if (!t) return;
+            const a = t.dataset.a;
+            if (a === 'x') { o.remove(); return resolve(false); }
+            if (a === 'go') { if (rows.some(r => r.owed > 0)) return; o.remove(); return resolve(true); }
+            if (a === 'cash' || a === 'mobile') {
+                const r = rows[+t.dataset.i]; if (!r || !(r.owed > 0)) return;
+                if (!canExpense()) return toast('⚠️ ' + tl('The owner must allow Expenses for front desk, so you can pay barbers.'), 'err');
+                o.style.display = 'none';
+                const yes = await showConfirm(`${tl('Pay')} <b class="notr">${esc(r.p.name)}</b> <b>${fmt(r.owed)}</b> ${a === 'cash' ? '💵 ' + tl('from the drawer') : '📱 ' + tl('by mobile money')}?`, tl('Pay'), 'var(--pos)');
+                o.style.display = 'flex';
+                if (!yes) return;
+                const amount = r.owed, b = db.batch();
+                writeEntries(b, [{ type: 'expense', category: 'Salaries', from: a, to: null, amount, payee: r.p.uid, payeeName: r.p.name, note: `Pay ${r.p.name} · ${dayStr()}`, day: dayStr() }]);
+                commit(b, `✅ ${tl('Paid')} ${r.p.name} ${n0(amount)}`, { label: `Barber pay ${r.p.name} ${n0(amount)}` });
+                r.paid += amount; r.owed = 0;
+                if (S.bm) delete S.bm[dayStr().slice(0, 7)];
+                draw();
+            }
+        });
+    });
 }

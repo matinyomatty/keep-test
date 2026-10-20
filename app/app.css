@@ -633,3 +633,21 @@
         .login-note { margin-top: 14px; font-size: .78rem; color: var(--gray); background: #fff; border: 1px dashed #d5dbe4; border-radius: 14px; padding: 12px 14px; line-height: 1.45; }
         .login-note a { color: var(--blue); font-weight: 800; }
         body.barber #sheetItem .barber-hide, body.barber .tm-pane .shop-only { display: none !important; }
+        .svc-row { position: relative; }
+        .svc-row.picked { border-color: var(--pos); background: var(--pos-l); }
+        .sr-tick { width: 26px; height: 26px; border-radius: 50%; border: 2px solid #d5dbe4; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-weight: 800; color: #fff; font-size: .85rem; }
+        .svc-row.picked .sr-tick { background: var(--pos); border-color: var(--pos); }
+        .svc-bar { position: fixed; left: 12px; right: 12px; bottom: calc(12px + env(safe-area-inset-bottom)); max-width: 476px; margin: 0 auto; background: var(--ink); color: #fff; border-radius: 18px; padding: 10px 10px 10px 12px; display: none; align-items: center; gap: 12px; z-index: 50; box-shadow: 0 8px 24px rgba(0,0,0,.25); }
+        .svc-bar.show { display: flex; }
+        .sb-clear { background: rgba(255,255,255,.12); border: none; color: #fff; width: 34px; height: 34px; border-radius: 50%; cursor: pointer; }
+        .sb-info { flex: 1; } .sb-info b { display: block; } .sb-info small { color: var(--yellow); font-weight: 800; }
+        .sb-next { background: var(--pos); color: #fff; border: none; border-radius: 12px; padding: 14px 22px; font-weight: 800; font-size: 1rem; cursor: pointer; }
+        body.barber .pos-items { padding-bottom: 110px; }
+        .qs-who { cursor: pointer; text-decoration: underline dotted; }
+        .pt-row { background: #f6f8fb; border-radius: 14px; padding: 12px; margin-bottom: 8px; }
+        .pt-row.done { opacity: .7; }
+        .pt-top b { display: block; } .pt-top small { color: var(--gray); font-size: .72rem; }
+        .pt-nums { display: flex; gap: 12px; font-size: .78rem; color: var(--gray); margin: 6px 0; flex-wrap: wrap; } .pt-nums b { color: var(--ink); }
+        .pt-pay { display: flex; align-items: center; gap: 8px; } .pt-pay span { flex: 1; font-size: .85rem; } .pt-pay b { font-size: 1rem; }
+        .pt-pay button { border: none; color: #fff; border-radius: 10px; padding: 10px 12px; font-weight: 800; cursor: pointer; }
+        .pt-ok { color: var(--pos); font-weight: 800; font-size: .85rem; }
