@@ -228,6 +228,7 @@ async function payStaff(i) {
         note: `Pay ${r.p.name} · ${S.spRange.from}${S.spRange.from === S.spRange.to ? '' : ' to ' + S.spRange.to}`, day: dayStr() }]);
     await commit(b, `✅ ${tl('Paid')} ${r.p.name} ${n0(amount)}`, { label: `Staff pay ${r.p.name} ${n0(amount)}` });
     loadStaffPay();
+    if (typeof loadBarberMonth === 'function') loadBarberMonth(dayStr().slice(0, 7), true);
 }
 
 // ── Barbershop till: tap a service → who did it → how they paid → done ──

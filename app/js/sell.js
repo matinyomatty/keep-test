@@ -19,8 +19,9 @@ function renderDashboard() {
     const m = today.slice(0, 7), f = monthFig(m), mon = monthShort(m);
     $('lblMSales').textContent = (isBarberMode() ? tl('Money in') : 'Sales') + ' · ' + mon; $('mSales').textContent = fmt(f.sales);
     $('lblMStock').textContent = tl(stockWord()) + ' · ' + mon; $('mStock').textContent = fmt(f.supplier);
-    $('lblMExp').textContent = 'Expenses · ' + mon; $('mExp').textContent = fmt(f.expense);
-    $('lblMProfit').textContent = 'Profit · ' + mon; $('mProfit').textContent = fmt(f.profit);
+    $('lblMExp').textContent = (isBarberMode() ? tl('Other expenses') : 'Expenses') + ' · ' + mon; $('mExp').textContent = fmt(isBarberMode() && f.otherExpense != null ? f.otherExpense : f.expense);
+    if ($('mBarb')) { $('lblMBarb').textContent = tl('Barbers earned') + ' · ' + mon; $('mBarb').textContent = f.barbersPending ? '…' : fmt(f.barbers || 0); }
+    $('lblMProfit').textContent = 'Profit · ' + mon; $('mProfit').textContent = f.barbersPending ? '…' : fmt(f.profit);
     $('mProfit').style.color = f.profit >= 0 ? 'var(--green)' : 'var(--red)';
     renderMonthBanner();
     renderHistory();
@@ -76,7 +77,7 @@ function renderHistory() {
         return `<div class="entry-item ${d === today ? 'is-today' : ''}" onclick="openDay('${d}')">
             <div style="min-width:0;flex:1;">
                 <div class="entry-date">${shortDay(d)}${d === today ? '<span class="tag tag-today">TODAY</span>' : ''}${x.closing ? '<span class="tag tag-closed">🔒 CLOSED</span>' : ''}${afterClose(x) ? '<span class="tag tag-open">+' + n0(afterClose(x)) + ' AFTER CLOSE</span>' : ''}</div>
-                <div class="entry-meta">🛒 ${n0(x.sales)} TZS${x.tx ? ` · ${x.tx} sale${x.tx === 1 ? '' : 's'}` : ''}${spent ? ` · 💸 ${n0(spent)}` : ''}${banked ? ` · 🏦 ${n0(banked)}` : ''}</div>
+                <div class="entry-meta">${isBarberMode() ? '💈' : '🛒'} ${n0(x.sales)} TZS${x.tx ? ` · ${x.tx} ${isBarberMode() ? tl(x.tx === 1 ? 'client' : 'clients') : 'sale' + (x.tx === 1 ? '' : 's')}` : ''}${spent ? ` · 💸 ${n0(spent)}` : ''}${banked ? ` · 🏦 ${n0(banked)}` : ''}</div>
                 ${p.sales ? `<div style="margin-top:4px;">${trendBadge(x.sales, p.sales, 'vs day before')}</div>` : ''}
             </div>
             <div class="btn-circle">›</div>

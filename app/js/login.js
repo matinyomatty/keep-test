@@ -414,6 +414,7 @@ function monthFig(m) {
         if (x.sales) f.days++;
     });
     f.profit = f.sales - f.supplier - f.expense;
+    barberMonthAdjust(m, f);
     f.hasData = !!(f.sales || f.supplier || f.expense);
     return f;
 }

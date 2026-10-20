@@ -275,7 +275,7 @@ function confirmCloseDay() {
     const val = id => $(id).value.trim() === '' ? null : num($(id).value);
     const counted = { cash: val('cdCash'), mobile: val('cdMobile'), bank: val('cdBank') };
     const x = dayFig(d), bal = S.balances;
-    const profit = x.sales - x.supplier - x.expense;
+    const dcut = barberDayCut(d), profit = barberProfit(x, dcut);
     const outItems = S.products.filter(p => !isService(p) && (Number(p.stock) || 0) <= 0);
     const lowItems = S.products.filter(p => !isService(p) && p.stock > 0 && p.stock <= (Number(p.reorderLevel) || 5));
     const expItems = expiringItems();
@@ -340,7 +340,7 @@ function confirmCloseDay() {
 ${isBarberMode() ? '💈 Money in' : '🛒 Sales'}: ${n0(x.sales)}
 💵 Cash in: ${n0(x.cash)} · 📱 Simu in: ${n0(x.mobile)}${x.credit ? `\n📒 On credit: ${n0(x.credit)}` : ''}${x.discount ? `\n🏷️ Discounts: ${n0(x.discount)}` : ''}${x.returns ? `\n↩️ Returns: ${n0(x.returns)}` : ''}${x.debtPaid ? `\n💰 Debts collected: ${n0(x.debtPaid)}` : ''}
 📦 ${stockWord()}: ${n0(x.supplier)}
-💸 Expenses: ${n0(x.expense)}
+${isBarberMode() ? `💈 Barbers earned: ${n0(dcut.cost)}\n💸 Other expenses: ${n0(x.expense - dcut.paidOut)}` : `💸 Expenses: ${n0(x.expense)}`}
 🏦 Banked: ${n0(x.bankIn)}${x.bankOut ? ` | 💳 Out: ${n0(x.bankOut)}` : ''}
 ━━━━━━━━━━
 📈 Day profit: ${n0(profit)}
@@ -390,7 +390,8 @@ function renderMonthClose() {
         <div class="sum-box">
             ${row(isBarberMode() ? '💈 ' + tl('Money in') : '🛒 Sales', fmt(f.sales), 'var(--green)')}
             ${row('📦 ' + tl(stockWord()), '-' + fmt(f.supplier), 'var(--red)')}
-            ${row('💸 Expenses', '-' + fmt(f.expense), 'var(--red)')}
+            ${f.barbers != null ? row('💈 ' + tl('Barbers earned'), '-' + fmt(f.barbers), 'var(--red)') : ''}
+            ${row(f.otherExpense != null ? '💸 ' + tl('Other expenses') : '💸 Expenses', '-' + fmt(f.otherExpense != null ? f.otherExpense : f.expense), 'var(--red)')}
             ${row('📈 Profit', fmt(f.profit), f.profit >= 0 ? 'var(--green)' : 'var(--red)')}
             ${row('🏦 Banked (net)', fmt(f.bankIn - f.bankOut), 'var(--blue)')}
             ${row('💰 Put in savings', fmt(f.toSavings), '#a16207')}
@@ -446,11 +447,11 @@ async function closeMonth() {
 function monthMessage() {
     if (!S.mc) return '';
     const { m, f } = S.mc, b = S.balances, pct = f.sales ? Math.round(f.profit / f.sales * 100) : 0;
-    return `🏪 *${(S.tenantInfo.name || S.tenant).toUpperCase()}* — ${monthName(m)}
+    return `${isBarberMode() ? '💈' : '🏪'} *${(S.tenantInfo.name || S.tenant).toUpperCase()}* — ${monthName(m)}
 
 ${isBarberMode() ? '💈 Money in' : '🛒 Sales'}: ${n0(f.sales)}
 📦 ${stockWord()}: ${n0(f.supplier)}
-💸 Expenses: ${n0(f.expense)}
+${f.barbers != null ? `💈 Barbers earned: ${n0(f.barbers)}\n💸 Other expenses: ${n0(f.otherExpense)}` : `💸 Expenses: ${n0(f.expense)}`}
 ━━━━━━━━━━
 📈 Profit: ${n0(f.profit)} (${pct}%)
 🏦 Banked: ${n0(f.bankIn - f.bankOut)}
@@ -497,7 +498,8 @@ async function previewReport() {
             ${f.returns ? `<div class="sum-row"><span>&nbsp;&nbsp;↩️ Returns refunded</span><span>−${n0(f.returns)}</span></div>` : ''}
             ${f.debtPaid ? `<div class="sum-row"><span>💰 Debts collected</span><span>${n0(f.debtPaid)}</span></div>` : ''}
             <div class="sum-row"><span>📦 ${tl(stockWord())}</span><strong style="color:var(--red);">${fmt(f.supplier)}</strong></div>
-            <div class="sum-row"><span>💸 Expenses</span><strong style="color:var(--red);">${fmt(f.expense)}</strong></div>
+            ${f.barbers != null ? `<div class="sum-row"><span>💈 ${tl('Barbers earned')}</span><strong style="color:var(--red);">${fmt(f.barbers)}</strong></div>` : ''}
+            <div class="sum-row"><span>💸 ${f.otherExpense != null ? tl('Other expenses') : 'Expenses'}</span><strong style="color:var(--red);">${fmt(f.otherExpense != null ? f.otherExpense : f.expense)}</strong></div>
             <div class="sum-row"><span>🏦 Banked (net)</span><strong style="color:var(--blue);">${fmt(f.bankIn - f.bankOut)}</strong></div>
             <div class="sum-row big"><span>📈 Profit</span><strong style="color:${f.profit >= 0 ? 'var(--green)' : 'var(--red)'};">${fmt(f.profit)} (${margin}%)</strong></div>
         </div><div id="rpTop" style="font-size:0.75rem;color:var(--gray);text-align:center;">Loading top sellers…</div>`;
@@ -553,7 +555,7 @@ async function generatePDF() {
         doc.autoTable({
             startY: y + 3, margin: { left: 14, right: 14 },
             head: [['Date', 'Sales', 'Cash', 'Mobile', 'Stock bought', 'Expenses', 'Banked', 'Profit']],
-            body: dayKeys.map(d => { const x = dayFig(d), p = x.sales - x.supplier - x.expense; return [d, n0(x.sales), n0(x.cash), n0(x.mobile), n0(x.supplier), n0(x.expense), n0(x.bankIn - x.bankOut), n0(p)]; }),
+            body: dayKeys.map(d => { const x = dayFig(d), p = barberProfit(x, barberDayCut(d)); return [d, n0(x.sales), n0(x.cash), n0(x.mobile), n0(x.supplier), n0(x.expense), n0(x.bankIn - x.bankOut), n0(p)]; }),
             styles: { fontSize: 7, cellPadding: 2.2 }, headStyles: { fillColor: blue, textColor: 255, fontStyle: 'bold' },
             alternateRowStyles: { fillColor: [245, 248, 252] },
             didParseCell: d => { if (d.section === 'body' && d.column.index === 7) { d.cell.styles.fontStyle = 'bold'; d.cell.styles.textColor = String(d.cell.raw).startsWith('-') ? [220, 38, 38] : [22, 163, 74]; } }

@@ -156,3 +156,56 @@ function renderDashBarbers() {
 // Words that change in a barbershop
 const stockWord = () => isBarberMode() ? 'Supplies bought' : 'Stock bought';
 const roleWord = r => r === 'admin' ? 'Admin' : isBarberMode() ? 'Front desk' : 'Seller';
+
+// ════════════════════════════════════════════════
+//  PROFIT IN A BARBERSHOP
+//  Profit = money in − what the barbers earned − other expenses.
+//  Barbers paid per service, by percentage or chair rent: what they earn
+//  is a cost the day they work; paying them later is not counted again.
+//  Salaried barbers: their salary is an ordinary expense when paid.
+// ════════════════════════════════════════════════
+function barberCut(sales, entries) {
+    if (!isBarberMode()) return { cost: 0, paidOut: 0 };
+    const staff = barbersAll().map(b => ({ uid: b.id, name: b.name, pay: b.pay }));
+    const keep = S.spRange; S.spRange = {};
+    const rows = staffPayRows(sales || [], entries || [], staff);
+    S.spRange = keep;
+    let cost = 0, paidOut = 0;
+    rows.forEach(r => { if (r.pay.type === 'salary') return; cost += r.earned; paidOut += r.paid; });
+    return { cost, paidOut };
+}
+const barberProfit = (x, cut) => x.sales - x.supplier - (x.expense - cut.paidOut) - cut.cost;
+
+// The month's clients and payments, loaded once (owner, online) and kept fresh with today's live sales
+S.bm = {};
+async function loadBarberMonth(m, force) {
+    if (!isBarberMode() || !isAdmin() || !navigator.onLine) return;
+    const c = S.bm[m];
+    if (c && (c.loading || (!force && Date.now() - c.at < 5 * 60e3))) return;
+    S.bm[m] = { ...(c || {}), loading: true, at: Date.now() };
+    try {
+        const [s, e] = await Promise.all([col('sales').where('month', '==', m).get(), col('entries').where('month', '==', m).get()]);
+        S.bm[m] = { sales: s.docs.map(d => ({ id: d.id, ...d.data() })), entries: e.docs.map(d => ({ id: d.id, ...d.data() })), at: Date.now() };
+    } catch (err) { S.bm[m] = { ...(c || {}), at: Date.now() }; }
+    renderDashboard();
+}
+function barberMonthData(m) {
+    const c = S.bm[m]; if (!c || !c.sales) return null;
+    const today = dayStr();
+    const sales = m === today.slice(0, 7) ? c.sales.filter(s => s.day !== today).concat(S.todaySales || []) : c.sales;
+    return { sales, entries: c.entries || [] };
+}
+// Called by monthFig: puts the barbers' earnings into the month's profit
+function barberMonthAdjust(m, f) {
+    if (!isBarberMode()) return;
+    const d = barberMonthData(m);
+    if (!d) { loadBarberMonth(m); f.barbersPending = true; return; }
+    const cut = barberCut(d.sales, d.entries);
+    f.barbers = cut.cost; f.barberPaid = cut.paidOut; f.otherExpense = f.expense - cut.paidOut;
+    f.profit = barberProfit(f, cut);
+}
+function barberDayCut(day) {
+    const d = barberMonthData(day.slice(0, 7));
+    if (!d) { loadBarberMonth(day.slice(0, 7)); return { cost: 0, paidOut: 0 }; }
+    return barberCut(d.sales.filter(s => s.day === day), d.entries.filter(e => e.day === day));
+}

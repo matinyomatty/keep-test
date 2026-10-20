@@ -123,6 +123,16 @@ async function buildReport(id) {
         const ents = await rpRange('entries'), exp = ents.filter(e => e.type === 'expense' && e.category !== 'Supplier');
         const byCat = {}; exp.forEach(e => byCat[e.category || 'Other'] = (byCat[e.category || 'Other'] || 0) + e.amount);
         const items = r._items || [], cogs = sum(items, x => x.cogs); delete r._items;
+        if (isBarberMode()) {
+            const cut = barberCut(await rpRange('sales'), ents);
+            const other = f('expense') - cut.paidOut, profit = f('sales') - f('supplier') - other - cut.cost;
+            r.summary = [['Money in', f('sales')], ['Barbers earned', cut.cost], ['Supplies bought', f('supplier')], ['Other expenses', other], ['Profit (money in - barbers - supplies - expenses)', profit],
+                ['Margin', f('sales') ? (profit / f('sales') * 100).toFixed(1) + '%' : '—'], ['Banked (net)', f('bankIn') - f('bankOut')], ['Moved to savings', f('toSavings')]];
+            T('Profit & loss', ['Line', 'TZS'], [['Money in', f('sales')], ['  of which cash', f('cash')], ['  of which Lipa kwa Simu', f('mobile')], ['Barbers earned', -cut.cost], ['Supplies bought', -f('supplier')],
+                ...Object.entries(byCat).sort((a, b) => b[1] - a[1]).map(([c, v]) => ['Expense: ' + catName(c), -v]), ['  less: barber pay already counted above', cut.paidOut], ['PROFIT', profit]]);
+            r.note = 'Barbers paid per service, by percentage or chair rent are counted the day they work; paying them later is not counted twice. Salaries count as expenses when paid.';
+            return r;
+        }
         const profit = f('sales') - f('supplier') - f('expense');
         r.summary = [['Sales', f('sales')], ['Stock bought', f('supplier')], ['Expenses', f('expense')], ['Profit (sales - stock bought - expenses)', profit], ['Margin', f('sales') ? (profit / f('sales') * 100).toFixed(1) + '%' : '—'],
             ['Gross profit on items sold (est.)', Math.round(sum(items, x => x.revenue) - cogs)], ['Banked (net)', f('bankIn') - f('bankOut')], ['Moved to savings', f('toSavings')]];

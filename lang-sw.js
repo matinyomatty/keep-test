@@ -519,4 +519,5 @@ KeepLang.add({
   'Add a payment (e.g. LUKU, blades, transport)': 'Ongeza malipo (mfano LUKU, wembe, usafiri)',
   'Help, guide & FAQ': 'Msaada, mwongozo na maswali',
   'Count all the cash in the drawer, including change.': 'Hesabu pesa zote zilizo kwenye droo, pamoja na chenji.',
+  'Other expenses': 'Matumizi mengine',
 }, [[/^Today · (.+)$/, (m, a) => 'Leo · ' + KeepLang.tl(a)], [/^(\d+) clients?$/, 'wateja $1'], [/^([\d,.]+) left$/, 'zimebaki $1']]);

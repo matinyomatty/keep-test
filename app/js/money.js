@@ -171,6 +171,7 @@ function renderDayBody(d, sales, entries) {
     sales.sort(byTime); entries.sort(byTime);
     sales.forEach(s => S.saleCache[s.id] = s); entries.forEach(e => S.entryCache[e.id] = e);
     const x = dayFig(d);
+    const cut = barberCut(sales, entries);
     const c = x.closing;
     let html = `<div style="font-size:0.7rem;font-weight:800;color:var(--gray);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">${prettyDay(d)}</div>
         <div class="sum-box">
@@ -181,9 +182,10 @@ function renderDayBody(d, sales, entries) {
             ${x.returns ? `<div class="sum-row"><span>&nbsp;&nbsp;↩️ Returns refunded</span><span style="color:#7c3aed;">−${n0(x.returns)}</span></div>` : ''}
             ${x.debtPaid ? `<div class="sum-row"><span>💰 Debts paid by customers</span><strong style="color:var(--pos);">${fmt(x.debtPaid)}</strong></div>` : ''}
             <div class="sum-row"><span>📦 ${tl(stockWord())}</span><strong style="color:var(--red);">${fmt(x.supplier)}</strong></div>
-            <div class="sum-row"><span>💸 Expenses</span><strong style="color:var(--red);">${fmt(x.expense)}</strong></div>
+            ${cut.cost || cut.paidOut ? `<div class="sum-row"><span>💈 ${tl('Barbers earned')}</span><strong style="color:var(--red);">${fmt(cut.cost)}</strong></div>` : ''}
+            <div class="sum-row"><span>💸 ${isBarberMode() ? tl('Other expenses') : 'Expenses'}</span><strong style="color:var(--red);">${fmt(x.expense - cut.paidOut)}</strong></div>
             <div class="sum-row"><span>🏦 Banked (net)</span><strong style="color:var(--blue);">${fmt(x.bankIn - x.bankOut)}</strong></div>
-            <div class="sum-row big"><span>📈 Day profit</span><strong style="color:${x.sales - x.supplier - x.expense >= 0 ? 'var(--green)' : 'var(--red)'};">${fmt(x.sales - x.supplier - x.expense)}</strong></div>
+            <div class="sum-row big"><span>📈 Day profit</span><strong style="color:${barberProfit(x, cut) >= 0 ? 'var(--green)' : 'var(--red)'};">${fmt(barberProfit(x, cut))}</strong></div>
         </div>`;
     if (c) html += `<div class="hint green">🔒 Closed by ${esc(c.by || '')}${c.bySeller ? ' (seller)' : ''}${c.countedCash != null ? ` · cash counted ${n0(c.countedCash)}` + (c.systemCash != null ? ` (${signed(c.countedCash - c.systemCash)})` : ' — see their cash-up for the difference') : ''}${afterClose(x) ? `<br>⚠️ ${fmt(afterClose(x))} of sales came in after the day was closed.` : ''}</div>`;
     html += `<button class="btn-sec wide" onclick="openEntry('${d}')">➕ Add expense / banking for this date</button>`;
