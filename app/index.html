@@ -180,13 +180,6 @@
             <div id="payDue" class="barber-only"></div>
             <div id="dashBarbers" class="barber-only"></div>
             <div style="height:14px;"></div>
-            <div class="summary-grid shop-only">
-                <div class="stat-card"><h4 id="lblMSales">Sales · Month</h4><p id="mSales">—</p></div>
-                <div class="stat-card barber-only" style="border-left-color:var(--pos);"><h4 id="lblMBarb">Barbers earned</h4><p id="mBarb">—</p></div>
-                <div class="stat-card shop-only"><h4 id="lblMStock">Cost of goods sold · Month</h4><p id="mStock">—</p><small class="stat-sub" id="mStockSub"></small></div>
-                <div class="stat-card"><h4 id="lblMExp">Expenses · Month</h4><p id="mExp">—</p></div>
-                <div class="stat-card" style="border-left-color:var(--yellow);"><h4 id="lblMProfit">Profit · Month</h4><p id="mProfit">—</p><small class="stat-sub" id="mProfitSub"></small></div>
-            </div>
             <div class="row-btns in-sidebar">
                 <button class="btn-sec" onclick="openDay()">🔍 FIND DATE</button>
                 <button class="btn-sec" onclick="openReports()">📄 REPORTS</button>
@@ -225,8 +218,8 @@
                 <button class="strip-btn ghost shop-only" id="stManual" onclick="openManualSale()">✍️ Manual sale</button>
                 <button class="strip-btn ghost" id="stExpense" onclick="openSellerExpense()">💸 Expense</button>
             </div>
-            <div class="pos-strip"><span id="posStrip">Today: <b>0</b> sales</span>
-                <span style="display:flex;gap:6px;"><button class="strip-btn ghost" onclick="openTodaySales()">📋 <span>My day</span></button><button class="strip-btn ghost shop-only" onclick="openCustomers('manage')">👥 Customers</button><button class="strip-btn ghost barber-only" onclick="payBarbersToday(false)">💵 Pay barbers</button><button class="strip-btn" onclick="openShiftEnd()">🔒 END SHIFT</button></span></div>
+            <div class="pos-strip"><button type="button" id="posStrip" class="strip-sum" onclick="openTodaySales()">Today: <b>0</b> sales</button>
+                <span class="strip-btns"><button class="strip-btn ghost" onclick="openTodaySales()">📋 <span>My day</span></button><button class="strip-btn ghost shop-only" onclick="openCustomers('manage')">👥 Customers</button><button class="strip-btn ghost barber-only" onclick="payBarbersToday(false)">💵 Pay barbers</button><button class="strip-btn" onclick="openShiftEnd()">🔒 END SHIFT</button></span></div>
             <div class="search-wrap shop-only">
                 <span class="search-icon">🔍</span>
                 <input type="text" class="dark-search" id="posSearch" placeholder="Search or scan barcode..." oninput="renderPOS()" autocomplete="off" style="padding-right:58px !important;">

@@ -16,21 +16,22 @@ function renderDashboard() {
     $('balCash').textContent = fmt(b.cash); $('balMobile').textContent = fmt(b.mobile);
     $('balBank').textContent = fmt(b.bank); $('balSavings').textContent = fmt(b.savings);
 
-    const m = today.slice(0, 7), f = monthFig(m), mon = monthShort(m);
-    $('lblMSales').textContent = (isBarberMode() ? tl('Money in') : 'Sales') + ' · ' + mon; $('mSales').textContent = fmt(f.sales);
-    const wait = f.pending;
-    $('lblMStock').textContent = tl('Cost of goods sold') + ' · ' + mon; $('mStock').textContent = wait ? '…' : fmt(f.cogs || 0);
-    $('mStockSub').textContent = f.supplier ? tl('Stock bought') + ': ' + n0(f.supplier) : '';
-    $('lblMExp').textContent = (isBarberMode() ? tl('Other expenses') : 'Expenses') + ' · ' + mon; $('mExp').textContent = fmt(f.otherExpense != null ? f.otherExpense : f.expense);
-    if ($('mBarb')) { $('lblMBarb').textContent = tl('Barbers earned') + ' · ' + mon; $('mBarb').textContent = wait ? '…' : fmt(f.barbers || 0); }
-    $('lblMProfit').textContent = 'Profit · ' + mon; $('mProfit').textContent = wait ? '…' : fmt(f.profit);
-    $('mProfit').style.color = f.profit >= 0 ? 'var(--green)' : 'var(--red)';
-    $('mProfitSub').textContent = wait ? '' : (f.missing && f.missing.length ? '⚠️ ' + missingCostNote(f.missing) : (isBarberMode() ? '' : tl('Sales − cost of goods − expenses')));
-    $('mProfitSub').style.color = f.missing && f.missing.length ? '#b45309' : '';
     renderMonthBanner();
     renderHistory();
 }
 
+// How the month's profit was worked out: one line under "Profit so far" (no second set of boxes)
+function monthBreakdown(f) {
+    if (!f.hasData) return '';
+    const v = x => f.pending ? '…' : n0(x), barber = isBarberMode();
+    const cols = barber
+        ? [[tl('Money in'), v(f.sales), ''], [tl('Barbers earned'), v(f.barbers || 0), '−'], [tl('Expenses'), v((f.otherExpense || 0) + (f.supplies || 0)), '−']]
+        : [['Sales', v(f.sales), ''], [tl('Cost of goods'), v(f.cogs || 0), '−'], ['Expenses', v(f.otherExpense != null ? f.otherExpense : f.expense), '−']];
+    const notes = [];
+    if (!f.pending && f.missing && f.missing.length) notes.push(`<div class="mb-warn" onclick="switchTab('inventory')">⚠️ ${esc(missingCostNote(f.missing))} ›</div>`);
+    if (!barber && f.supplier) notes.push(`<div class="mb-note">📥 ${tl('Stock bought')} ${n0(f.supplier)} — ${tl('counted when the goods are sold')}</div>`);
+    return `<div class="mb-break">${cols.map(([l, x, sg]) => `<div><small>${l}</small><b>${sg && x !== '…' && x !== '0' ? sg : ''}${x}</b></div>`).join('')}</div>${notes.join('')}`;
+}
 function renderMonthBanner() {
     const now = new Date(), m = dayStr().slice(0, 7);
     const dim = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
@@ -54,12 +55,12 @@ function renderMonthBanner() {
                 </div>
                 <div style="text-align:right;">
                     <div style="font-size:0.5rem;color:var(--yellow);text-transform:uppercase;letter-spacing:.8px;">Profit so far</div>
-                    <div style="font-size:1.05rem;font-weight:800;color:${f.profit >= 0 ? '#4ade80' : '#f87171'};">${n0(f.profit)} <span style="font-size:0.6rem;">TZS</span></div>
+                    <div style="font-size:1.05rem;font-weight:800;color:${f.profit >= 0 ? '#4ade80' : '#f87171'};">${f.pending ? '…' : n0(f.profit)} <span style="font-size:0.6rem;">TZS</span></div>
                 </div>
             </div>
             <div style="height:4px;background:rgba(255,255,255,0.1);border-radius:3px;margin-top:8px;overflow:hidden;">
                 <div style="height:100%;width:${Math.round(now.getDate() / dim * 100)}%;background:var(--yellow);"></div>
-            </div>${prev}
+            </div>${monthBreakdown(f)}${prev}
         </div>`;
 }
 
@@ -97,14 +98,12 @@ function renderPosStrip() {
     const live = S.todaySales.filter(s => !s.voided && s.kind !== 'repay');
     const pos = live.filter(s => s.kind !== 'manual' && s.kind !== 'return');
     const mine = pos.filter(s => S.me && s.staffUid === S.me.uid);
-    if (isBarberMode()) {
-        const nC = pos.filter(x => !isCancelled(x)).length;
-        $('posStrip').innerHTML = `${tl('Today')}: <b>${nC}</b> ${tl(nC === 1 ? 'client' : 'clients')}` + (isAdmin() ? ` · <b>${fmt(live.reduce((a, s) => a + (s.kind === 'return' ? -1 : 1) * (s.total || 0), 0))}</b>` : '');
-        return;
-    }
-    $('posStrip').innerHTML = `Today: <b>${pos.length}</b> sale${pos.length === 1 ? '' : 's'}` +
-        (isAdmin() ? ` · <b>${fmt(live.reduce((a, s) => a + (s.kind === 'return' ? -1 : 1) * (s.total || 0), 0))}</b>` : '') +
-        (mine.length !== pos.length ? ` · you: <b>${mine.length}</b>` : '');
+    const total = live.reduce((a, s) => a + (s.kind === 'return' ? -1 : 1) * (s.total || 0), 0);
+    const mineTotal = live.filter(s => S.me && s.staffUid === S.me.uid).reduce((a, s) => a + (s.kind === 'return' ? -1 : 1) * (s.total || 0), 0);
+    const n = isBarberMode() ? pos.filter(x => !isCancelled(x)).length : (isAdmin() ? pos.length : mine.length);
+    const word = isBarberMode() ? (n === 1 ? 'client' : 'clients') : (n === 1 ? 'sale' : 'sales');
+    const amt = isAdmin() ? total : mineTotal;
+    $('posStrip').innerHTML = `<span class="ss-l">${tl(isAdmin() ? 'Today' : 'You today')} · <b>${n}</b> ${tl(word)}</span><span class="ss-r">${fmt(amt)}</span>`;
 }
 
 function renderPOS() {

@@ -110,7 +110,12 @@
         .imp-table .was { color: var(--gray); text-decoration: line-through; font-size: .64rem; display: block; }
 
         /* ── SHIFTS ── */
-        .pos-strip { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+        .pos-strip { display: flex; flex-direction: column; align-items: stretch; gap: 8px; }
+        .strip-sum { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; width: 100%; background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.1); border-radius: 12px; padding: 9px 12px; color: rgba(255,255,255,.7); font: inherit; font-size: .78rem; text-align: left; cursor: pointer; white-space: nowrap; }
+        .strip-sum .ss-l { overflow: hidden; text-overflow: ellipsis; }
+        .strip-sum .ss-r { color: var(--yellow); font-weight: 800; font-size: .95rem; font-variant-numeric: tabular-nums; }
+        .strip-btns { display: flex; gap: 6px; }
+        .strip-btns .strip-btn { flex: 1 1 auto; min-width: 0; padding: 9px 8px; overflow: hidden; text-overflow: ellipsis; }
         .strip-btn { background: var(--yellow); color: var(--ink); border: none; border-radius: 10px; padding: 6px 11px; font-size: .68rem; font-weight: 800; letter-spacing: .5px; cursor: pointer; white-space: nowrap; }
         .badge { display: inline-block; min-width: 18px; padding: 1px 6px; border-radius: 10px; background: var(--red); color: #fff; font-size: .62rem; margin-left: 4px; }
         .po-row { display: grid; grid-template-columns: 1.3fr 1fr auto; gap: 6px; margin-bottom: 6px; }
@@ -727,7 +732,7 @@
             #invList { grid-template-columns: repeat(auto-fill, minmax(330px, 1fr)); }
 
             /* Dashboard: money panels side by side, then history (left) and actions (right) */
-            #page-dashboard .header { display: grid; grid-template-columns: 1.1fr 1fr 1.3fr; gap: 12px; align-items: stretch; }
+            #page-dashboard .header { display: grid; grid-template-columns: 1.1fr 1fr 1.3fr; gap: 12px; align-items: start; }
             #page-dashboard .header > .header-top { grid-column: 1 / -1; margin-bottom: 4px; }
             #page-dashboard .header > #monthBanner { margin-bottom: 0 !important; }
             #page-dashboard .header > .today-panel { margin-top: 0 !important; }
@@ -869,6 +874,13 @@
         .ts-main small { display: block; color: var(--gray); font-size: .74rem; margin-top: 2px; overflow-wrap: anywhere; }
         .ts-amt { font-weight: 800; text-align: right; white-space: nowrap; } .ts-amt small { display: block; color: var(--red); font-size: .7rem; }
         .ts-rcpt { background: var(--pos); color: #fff; border: none; border-radius: 10px; width: 42px; height: 40px; font-size: 1.05rem; cursor: pointer; flex-shrink: 0; }
+        .mb-break { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 6px; margin-top: 10px; padding-top: 9px; border-top: 1px solid rgba(255,255,255,.08); }
+        .mb-break small { display: block; font-size: .56rem; color: rgba(255,255,255,.5); text-transform: uppercase; letter-spacing: .5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .mb-break b { display: block; font-size: .8rem; color: #fff; font-variant-numeric: tabular-nums; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .mb-break div:nth-child(2), .mb-break div:nth-child(3) { text-align: right; }
+        .mb-break div:nth-child(2) { text-align: center; }
+        .mb-warn { margin-top: 8px; background: rgba(245,158,11,.15); border: 1px solid rgba(245,158,11,.45); color: #fde68a; border-radius: 10px; padding: 7px 10px; font-size: .68rem; cursor: pointer; }
+        .mb-note { margin-top: 6px; font-size: .62rem; color: rgba(255,255,255,.45); }
         .md-days { display: grid; grid-template-columns: 44px minmax(0,1fr) 44px auto; gap: 6px; margin-bottom: 10px; align-items: center; }
         .md-days input { min-width: 0; -webkit-appearance: none; appearance: none; text-align: center; font-weight: 700; }
         .md-days .btn-sec { padding: 10px 0; font-size: 1.1rem; font-weight: 800; margin: 0; }
