@@ -583,4 +583,5 @@ KeepLang.add({
   'End shift': 'Maliza zamu',
   'Read the barbershop guide': 'Soma mwongozo wa kinyozi',
   'User guide': 'Mwongozo',
+  'Keep is a product of': 'Keep ni bidhaa ya',
 }, [[/^Today · (.+)$/, (m, a) => 'Leo · ' + KeepLang.tl(a)], [/^(\d+) clients?$/, 'wateja $1'], [/^([\d,.]+) left$/, 'zimebaki $1']]);
