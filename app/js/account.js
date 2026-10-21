@@ -439,8 +439,11 @@ function openMeMenu(ev) {
         <button class="mm-out" onclick="closeMeMenu();logout()">${ic('<path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3"/><path d="M10 17l-5-5 5-5M5 12h11"/>')}Sign out</button>`;
     document.body.appendChild(m);
     const w = m.offsetWidth;
-    m.style.top = Math.round(r.bottom + 8) + 'px';
-    m.style.left = Math.round(Math.max(8, Math.min(window.innerWidth - w - 8, r.right - w))) + 'px';
+    const h = m.offsetHeight, below = r.bottom + 8 + h <= window.innerHeight;
+    m.style.top = Math.round(below ? r.bottom + 8 : Math.max(8, r.top - h - 8)) + 'px';
+    // from the sidebar (computer) the menu opens beside it, otherwise under the button
+    const left = r.left < 300 && !below ? r.left : r.right - w;
+    m.style.left = Math.round(Math.max(8, Math.min(window.innerWidth - w - 8, left))) + 'px';
     setTimeout(() => document.addEventListener('click', meOutside, true), 0);
 }
 window.addEventListener('resize', closeMeMenu);

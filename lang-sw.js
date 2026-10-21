@@ -575,4 +575,10 @@ KeepLang.add({
   'given back': 'zimerudishwa',
   'Barber pay due': 'Malipo ya vinyozi yamefika',
   'days since last pay': 'siku tangu malipo ya mwisho',
+  'Quick': 'Haraka',
+  'Find date': 'Tafuta tarehe',
+  'Close day': 'Funga siku',
+  'Customers & credit': 'Wateja na mikopo',
+  'Monthly profit': 'Faida ya mwezi',
+  'End shift': 'Maliza zamu',
 }, [[/^Today · (.+)$/, (m, a) => 'Leo · ' + KeepLang.tl(a)], [/^(\d+) clients?$/, 'wateja $1'], [/^([\d,.]+) left$/, 'zimebaki $1']]);

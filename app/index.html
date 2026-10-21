@@ -115,11 +115,26 @@
 <!-- ══════════════ APP ══════════════ -->
 <div id="mainApp">
     <div class="tab-nav">
+        <div class="nav-brand"><span class="nb-logo">KEEP</span><span class="nb-shop shop-name"></span><span class="nb-date today-label"></span></div>
         <button class="tab-btn role-admin" id="tab-dashboard" onclick="switchTab('dashboard')"><span class="tab-icon">📊</span>Dashboard</button>
         <button class="tab-btn" id="tab-pos" onclick="switchTab('pos')"><span class="tab-icon">🛒</span>Point of Sale</button>
         <button class="tab-btn shop-only" id="tab-inventory" onclick="switchTab('inventory')"><span class="tab-icon">📦</span>Stock</button>
         <button class="tab-btn role-admin barber-only" id="tab-services" onclick="switchTab('services')"><span class="tab-icon">✂️</span>Services</button>
         <button class="tab-btn role-admin barber-only" id="tab-barbers" onclick="switchTab('barbers')"><span class="tab-icon">👥</span>Barbers</button>
+        <div class="nav-extra">
+            <div class="nx-label">Quick</div>
+            <button class="nx role-admin" onclick="openEntry()"><span>📒</span>Accounting</button>
+            <button class="nx role-admin" onclick="openReports()"><span>📄</span>Reports</button>
+            <button class="nx role-admin" onclick="openDay()"><span>🔍</span>Find date</button>
+            <button class="nx role-admin" onclick="openCashups()"><span>🧾</span>Cash-ups<b class="nx-badge hidden" id="cuBadgeSide"></b></button>
+            <button class="nx role-admin" onclick="openCloseDay()"><span>🔒</span>Close day</button>
+            <button class="nx role-admin shop-only" onclick="openCustomers('manage')"><span>📒</span>Customers & credit</button>
+            <button class="nx role-admin barber-only" onclick="openStaffPay()"><span>💵</span>Pay barbers</button>
+            <button class="nx role-admin" onclick="openMonth()"><span>📅</span>Monthly profit</button>
+            <button class="nx" onclick="openShiftEnd()"><span>🔓</span>End shift</button>
+            <button class="nx role-admin" onclick="openTeam()"><span>⚙️</span>Settings</button>
+        </div>
+        <button class="nav-foot" onclick="openMeMenu(event)"><span class="me-av"></span><span class="nf-name me-name"></span><span class="nf-more">⋯</span></button>
     </div>
 
     <div id="noticeBar"></div>
@@ -154,7 +169,8 @@
             </div>
         </div>
 
-        <div class="container">
+        <div class="container dash-wrap">
+          <div class="dash-side">
             <div class="row-btns" style="margin-top:2px;">
                 <button class="primary-cta" style="flex:1;margin-bottom:0;" onclick="openEntry()">📒 Accounting</button>
                 <button class="primary-cta green shop-only" style="flex:1;margin-bottom:0;" onclick="openManualSale()">✍️ Manual Sale</button>
@@ -170,24 +186,26 @@
                 <div class="stat-card"><h4 id="lblMExp">Expenses · Month</h4><p id="mExp">—</p></div>
                 <div class="stat-card" style="border-left-color:var(--yellow);"><h4 id="lblMProfit">Profit · Month</h4><p id="mProfit">—</p></div>
             </div>
-            <div class="row-btns">
+            <div class="row-btns in-sidebar">
                 <button class="btn-sec" onclick="openDay()">🔍 FIND DATE</button>
                 <button class="btn-sec" onclick="openReports()">📄 REPORTS</button>
             </div>
-            <div class="row-btns">
+            <div class="row-btns in-sidebar">
                 <button class="btn-sec" style="border-color:var(--yellow);" onclick="openCashups()">🧾 CASH-UPS<span class="badge hidden" id="cuBadge">0</span></button>
                 <button class="btn-sec" style="border-color:var(--red);color:var(--red);" onclick="openCloseDay()">🔒 CLOSE DAY</button>
             </div>
             <button class="btn-sec wide shop-svc shop-only hidden" style="border-color:var(--ink);" onclick="openStaffPay()">✂️ STAFF PAY &amp; CLIENTS</button>
-            <button class="btn-sec wide shop-only" style="border-color:var(--amber);" onclick="openCustomers('manage')">📒 CUSTOMERS & CREDIT <span id="dashOwed" style="color:var(--red);"></span></button>
-            <button class="btn-sec wide" style="border-color:var(--blue);color:var(--blue);margin-bottom:18px;" onclick="openMonth()">📅 MONTHLY PROFIT & CLOSE MONTH</button>
-
+            <button class="btn-sec wide shop-only in-sidebar" style="border-color:var(--amber);" onclick="openCustomers('manage')">📒 CUSTOMERS & CREDIT <span id="dashOwed" style="color:var(--red);"></span></button>
+            <button class="btn-sec wide in-sidebar" style="border-color:var(--blue);color:var(--blue);margin-bottom:18px;" onclick="openMonth()">📅 MONTHLY PROFIT & CLOSE MONTH</button>
+          </div>
+          <div class="dash-main">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
                 <span class="section-label" id="historyLabel" style="margin-bottom:0;">Days</span>
                 <button class="link-btn" style="margin:0;" id="historyToggle" onclick="toggleHistory()">Show all months</button>
             </div>
             <div id="historyList"></div>
             <button id="historyMore" class="btn-sec wide hidden" onclick="S.historyLimit += 7; renderHistory();">VIEW MORE</button>
+          </div>
         </div>
         <button class="fab-ai" onclick="openAI()" title="Business insights">✨</button>
     </div>

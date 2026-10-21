@@ -348,6 +348,7 @@ function startListeners() {
             S.pendingCashups = s.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => (tms(a.createdAt) || 9e15) - (tms(b.createdAt) || 9e15));
             const n = S.pendingCashups.length, bd = $('cuBadge');
             bd.textContent = n; bd.classList.toggle('hidden', !n);
+            const bs = $('cuBadgeSide'); if (bs) { bs.textContent = n; bs.classList.toggle('hidden', !n); }
             renderNotices();
             if ($('sheetCashups').classList.contains('active')) renderCashupList();
         });
