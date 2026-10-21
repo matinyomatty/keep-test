@@ -138,12 +138,16 @@ en: () => `
 <h3>Open and install</h3>
 <p>Open the Keep link in Chrome (Android) or Safari (iPhone). Tap <span class="k">📲 Install</span> (or “Add to Home Screen”) so Keep opens like an app from the home screen.</p>
 <h3>Sign in</h3>
-<ul><li>Tap your name under <b>Who's working?</b>, or type your phone number (owners can also use their email).</li>
+<ul><li><b>First time?</b> Tap <span class="k">Use your setup code</span>, type the code you got on WhatsApp, and choose your own PIN.</li>
+<li>After that: tap your name under <b>Who's working?</b>, or type your phone number (owners can also use their email).</li>
 <li>Type your PIN (6–12 numbers) and tap <span class="k">UNLOCK</span>.</li>
 <li>Keep signs you out after 10 minutes without use, so nobody can sell in your name.</li>
-<li><b>Tap your name</b> at the top right to change your PIN, refresh the app, open Help, or <b>sign out</b> when you leave.</li></ul>
+<li><b>Tap your name</b> (top right on a phone, bottom left on a computer) to change your PIN, switch language, refresh the app, open this guide, or <b>sign out</b> when you leave.</li>
+<li><b>Kiswahili or English:</b> tap <b>SW / EN</b> on the sign-in screen, or your name → <b>Kiswahili</b>. Each person's choice is kept on their phone.</li></ul>
+<h3>On a computer</h3>
+<p>The menu is on the <b>left</b>: Dashboard, Point of Sale and Stock, then <b>Quick</b> links (Accounting, Reports, Find date, Cash-ups, Close day, Customers, Monthly profit, End shift, Settings, User guide). Your name and the account menu are at the bottom.</p>
 <h3>Forgot your PIN?</h3>
-<ul><li>${S_.en} Ask the owner — they reset it in <span class="k">👥 Team</span>.</li>
+<ul><li>${S_.en} Ask the owner for a new setup code — they make one in <span class="k">👥 Team</span> → <b>Reset PIN</b> and send it on WhatsApp. You then choose a new PIN yourself.</li>
 <li>${O.en} Type your email on the sign-in screen and tap <span class="k">Forgot PIN?</span>. Open the emailed link to set a new PIN (check spam too).</li></ul>
 </div>
 <div class="tip">📵 <b>No internet?</b> Keep keeps working. Sales are saved on the phone and sent when the internet returns. A bar shows when you are offline and ⏳ shows anything still waiting to send.</div>
@@ -155,7 +159,7 @@ en: () => `
 <li><span class="k">✍️ Manual sale</span> and <span class="k">💸 Expense</span> — only if the owner allows them (see section 11).</li>
 <li><span class="k">👥 Customers</span> — customer list, debts and payments.</li>
 <li><span class="k">🔒 END SHIFT</span> — count the drawer at the end of your shift.</li>
-<li><b>Your name</b> (top right) → Change my PIN, Help, Refresh app, Sign out.</li></ul>
+<li><b>Your name</b> (top right; bottom left on a computer) → Change my PIN, language, Help, Refresh app, Sign out.</li></ul>
 <p>Sellers never see profit, cost prices, balances, banking or savings.</p></div>
 
 <h2 id="g3">3. Making a sale ${S_.en}</h2>
@@ -164,10 +168,10 @@ en: () => `
 <li>Items sold in parts (kg, metres, litres) accept amounts like 1.5. Use + / − or ✏️ to change quantity or price.</li>
 <li>For phones and electronics Keep asks for each <b>serial / IMEI</b>. Scan or type it — Keep stops you if it is wrong, belongs to another item, or is already sold.</li>
 <li>Optional: <span class="k">👤 Add customer</span>, and <span class="k">🏷️ Discount</span> (sellers can't go above the owner's discount limit).</li>
-<li>Payment: <b>💵 Cash</b>, <b>📱 Lipa kwa Simu</b>, <b>📒 Credit</b>, or a mix. Shortcuts: <b>All Cash</b>, <b>All Simu</b>, <b>All Credit</b>. The payment must add up to the total.</li>
+<li>Payment: <b>💵 Cash</b>, <b>📱 Lipa kwa Simu</b>, <b>📒 Credit</b>, or a mix. Shortcuts: <b>All Cash</b> (green), <b>All Simu</b> (blue), <b>All Credit</b> — the one in use fills in with its colour. For a mix, type the amounts in the boxes. The payment must add up to the total.</li>
 <li>Tap <span class="k">✅ CONFIRM SALE</span>.</li>
 <li>Tap <span class="k">🧾 Receipt</span> to send it on <b>WhatsApp</b> or get a <b>PDF to print</b>. The receipt shows your shop details, warranty and serials.</li></ol>
-<div class="tip">⌨️ <b>On a computer:</b> <b>/</b> search · <b>Enter</b> add item · <b>F2</b> confirm sale · <b>Esc</b> close.</div></div>
+<div class="tip">🖥️ <b>On a computer</b> the cart stays open on the right, with <b>Clear</b> at the top. Keyboard: <b>/</b> search · <b>Enter</b> add item · <b>F2</b> confirm sale · <b>Esc</b> close.</div></div>
 
 <h2 id="g4">4. Customers and credit</h2>
 <div class="card"><ul>
@@ -186,14 +190,19 @@ en: () => `
 <h2 id="g6">6. Stock</h2>
 <div class="card">
 <h3>Adding items ${O.en}</h3>
-<p><span class="k">➕ ADD ITEM</span>: icon, name, category, how it is sold (piece, kg, metre…), <b>pack size</b> (e.g. a box of 12), <b>part units</b> (e.g. 0.5 kg), selling price, cost, stock, low-stock level, <b>warranty months</b>, <b>Ask for serial / IMEI</b>, and barcode (scan with 📷).</p>
+<p><span class="k">➕ ADD ITEM</span>: icon, name, category, how it is sold (piece, kg, metre…), <b>pack size</b> (e.g. a box of 12), <b>part units</b> (e.g. 0.5 kg), selling price, cost, stock, low-stock level, <b>warranty months</b>, <b>Ask for serial / IMEI</b>, <b>expiry date</b> (the soonest on the shelf) and barcode (scan with 📷).</p>
+<h3>Services (repairs, installation…) ${O.en}</h3>
+<p>Tick <b>✂️ This is a service</b> on an item for work you charge for without stock. Services never run out. At the till you choose who did the work, and <span class="k">✂️ STAFF PAY &amp; CLIENTS</span> on the dashboard shows each person's work and what they are owed. (A barbershop has its own guide — use the <b>💈 Barbershop</b> switch at the top.)</p>
 <h3>Receiving goods</h3>
 <ul><li><span class="k">📥</span> on an item: <b>Restock</b>. Count in pieces or packs. For serial items scan each serial (📷 scans many in a row). ${O.en} can enter the cost and record the payment.</li>
 <li><span class="k">🚚 DELIVERY</span>: a supplier delivery with many items, supplier name, costs and how it was paid. Share the delivery note as PDF. ${S_.en} A seller's delivery waits for the owner to check prices and confirm.</li></ul>
 <h3>Counting and checking</h3>
 <ul><li><span class="k">📋 COUNT</span>: type the real count for each item (skip blanks). Keep corrects the stock and records who counted.</li>
 <li><span class="k">🔍 SERIAL</span>: type or scan a serial / IMEI to see if it is in stock, who bought it and when, and whether the <b>warranty</b> is still valid.</li>
-<li>Items running low show yellow, items out show red. The owner sees them on the dashboard and in reports.</li></ul>
+<li>Items running low show yellow, items out show red. The owner sees them on the dashboard and in reports.</li>
+<li><b>⏳ Expiry:</b> items expiring within 30 days (or already expired) are counted at the top of Stock — tap it to see only those. When you restock you can enter the expiry date of the new stock.</li></ul>
+<h3>🏷️ Shelf labels ${O.en}</h3>
+<p><span class="k">🏷️ LABELS</span>: tick the items, choose small (65 per A4 page) or large labels, with or without the price, and print. Items without a barcode get one made, so they can be scanned at the till.</p>
 <h3>Excel ${O.en}</h3>
 <p><span class="k">📥 EXCEL</span>: download a blank template or your current stock, fill it in Excel, Google Sheets or WPS, and upload it. You see a preview first and choose: add to stock (a delivery), replace with the count (a stocktake), or don't change stock; and whether to update prices.</p></div>
 
@@ -212,7 +221,7 @@ en: () => `
 <h2 id="g8">8. Owner's daily work ${O.en}</h2>
 <div class="card">
 <h3>📊 Dashboard</h3>
-<p>Today's sales (with progress to your daily target and change vs yesterday), cash, Simu, bank and savings balances, and this month's sales, stock bought, expenses and profit.</p>
+<p>Today's sales (with progress to your daily target and change vs yesterday), cash, Simu, bank and savings balances, and this month's sales, stock bought, expenses and profit. On a computer the day history is on the left and the actions on the right.</p>
 <h3>Alerts at the top</h3>
 <p>Keep shows a coloured bar when something needs you: cash-ups to review, deliveries to check, items below zero, things that were not saved, the phone clock being wrong, or the trial / subscription ending.</p>
 <h3>🧾 Cash-ups</h3>
@@ -249,10 +258,10 @@ en: () => `
 
 <h2 id="g11">11. Team, permissions and settings ${O.en}</h2>
 <div class="card">
-<p>Tap <b>your name</b> at the top → <span class="k">⚙️ Settings</span>. It has four tabs:</p>
+<p>Tap <b>your name</b> → <span class="k">⚙️ Settings</span> (on a computer: <b>Settings</b> in the left menu). It has four tabs:</p>
 <h3>👥 Team</h3>
-<ul><li><span class="k">➕ ADD STAFF</span>: name, phone, PIN and role — <b>🛒 Seller</b> (sells, receives stock, does cash-ups) or <b>👑 Admin</b> (everything the owner can do).</li>
-<li>Reset someone's PIN, make a seller an admin (or back), and <b>switch an account off</b> when someone leaves. Their past records stay.</li></ul>
+<ul><li><span class="k">➕ ADD STAFF</span>: name, phone and role — <b>🛒 Seller</b> (sells, receives stock, does cash-ups) or <b>👑 Admin</b> (everything the owner can do). Keep gives you a <b>one-time setup code</b> to send them on WhatsApp; they choose their own PIN.</li>
+<li><b>Reset PIN</b> gives a new setup code. Make a seller an admin (or back), and <b>switch an account off</b> when someone leaves. Their past records stay.</li></ul>
 <h3>🔐 Permissions — what sellers may do</h3>
 <ul><li><b>📒 Sell on credit</b> — let customers take goods and pay later.</li>
 <li><b>↩️ Returns &amp; refunds</b> — take goods back and give money back.</li>
@@ -267,7 +276,9 @@ en: () => `
 <li><b>On customer receipts:</b> <b>shop logo</b> (📷 Upload logo — tick “My logo already shows the shop name” if it does), shop phone, address / TIN, footer message, and <b>receipt paper</b> (80 mm or 58 mm printer). Tap <span class="k">🧾 Preview a sample receipt</span> to check it.</li>
 <li><span class="k">⬇️ DOWNLOAD FULL BACKUP</span> — a complete copy of your shop's records.</li>
 <li><span class="k">❓ Help · FAQ · Terms</span> — this page.</li></ul>
-<h3>💳 Plan</h3><p>See section 12.</p></div>
+<h3>💳 Plan</h3><p>See section 12.</p>
+<h3>🏪 More than one branch</h3>
+<p>If you own more than one shop, Keep can add each as a branch with its own stock, sellers and money. Tap your name → <b>Switch branch</b> to move between them. Ask Keep support to add a branch.</p></div>
 
 <h2 id="g12">12. Plan and payment ${O.en}</h2>
 <div class="card"><ul>
@@ -300,12 +311,16 @@ sw: () => `
 <h3>Fungua na usakinishe</h3>
 <p>Fungua kiungo cha Keep kwenye Chrome (Android) au Safari (iPhone). Gusa <span class="k">📲 Install</span> (au “Add to Home Screen”) ili Keep ifunguke kama app kutoka skrini ya mwanzo.</p>
 <h3>Kuingia</h3>
-<ul><li>Gusa jina lako chini ya <b>Who's working?</b>, au andika namba yako ya simu (mmiliki anaweza pia kutumia barua pepe).</li>
+<ul><li><b>Mara ya kwanza?</b> Gusa <span class="k">Tumia namba yako ya kuanzia</span>, andika namba uliyopata kwa WhatsApp, na uchague PIN yako mwenyewe.</li>
+<li>Baada ya hapo: gusa jina lako chini ya <b>Nani yuko kazini?</b>, au andika namba yako ya simu (mmiliki anaweza pia kutumia barua pepe).</li>
 <li>Andika PIN yako (namba 6–12) kisha gusa <span class="k">UNLOCK</span>.</li>
 <li>Keep inakutoa yenyewe baada ya dakika 10 bila kuitumia, ili mtu mwingine asiuze kwa jina lako.</li>
-<li><b>Gusa jina lako</b> juu kulia kubadilisha PIN, kuonyesha app upya, kufungua Msaada, au <b>kutoka</b> unapoondoka.</li></ul>
+<li><b>Gusa jina lako</b> (juu kulia kwenye simu, chini kushoto kwenye kompyuta) kubadilisha PIN, kubadilisha lugha, kuonyesha app upya, kufungua mwongozo huu, au <b>kutoka</b> unapoondoka.</li>
+<li><b>Kiswahili au Kiingereza:</b> gusa <b>SW / EN</b> kwenye ukurasa wa kuingia, au jina lako → <b>English/Kiswahili</b>. Chaguo la kila mtu linabaki kwenye simu yake.</li></ul>
+<h3>Kwenye kompyuta</h3>
+<p>Menyu iko <b>kushoto</b>: Dashibodi, Mauzo na Stoku, kisha viungo vya <b>Haraka</b> (Hesabu, Ripoti, Tafuta tarehe, Hesabu za droo, Funga siku, Wateja, Faida ya mwezi, Maliza zamu, Mipangilio, Mwongozo). Jina lako na menyu ya akaunti viko chini.</p>
 <h3>Umesahau PIN?</h3>
-<ul><li>${S_.sw} Muombe mmiliki — anaibadilisha kwenye <span class="k">👥 Team</span>.</li>
+<ul><li>${S_.sw} Muombe mmiliki namba mpya ya kuanzia — anaitengeneza kwenye <span class="k">👥 Timu</span> → <b>Reset PIN</b> na kukutumia kwa WhatsApp. Kisha unachagua PIN mpya mwenyewe.</li>
 <li>${O.sw} Andika barua pepe yako kwenye ukurasa wa kuingia kisha gusa <span class="k">Forgot PIN?</span>. Fungua kiungo kilichotumwa kuweka PIN mpya (angalia pia spam).</li></ul>
 </div>
 <div class="tip">📵 <b>Hakuna intaneti?</b> Keep inaendelea kufanya kazi. Mauzo yanahifadhiwa kwenye simu na kutumwa intaneti ikirudi. Ukanda unaonyesha ukiwa nje ya mtandao na ⏳ inaonyesha kilichobaki kutumwa.</div>
@@ -317,7 +332,7 @@ sw: () => `
 <li><span class="k">✍️ Manual sale</span> na <span class="k">💸 Expense</span> — kama tu mmiliki ameruhusu (angalia sehemu ya 11).</li>
 <li><span class="k">👥 Customers</span> — orodha ya wateja, madeni na malipo.</li>
 <li><span class="k">🔒 END SHIFT</span> — kuhesabu droo mwisho wa zamu yako.</li>
-<li><b>Jina lako</b> (juu kulia) → Change my PIN, Help, Refresh app, Sign out.</li></ul>
+<li><b>Jina lako</b> (juu kulia; chini kushoto kwenye kompyuta) → Badilisha PIN, lugha, Msaada, Onyesha upya, Toka.</li></ul>
 <p>Wauzaji hawaoni faida, bei za kununulia, salio, benki wala akiba.</p></div>
 
 <h2 id="g3">3. Kuuza ${S_.sw}</h2>
@@ -326,10 +341,10 @@ sw: () => `
 <li>Bidhaa zinazouzwa kwa vipimo (kilo, mita, lita) zinakubali kiasi kama 1.5. Tumia + / − au ✏️ kubadilisha idadi au bei.</li>
 <li>Kwa simu na vifaa vya kielektroniki Keep inauliza kila <b>serial / IMEI</b>. Isome au iandike — Keep inakuzuia ikiwa si sahihi, ni ya bidhaa nyingine, au imeshauzwa.</li>
 <li>Hiari: <span class="k">👤 Add customer</span> (ongeza mteja), na <span class="k">🏷️ Discount</span> (punguzo — wauzaji hawawezi kuzidi kikomo cha mmiliki).</li>
-<li>Malipo: <b>💵 Taslimu</b>, <b>📱 Lipa kwa Simu</b>, <b>📒 Mkopo</b>, au mchanganyiko. Njia za haraka: <b>All Cash</b>, <b>All Simu</b>, <b>All Credit</b>. Malipo lazima yalingane na jumla.</li>
+<li>Malipo: <b>💵 Taslimu</b>, <b>📱 Lipa kwa Simu</b>, <b>📒 Mkopo</b>, au mchanganyiko. Njia za haraka: <b>Taslimu Zote</b> (kijani), <b>Simu Zote</b> (bluu), <b>Mikopo Yote</b> — inayotumika inajaa rangi yake. Kwa mchanganyiko, andika kiasi kwenye visanduku. Malipo lazima yalingane na jumla.</li>
 <li>Gusa <span class="k">✅ CONFIRM SALE</span>.</li>
 <li>Gusa <span class="k">🧾 Receipt</span> kuituma kwa <b>WhatsApp</b> au kupata <b>PDF ya kuchapisha</b>. Risiti inaonyesha taarifa za duka, waranti na serial.</li></ol>
-<div class="tip">⌨️ <b>Kwenye kompyuta:</b> <b>/</b> tafuta · <b>Enter</b> ongeza bidhaa · <b>F2</b> thibitisha mauzo · <b>Esc</b> funga.</div></div>
+<div class="tip">🖥️ <b>Kwenye kompyuta</b> kikapu kinabaki wazi upande wa kulia, na <b>Ondoa zote</b> juu yake. Kibodi: <b>/</b> tafuta · <b>Enter</b> ongeza bidhaa · <b>F2</b> thibitisha mauzo · <b>Esc</b> funga.</div></div>
 
 <h2 id="g4">4. Wateja na mikopo</h2>
 <div class="card"><ul>
@@ -348,14 +363,19 @@ sw: () => `
 <h2 id="g6">6. Stoku</h2>
 <div class="card">
 <h3>Kuongeza bidhaa ${O.sw}</h3>
-<p><span class="k">➕ ADD ITEM</span>: alama, jina, kundi, inavyouzwa (kipande, kilo, mita…), <b>ukubwa wa paketi</b> (mfano boksi la 12), <b>vipimo vidogo</b> (mfano kilo 0.5), bei ya kuuza, gharama, stoku, kiwango cha tahadhari, <b>miezi ya waranti</b>, <b>Ask for serial / IMEI</b>, na barcode (soma kwa 📷).</p>
+<p><span class="k">➕ ADD ITEM</span>: alama, jina, kundi, inavyouzwa (kipande, kilo, mita…), <b>ukubwa wa paketi</b> (mfano boksi la 12), <b>vipimo vidogo</b> (mfano kilo 0.5), bei ya kuuza, gharama, stoku, kiwango cha tahadhari, <b>miezi ya waranti</b>, <b>Ask for serial / IMEI</b>, <b>tarehe ya kuisha muda</b> (ya karibu zaidi rafuni) na barcode (soma kwa 📷).</p>
+<h3>Huduma (matengenezo, ufungaji…) ${O.sw}</h3>
+<p>Weka tiki <b>✂️ Hii ni huduma</b> kwenye bidhaa kwa kazi unayotoza bila stoku. Huduma haziishi. Wakati wa kuuza unachagua nani alifanya kazi, na <span class="k">✂️ MALIPO YA WAFANYAKAZI NA WATEJA</span> kwenye dashibodi inaonyesha kazi ya kila mtu na anachodai. (Kinyozi kina mwongozo wake — tumia kitufe cha <b>💈 Barbershop</b> juu.)</p>
 <h3>Kupokea mzigo</h3>
 <ul><li><span class="k">📥</span> kwenye bidhaa: <b>Restock</b>. Hesabu kwa vipande au paketi. Kwa bidhaa zenye serial soma kila serial (📷 inasoma nyingi mfululizo). ${O.sw} anaweza kuweka gharama na kurekodi malipo.</li>
 <li><span class="k">🚚 DELIVERY</span>: mzigo wa msambazaji wenye bidhaa nyingi, jina la msambazaji, gharama na ulivyolipwa. Tuma hati ya mzigo kama PDF. ${S_.sw} Mzigo uliorekodiwa na muuzaji unasubiri mmiliki akague bei na athibitishe.</li></ul>
 <h3>Kuhesabu na kukagua</h3>
 <ul><li><span class="k">📋 COUNT</span>: andika idadi halisi ya kila bidhaa (acha tupu kuruka). Keep inarekebisha stoku na kurekodi nani alihesabu.</li>
 <li><span class="k">🔍 SERIAL</span>: andika au soma serial / IMEI kuona kama iko dukani, nani aliinunua na lini, na kama <b>waranti</b> bado ipo.</li>
-<li>Bidhaa zinazokaribia kuisha zinaonekana njano, zilizoisha nyekundu. Mmiliki anaziona kwenye dashibodi na ripoti.</li></ul>
+<li>Bidhaa zinazokaribia kuisha zinaonekana njano, zilizoisha nyekundu. Mmiliki anaziona kwenye dashibodi na ripoti.</li>
+<li><b>⏳ Kuisha muda:</b> bidhaa zinazoisha muda ndani ya siku 30 (au zilizokwisha) zinahesabiwa juu ya Stoku — gusa kuona hizo tu. Ukiongeza stoku unaweza kuweka tarehe ya kuisha ya mzigo mpya.</li></ul>
+<h3>🏷️ Lebo za rafu ${O.sw}</h3>
+<p><span class="k">🏷️ LABELS</span>: weka tiki bidhaa, chagua lebo ndogo (65 kwa ukurasa wa A4) au kubwa, zenye bei au bila, kisha chapisha. Bidhaa zisizo na barcode zinatengenezewa, ili zisomeke wakati wa kuuza.</p>
 <h3>Excel ${O.sw}</h3>
 <p><span class="k">📥 EXCEL</span>: pakua kiolezo tupu au stoku yako ya sasa, ijaze kwenye Excel, Google Sheets au WPS, kisha ipakie. Unaona hakikisho kwanza na kuchagua: ongeza kwenye stoku (mzigo), badilisha kwa idadi (kuhesabu stoku), au usibadilishe stoku; na kama bei zibadilishwe.</p></div>
 
@@ -411,10 +431,10 @@ sw: () => `
 
 <h2 id="g11">11. Timu, ruhusa na mipangilio ${O.sw}</h2>
 <div class="card">
-<p>Gusa <b>jina lako</b> juu → <span class="k">⚙️ Settings</span>. Ina sehemu nne:</p>
+<p>Gusa <b>jina lako</b> → <span class="k">⚙️ Mipangilio</span> (kwenye kompyuta: <b>Mipangilio</b> kwenye menyu ya kushoto). Ina sehemu nne:</p>
 <h3>👥 Team</h3>
-<ul><li><span class="k">➕ ADD STAFF</span>: jina, simu, PIN na nafasi — <b>🛒 Seller</b> (anauza, anapokea stoku, anafanya hesabu za zamu) au <b>👑 Admin</b> (kila kitu anachoweza mmiliki).</li>
-<li>Badilisha PIN ya mtu, mfanye muuzaji kuwa admin (au kinyume), na <b>zima akaunti</b> mtu akiondoka. Kumbukumbu zake za zamani zinabaki.</li></ul>
+<ul><li><span class="k">➕ ADD STAFF</span>: jina, simu na nafasi — <b>🛒 Seller</b> (anauza, anapokea stoku, anafanya hesabu za zamu) au <b>👑 Admin</b> (kila kitu anachoweza mmiliki). Keep inakupa <b>namba ya kuanzia ya mara moja</b> ya kumtumia kwa WhatsApp; anachagua PIN yake mwenyewe.</li>
+<li><b>Reset PIN</b> inatoa namba mpya ya kuanzia. Mfanye muuzaji kuwa admin (au kinyume), na <b>zima akaunti</b> mtu akiondoka. Kumbukumbu zake za zamani zinabaki.</li></ul>
 <h3>🔐 Permissions — wauzaji wanaruhusiwa nini</h3>
 <ul><li><b>📒 Sell on credit</b> — kuruhusu wateja kuchukua bidhaa na kulipa baadaye.</li>
 <li><b>↩️ Returns &amp; refunds</b> — kupokea bidhaa zinazorudishwa na kurudisha pesa.</li>
@@ -429,7 +449,9 @@ sw: () => `
 <li><b>Kwenye risiti za wateja:</b> <b>nembo ya duka</b> (📷 Upload logo — weka tiki “My logo already shows the shop name” kama nembo ina jina), simu ya duka, anwani / TIN, ujumbe wa chini, na <b>karatasi ya risiti</b> (printa ya 80 mm au 58 mm). Gusa <span class="k">🧾 Preview a sample receipt</span> kuiona.</li>
 <li><span class="k">⬇️ DOWNLOAD FULL BACKUP</span> — nakala kamili ya kumbukumbu za duka lako.</li>
 <li><span class="k">❓ Help · FAQ · Terms</span> — ukurasa huu.</li></ul>
-<h3>💳 Plan</h3><p>Angalia sehemu ya 12.</p></div>
+<h3>💳 Plan</h3><p>Angalia sehemu ya 12.</p><h3>🏪 Zaidi ya tawi moja</h3>
+<p>Ukiwa na duka zaidi ya moja, Keep inaweza kuongeza kila moja kama tawi lenye stoku, wauzaji na pesa zake. Gusa jina lako → <b>Badilisha tawi</b> kuhamia kati yao. Omba huduma ya Keep kuongeza tawi.</p>
+</div>
 
 <h2 id="g12">12. Kifurushi na malipo ${O.sw}</h2>
 <div class="card"><ul>
@@ -460,7 +482,7 @@ ${[
 ["Does Keep work without internet?", "Yes. You can keep selling. Sales are saved on the phone and sent automatically when the internet returns — keep the app open for a moment once you are back online. Signing in for the first time, resetting a PIN and backups need internet."],
 ["What do I need to use Keep?", "Any smartphone, tablet or computer with a modern browser (Chrome, Safari, Edge). No special machine. A receipt printer and barcode scanner are optional."],
 ["Can we use Keep on more than one phone?", "Yes. Every seller can use their own phone or a shared shop phone. Everything stays in step between devices."],
-["I forgot my PIN.", "Sellers: ask the owner to reset it in 👥 Team. Owners: type your email on the sign-in screen and tap “Forgot PIN?” — check your spam folder for the email."],
+["I forgot my PIN.", "Sellers: ask the owner for a new setup code (👥 Team → Reset PIN); they send it on WhatsApp and you choose a new PIN on the sign-in screen with “Use your setup code”. Owners: type your email on the sign-in screen and tap “Forgot PIN?” — check your spam folder for the email."],
 ["It says “The payment must add up to the total”.", "The cash + Simu + credit you typed must equal the total. Tap 💵 All Cash, 📱 All Simu or 📒 All Credit to fill it in one tap, or fix the amounts."],
 ["I made a mistake on a sale.", "If the customer returns goods, use ↩️ Return. If the sale itself was wrong, the owner can Void it. Sales are never deleted, so the history stays honest."],
 ["Keep says a serial / IMEI is already sold.", "Check the number carefully — it may be a typo. Use 🔍 SERIAL to see when and to whom it was sold. If a sold phone came back, record it as a return first."],
@@ -494,7 +516,7 @@ ${[
 ["Keep inafanya kazi bila intaneti?", "Ndiyo. Unaendelea kuuza. Mauzo yanahifadhiwa kwenye simu na kutumwa yenyewe intaneti ikirudi — acha app wazi kwa muda mfupi ukisharudi mtandaoni. Kuingia mara ya kwanza, kubadilisha PIN na kuhifadhi nakala vinahitaji intaneti."],
 ["Ninahitaji nini kutumia Keep?", "Simu janja, tablet au kompyuta yoyote yenye kivinjari cha kisasa (Chrome, Safari, Edge). Hakuna mashine maalum. Printa ya risiti na kisoma barcode ni hiari."],
 ["Tunaweza kutumia Keep kwenye simu zaidi ya moja?", "Ndiyo. Kila muuzaji anaweza kutumia simu yake au simu ya duka. Kila kitu kinaendana kati ya vifaa vyote."],
-["Nimesahau PIN yangu.", "Muuzaji: muombe mmiliki aibadilishe kwenye 👥 Team. Mmiliki: andika barua pepe yako kwenye ukurasa wa kuingia kisha gusa “Forgot PIN?” — angalia pia kwenye spam."],
+["Nimesahau PIN yangu.", "Muuzaji: muombe mmiliki namba mpya ya kuanzia (👥 Timu → Reset PIN); anakutumia kwa WhatsApp na unachagua PIN mpya kwenye ukurasa wa kuingia kwa “Tumia namba yako ya kuanzia”. Mmiliki: andika barua pepe yako kwenye ukurasa wa kuingia kisha gusa “Forgot PIN?” — angalia pia kwenye spam."],
 ["Inasema “The payment must add up to the total”.", "Taslimu + simu + mkopo ulivyoandika lazima vilingane na jumla. Gusa 💵 All Cash, 📱 All Simu au 📒 All Credit kujaza kwa mguso mmoja, au rekebisha kiasi."],
 ["Nimekosea kwenye mauzo.", "Mteja akirudisha bidhaa, tumia ↩️ Return. Kama mauzo yenyewe yalikosewa, mmiliki anaweza kuyafuta (Void). Mauzo hayafutwi kabisa, hivyo historia inabaki ya kweli."],
 ["Keep inasema serial / IMEI imeshauzwa.", "Kagua namba vizuri — huenda umekosea kuandika. Tumia 🔍 SERIAL kuona iliuzwa lini na kwa nani. Simu iliyouzwa ikirudi, irekodi kwanza kama marejesho (return)."],
