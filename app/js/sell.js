@@ -429,19 +429,37 @@ function renderLastSale() {
 
 // ── My day: what this person sold today, receipts again, and a check before closing ──
 // Sellers see their own work; the owner and admins see the whole shop.
+// Sellers can look back 30 days at their own sales; the owner can open any date
+const MYDAY_BACK = 30;
 function openTodaySales() {
     openSheet('sheetTodaySales');
-    S.myDayEntries = null;
+    myDayGo(dayStr());
+}
+function myDayGo(d) {
+    const today = dayStr(), min = isAdmin() ? '2000-01-01' : shiftDay(today, -MYDAY_BACK);
+    if (!d || d > today) d = today;
+    if (d < min) { toast(tl('Sellers can look back 30 days. Ask the owner for older sales.'), 'err'); d = min; }
+    S.myDay = d; S.myDayEntries = null; S.myDayPast = d === today ? null : undefined;
+    const pick = $('tsDay'); if (pick) { pick.value = d; pick.max = today; pick.min = isAdmin() ? '' : min; }
+    if ($('tsPrev')) $('tsPrev').disabled = d <= min;
+    if ($('tsNext')) $('tsNext').disabled = d >= today;
+    document.querySelectorAll('#sheetTodaySales .today-only').forEach(el => el.classList.toggle('hidden', d !== today));
     renderTodaySales();
-    // money this person paid out of the drawer today (expenses), for the reconciliation
-    const q = isAdmin() ? col('entries').where('day', '==', dayStr()) : col('entries').where('staffUid', '==', S.me.uid).where('day', '==', dayStr());
-    q.get().then(sn => { S.myDayEntries = sn.docs.map(d => d.data()); renderTodaySales(); }).catch(() => { S.myDayEntries = []; renderTodaySales(); });
+    const mine = c => isAdmin() ? col(c).where('day', '==', d) : col(c).where('staffUid', '==', S.me.uid).where('day', '==', d);
+    // money paid out of the drawer that day (expenses), for the reconciliation
+    mine('entries').get().then(sn => { if (S.myDay !== d) return; S.myDayEntries = sn.docs.map(x => x.data()); renderTodaySales(); })
+        .catch(() => { if (S.myDay !== d) return; S.myDayEntries = []; renderTodaySales(); });
+    if (d !== today) mine('sales').get().then(sn => { if (S.myDay !== d) return; S.myDayPast = sn.docs.map(x => ({ id: x.id, ...x.data() })); renderTodaySales(); })
+        .catch(e => { if (S.myDay !== d) return; S.myDayPast = []; renderTodaySales(); toast(friendlyErr(e), 'err'); });
 }
 function myDaySales() {
-    return (S.todaySales || []).filter(x => ['pos', 'return', 'manual', 'repay'].includes(x.kind || 'pos') && (isAdmin() || x.staffUid === S.me.uid));
+    const src = S.myDay && S.myDay !== dayStr() ? (S.myDayPast || []) : (S.todaySales || []);
+    return src.filter(x => ['pos', 'return', 'manual', 'repay'].includes(x.kind || 'pos') && (isAdmin() || x.staffUid === S.me.uid));
 }
 function renderMyDay() {
     const box = $('tsSummary'); if (!box) return;
+    const past = S.myDay && S.myDay !== dayStr();
+    if (past && !S.myDayPast) { box.innerHTML = `<div class="empty-state">${tl('Loading…')}</div>`; return; }
     const L = myDaySales().filter(x => !x.voided);
     const sum = f => L.reduce((a, x) => a + (Number(x[f]) || 0), 0);
     const pos = L.filter(x => (x.kind || 'pos') === 'pos'), rets = L.filter(x => x.kind === 'return'), repay = L.filter(x => x.kind === 'repay');
@@ -453,7 +471,7 @@ function renderMyDay() {
     const paidMobile = ents.filter(e => e.from === 'mobile').reduce((a, e) => a + (Number(e.amount) || 0), 0);
     const word = isBarberMode() ? (pos.length === 1 ? 'client' : 'clients') : (pos.length === 1 ? 'sale' : 'sales');
     box.innerHTML = `<div class="md-card">
-        <div class="md-top"><div><small>${tl(isAdmin() ? 'Shop today' : 'Your day')}</small><b>${fmt(salesTotal)}</b></div><div class="md-n"><b>${pos.length}</b><small>${tl(word)}</small></div></div>
+        <div class="md-top"><div><small>${past ? esc(prettyDay(S.myDay)) : tl(isAdmin() ? 'Shop today' : 'Your day')}</small><b>${fmt(salesTotal)}</b></div><div class="md-n"><b>${pos.length}</b><small>${tl(word)}</small></div></div>
         <div class="md-grid">
             <div><small>💵 ${tl('Cash received')}</small><b>${n0(cashIn)}</b></div>
             <div><small>📱 ${tl('Mobile received')}</small><b>${n0(mobileIn)}</b></div>
@@ -463,7 +481,7 @@ function renderMyDay() {
             ${paidCash || paidMobile ? `<div><small>💸 ${tl('Paid out')}</small><b>−${n0(paidCash + paidMobile)}</b></div>` : ''}
         </div>
         <div class="md-check"><span>💵 ${tl(isAdmin() ? 'Cash from today\'s sales, less money paid out' : 'Cash from your sales, less money you paid out')}</span><b>${S.myDayEntries ? fmt(cashIn - paidCash) : '…'}</b></div>
-        <div class="md-note">${tl('Count the drawer: it should hold this plus the change it started with. Mobile money should show')} <b>${n0(mobileIn - paidMobile)}</b> ${tl('more than this morning.')}</div>
+        ${past ? '' : `<div class="md-note">${tl('Count the drawer: it should hold this plus the change it started with. Mobile money should show')} <b>${n0(mobileIn - paidMobile)}</b> ${tl('more than this morning.')}</div>`}
     </div>`;
 }
 function renderTodaySales() {
@@ -483,7 +501,7 @@ function renderTodaySales() {
                 <small class="notr">${what}</small>${x.customer ? `<small>👤 <span class="notr">${esc(x.customer.name)}</span></small>` : ''}${isAdmin() && x.staffName ? `<small>${tl('By')} <span class="notr">${esc(x.staffName)}</span></small>` : ''}</div>
             <div class="ts-amt">${x.kind === 'return' ? '−' : ''}${n0(x.total)}<small style="color:var(--gray);">${gone ? `<span style="color:var(--red);">${tl(x.voided ? 'Voided' : 'Cancelled')}</span>` : how}</small></div>
             ${x.kind === 'pos' || x.kind === 'return' ? `<button class="ts-rcpt" onclick="receiptMenu(S.saleCache['${x.id}'])">🧾</button>` : '<span style="width:42px;"></span>'}</div>`;
-    }).join('') : `<div class="hint gray">${tl(q ? 'Nothing matches.' : 'No sales yet today.')}</div>`;
+    }).join('') : `<div class="hint gray">${tl(q ? 'Nothing matches.' : S.myDay && S.myDay !== dayStr() ? (S.myDayPast ? 'No sales on this day.' : 'Loading…') : 'No sales yet today.')}</div>`;
 }
 
 async function editRef(id) {

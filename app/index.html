@@ -633,11 +633,12 @@
     <div class="modal green">
         <div class="modal-handle"></div>
         <div class="modal-title">📋 <span>My day</span></div>
+        <div class="md-days"><button class="btn-sec" id="tsPrev" onclick="myDayGo(shiftDay(S.myDay, -1))" aria-label="Previous day">‹</button><input type="date" id="tsDay" onchange="myDayGo(this.value)"><button class="btn-sec" id="tsNext" onclick="myDayGo(shiftDay(S.myDay, 1))" aria-label="Next day">›</button><button class="btn-sec" onclick="myDayGo(dayStr())">Today</button></div>
         <div id="tsSummary"></div>
-        <span class="section-label" style="margin-top:14px;"><span data-bw="Clients today">Sales today</span> · <span data-bw="tap 🧾 to send a receipt again">tap 🧾 to send a receipt again</span></span>
+        <span class="section-label" style="margin-top:14px;"><span data-bw="Clients">Sales</span> · <span data-bw="tap 🧾 to send a receipt again">tap 🧾 to send a receipt again</span></span>
         <div class="search-wrap" style="margin-bottom:10px;"><span class="search-icon">🔍</span><input type="text" id="tsSearch" placeholder="Receipt no., customer or item" oninput="renderTodaySales()" style="padding-left:40px;"></div>
         <div id="tsList"></div>
-        <div class="save-bar"><button class="primary-cta" onclick="closeModals();openShiftEnd()">🔒 END SHIFT</button><button class="btn-sec wide ghost" onclick="closeModals()">CLOSE</button></div>
+        <div class="save-bar"><button class="primary-cta today-only" onclick="closeModals();openShiftEnd()">🔒 END SHIFT</button><button class="btn-sec wide ghost" onclick="closeModals()">CLOSE</button></div>
     </div>
 </div>
 

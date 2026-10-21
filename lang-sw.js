@@ -614,6 +614,8 @@ KeepLang.add({
   'Sales today': 'Mauzo ya leo',
   'tap 🧾 to send a receipt again': 'gusa 🧾 kutuma risiti tena',
   'sale': 'mauzo',
+  'Sellers can look back 30 days. Ask the owner for older sales.': 'Muuzaji anaweza kuangalia siku 30 zilizopita. Muulize mmiliki kwa mauzo ya zamani zaidi.',
+  'No sales on this day.': 'Hakuna mauzo siku hii.',
   'Cost of goods sold': 'Gharama ya bidhaa zilizouzwa',
   'Stock bought': 'Mzigo ulionunuliwa',
   'Stock bought (not in profit)': 'Mzigo ulionunuliwa (hauhesabiwi kwenye faida)',
