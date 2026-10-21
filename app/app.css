@@ -847,3 +847,17 @@
             #sheetManual .modal { max-width: 620px; }
         }
         .setup-guide { display: block; text-align: center; color: var(--blue); font-weight: 800; font-size: .82rem; text-decoration: none; padding: 8px 0 4px; }
+
+        /* ── iPhone (Safari) fixes: nothing in a pop-up may be wider than the screen ── */
+        input[type=date], input[type=month], input[type=time] {
+            -webkit-appearance: none; appearance: none; min-width: 0; max-width: 100%; width: 100%; box-sizing: border-box; text-align: left; min-height: 44px;
+        }
+        input[type=date]::-webkit-date-and-time-value, input[type=month]::-webkit-date-and-time-value { text-align: left; margin: 0; }
+        .modal { overflow-x: hidden; max-width: min(100vw, 480px); box-sizing: border-box; }
+        .modal * { max-width: 100%; }
+        .modal .form-row > *, .modal .pair > *, .modal .ms-grid > * { min-width: 0; }
+        /* Accounting tabs wrap onto two rows on a phone instead of running off the edge */
+        #entryTabs { display: grid !important; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+        #entryTabs button { white-space: normal; line-height: 1.2; padding: 8px 4px; }
+        @media (min-width: 640px) { .modal { max-width: 520px; } }
+        @media (min-width: 1024px) { .modal { max-width: 600px; } #entryTabs { grid-template-columns: repeat(6, minmax(0, 1fr)); } }
