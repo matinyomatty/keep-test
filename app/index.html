@@ -311,8 +311,9 @@
 <div class="modal-overlay" id="sheetCart" onclick="overlayClose(event)">
     <div class="modal green">
         <div class="modal-handle"></div>
-        <div class="modal-title">🛒 Current Cart</div>
+        <div class="modal-title cart-head"><span>🛒 <span data-cart-title>Current Cart</span> <small id="cartCountHead"></small></span><button type="button" class="cart-clear-top" onclick="clearCart();closeModals();">Clear</button></div>
         <div id="cartLines"></div>
+        <div class="cart-checkout">
         <div class="cart-tools">
             <button type="button" class="chip-btn" id="custBtn" onclick="openCustomers('pick')">👤 Add customer</button>
             <button type="button" class="chip-btn" id="discBtn" onclick="askDiscount()">🏷️ Discount</button>
@@ -322,9 +323,9 @@
         <div class="field-group" style="margin-top:12px;">
             <span class="field-label">💳 Payment</span>
             <div class="row-btns">
-                <button type="button" class="btn-sec" onclick="setPay('cash')">💵 All Cash</button>
-                <button type="button" class="btn-sec" onclick="setPay('mobile')">📱 All Simu</button>
-                <button type="button" class="btn-sec hidden" id="payAllCredit" onclick="setPay('credit')">📒 All Credit</button>
+                <button type="button" class="btn-sec pay-pick cash" id="ppCash" onclick="setPay('cash')">💵 All Cash</button>
+                <button type="button" class="btn-sec pay-pick mobile" id="ppMobile" onclick="setPay('mobile')">📱 All Simu</button>
+                <button type="button" class="btn-sec pay-pick credit hidden" id="payAllCredit" onclick="setPay('credit')">📒 All Credit</button>
             </div>
             <div class="pay-grid">
                 <div><span class="field-label" style="font-size:0.6rem;">💵 Cash</span><input type="number" id="payCash" inputmode="decimal" oninput="S.payTouched=true;checkPay()"></div>
@@ -335,7 +336,8 @@
         </div>
         <div class="save-bar">
             <button class="primary-cta green" onclick="confirmSale()">✅ CONFIRM SALE</button>
-            <button class="btn-sec wide ghost" style="color:var(--red);" onclick="clearCart();closeModals();">CLEAR CART</button>
+            <button class="btn-sec wide ghost cart-clear-bottom" style="color:var(--red);" onclick="clearCart();closeModals();">CLEAR CART</button>
+        </div>
         </div>
     </div>
 </div>

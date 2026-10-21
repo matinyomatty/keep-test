@@ -757,3 +757,45 @@
             #sheetItem .form-row { gap: 14px; }
             .nx .nx-badge { margin-left: auto; background: var(--red); color: #fff; border-radius: 9px; min-width: 18px; height: 18px; font-size: .62rem; font-weight: 800; display: inline-flex; align-items: center; justify-content: center; padding: 0 5px; }
         }
+
+        /* ── Cart kept open on the right (computer / tablet sideways): compact and easy to read ── */
+        .cart-clear-top { display: none; }
+        .cart-head { display: flex; justify-content: space-between; align-items: center; }
+        .cart-head small { color: var(--gray); font-size: .8rem; font-weight: 600; }
+        .modal-overlay.docked .modal { padding: 0; }
+        .modal-overlay.docked .cart-head { padding: 16px 18px 10px; margin: 0; font-size: 1.05rem; font-weight: 800; border-bottom: 1px solid var(--line); }
+        .modal-overlay.docked .cart-clear-top { display: inline-block; background: none; border: 1.5px solid #fecaca; color: var(--red); font-weight: 800; font-size: .72rem; border-radius: 8px; padding: 5px 10px; cursor: pointer; }
+        .modal-overlay.docked .cart-clear-bottom { display: none; }
+        .modal-overlay.docked #cartLines { padding: 4px 18px; scrollbar-width: thin; scrollbar-color: #cbd5e1 transparent; }
+        .modal-overlay.docked #cartLines::-webkit-scrollbar { width: 6px; }
+        .modal-overlay.docked #cartLines::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+        .modal-overlay.docked #cartLines::-webkit-scrollbar-button { display: none; height: 0; }
+        .modal-overlay.docked #cartLines .empty-state { padding: 28px 0 10px; }
+        .modal-overlay.docked .cart-line { padding: 8px 0; gap: 8px; }
+        .modal-overlay.docked .cl-emoji { font-size: 1.1rem; }
+        .modal-overlay.docked .cl-name { font-size: .84rem; }
+        .modal-overlay.docked .cl-price { font-size: .72rem; }
+        .modal-overlay.docked .qty-btn { width: 30px; height: 30px; font-size: 1rem; }
+        .modal-overlay.docked .cart-line input.qty-in { width: 46px; padding: 5px 2px; font-size: .85rem; }
+        .modal-overlay.docked .cart-checkout { background: #f6f8fb; border-top: 1px solid var(--line); padding: 10px 18px 14px; }
+        .modal-overlay.docked .cart-tools { margin: 0 0 8px; }
+        .modal-overlay.docked .chip-btn { padding: 5px 10px; font-size: .7rem; background: #fff; }
+        .modal-overlay.docked .cart-total-row { padding-top: 8px; }
+        .modal-overlay.docked .cart-total-row b { font-size: 1.5rem; }
+        .modal-overlay.docked .cart-checkout .field-group { margin-top: 8px !important; margin-bottom: 8px; }
+        .modal-overlay.docked .cart-checkout .field-label { margin-bottom: 4px; }
+        .modal-overlay.docked .cart-checkout .row-btns { margin-bottom: 6px; gap: 6px; }
+        .modal-overlay.docked .cart-checkout .row-btns .btn-sec { padding: 8px 6px; font-size: .74rem; margin-bottom: 0; }
+        .modal-overlay.docked .pay-grid input { padding: 8px 10px; font-size: .95rem; font-weight: 800; background: #fff; }
+        .modal-overlay.docked .save-bar { padding: 4px 0 0; margin: 0; box-shadow: none; background: transparent; }
+        .modal-overlay.docked .save-bar .primary-cta { margin: 0; padding: 14px; font-size: 1rem; }
+        /* Payment buttons: coloured, and filled when chosen */
+        .pay-pick { border-width: 2px; font-weight: 800; }
+        .pay-pick.cash { border-color: var(--pos); color: var(--pos); background: var(--pos-l); }
+        .pay-pick.mobile { border-color: #1a56db; color: #1a56db; background: #e8efff; }
+        .pay-pick.credit { border-color: var(--amber); color: #92400e; background: #fef3c7; }
+        .pay-pick.cash.on { background: var(--pos); color: #fff; }
+        .pay-pick.mobile.on { background: #1a56db; color: #fff; }
+        .pay-pick.credit.on { background: var(--amber); color: #fff; }
+        .chip-btn { border-style: solid; border-color: #c7cfdb; color: var(--ink); }
+        .modal-overlay.docked .chip-btn { border-color: #c7cfdb; }

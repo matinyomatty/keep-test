@@ -284,6 +284,7 @@ function renderCartInner() {
         ${disc ? `<div class="sum-line"><span>Discount${S.saleDisc.type === 'pct' ? ' ' + S.saleDisc.value + '%' : ''}</span><span>−${n0(disc)}</span></div>` : ''}
         <div class="sum-line" style="color:${!isAdmin() && discPctNow() > maxDiscPct() + 0.01 ? 'var(--red)' : 'var(--amber)'};font-weight:800;"><span>Customer saves</span><span>${n0(saved)} (${discPctNow().toFixed(1)}%)</span></div>` : '';
     $('cartModalTotal').textContent = fmt(total);
+    const nItems = lines.length; if ($('cartCountHead')) $('cartCountHead').textContent = nItems ? `· ${nItems} ${nItems === 1 ? 'item' : 'items'}` : '';
     // customer + discount buttons
     const c = S.saleCustomer;
     $('custBtn').innerHTML = c ? `👤 ${esc(c.name)}${c.balance ? ` · owes ${n0(c.balance)}` : ''} <span onclick="event.stopPropagation();S.saleCustomer=null;S.payTouched=false;renderCart();" style="margin-left:4px;color:var(--red);">✕</span>` : '👤 Add customer';
@@ -306,6 +307,9 @@ function setPay(mode) {
 }
 function checkPay() {
     const ok = Math.abs(num($('payCash').value) + num($('payMobile').value) + num($('payCredit').value) - cartTotal()) < 1;
+    // show which way the customer is paying
+    const t = cartTotal(), c = num($('payCash').value), m = num($('payMobile').value), cr = num($('payCredit').value);
+    $('ppCash').classList.toggle('on', t > 0 && c >= t - 0.5); $('ppMobile').classList.toggle('on', t > 0 && m >= t - 0.5); $('payAllCredit').classList.toggle('on', t > 0 && cr >= t - 0.5);
     $('payWarn').style.display = ok || !Object.keys(S.cart).length ? 'none' : 'block';
     return ok;
 }
