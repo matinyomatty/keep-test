@@ -1,7 +1,7 @@
 // Keep — lets the installed app open even when the internet is down.
 // The till (/app/) and barbershop (/barber/) have their own workers; this one covers sign-in and HQ.
 // Firebase keeps its own offline copy of the data; this file only saves the app's pages.
-const CACHE = 'keep-root-v4';
+const CACHE = 'keep-root-v5';
 const SHELL = ['/', '/index.html', '/manifest.json', '/icon-192.png', '/icon-512.png', '/lang.js', '/lang-sw.js', '/env.js'];
 
 self.addEventListener('install', e => {

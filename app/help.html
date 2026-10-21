@@ -116,8 +116,8 @@ const O = { en: '<span class="who o">Owner</span>', sw: '<span class="who o">Mmi
 const S_ = { en: '<span class="who s">Seller</span>', sw: '<span class="who s">Muuzaji</span>' };
 
 const LABELS = {
-    en: { guide: '📘 Guide', faq: '❓ FAQ', terms: '📜 Terms', back: '← Keep', foot: 'Keep · Shop POS · a product of MATINYO, Zanzibar, Tanzania' },
-    sw: { guide: '📘 Mwongozo', faq: '❓ Maswali', terms: '📜 Masharti', back: '← Keep', foot: 'Keep · Mfumo wa mauzo · bidhaa ya MATINYO, Zanzibar, Tanzania' }
+    en: { guide: '📘 Guide', faq: '❓ FAQ', terms: '📜 Terms', back: '← Keep', foot: 'Keep · Shop POS · a product of MATINYO, Mbeya, Tanzania' },
+    sw: { guide: '📘 Mwongozo', faq: '❓ Maswali', terms: '📜 Masharti', back: '← Keep', foot: 'Keep · Mfumo wa mauzo · bidhaa ya MATINYO, Mbeya, Tanzania' }
 };
 
 const DOCS = {
@@ -549,7 +549,7 @@ en: () => `
 <p class="lead">Plain-language terms for shops using Keep. By using Keep, the shop owner agrees to these terms on behalf of the shop and its staff.</p>
 
 <h2>1. Who we are</h2>
-<p>Keep is a point-of-sale and shop management service provided by <b>MATINYO</b> (registered with BRELA; owner Maternus Adriano), Zanzibar, Tanzania (“Keep”, “we”). The business using Keep is “the shop” or “you”.</p>
+<p>Keep is a point-of-sale and shop management service provided by <b>MATINYO</b> (registered with BRELA; owner Maternus Adriano), Mbeya, Tanzania (“Keep”, “we”). The business using Keep is “the shop” or “you”.</p>
 
 <h2>2. The service</h2>
 <ul><li>Keep lets you record sales, stock, customers, credit, cash-ups, expenses and reports, on phones, tablets and computers.</li>
@@ -616,7 +616,7 @@ sw: () => `
 <p class="lead">Masharti kwa lugha rahisi kwa maduka yanayotumia Keep. Kwa kutumia Keep, mmiliki wa duka anakubali masharti haya kwa niaba ya duka na wafanyakazi wake.</p>
 
 <h2>1. Sisi ni nani</h2>
-<p>Keep ni huduma ya mauzo (POS) na usimamizi wa duka inayotolewa na <b>MATINYO</b> (imesajiliwa BRELA; mmiliki Maternus Adriano), Zanzibar, Tanzania (“Keep”, “sisi”). Biashara inayotumia Keep ni “duka” au “wewe”.</p>
+<p>Keep ni huduma ya mauzo (POS) na usimamizi wa duka inayotolewa na <b>MATINYO</b> (imesajiliwa BRELA; mmiliki Maternus Adriano), Mbeya, Tanzania (“Keep”, “sisi”). Biashara inayotumia Keep ni “duka” au “wewe”.</p>
 
 <h2>2. Huduma</h2>
 <ul><li>Keep inakuwezesha kurekodi mauzo, stoku, wateja, mikopo, hesabu za zamu, matumizi na ripoti, kwenye simu, tablet na kompyuta.</li>
@@ -698,7 +698,7 @@ function render() {
     const pdfHead = `<div class="pdfhead"><div class="brand">Keep<span>.</span></div><small>${TITLES[doc][lang]} · ${lang === 'sw' ? 'Kiswahili' : 'English'} · keep.co.tz</small></div>`;
     document.getElementById('main').innerHTML = pdfHead + docFor(doc)[lang]();
     document.querySelectorAll('#modSwitch button').forEach(b => b.classList.toggle('on', b.dataset.m === mod));
-    document.getElementById('foot').textContent = mod === 'barbershop' ? (lang === 'sw' ? 'Keep · Mfumo wa kinyozi · bidhaa ya MATINYO, Zanzibar, Tanzania' : 'Keep · Barbershop · a product of MATINYO, Zanzibar, Tanzania') : L.foot;
+    document.getElementById('foot').textContent = mod === 'barbershop' ? (lang === 'sw' ? 'Keep · Mfumo wa kinyozi · bidhaa ya MATINYO, Mbeya, Tanzania' : 'Keep · Barbershop · a product of MATINYO, Mbeya, Tanzania') : L.foot;
     document.title = 'Keep — ' + TITLES[doc][lang];
     if (qs.get('print') === '1') document.querySelectorAll('details').forEach(d => d.open = true);
     // in-page links (table of contents) scroll without changing the tab
