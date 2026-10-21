@@ -312,7 +312,7 @@
         @keyframes spin { to { transform: rotate(360deg); } }
         .loading-text { font-size: 0.8rem; letter-spacing: 2px; opacity: .75; }
         .toast {
-            position: fixed; top: calc(64px + env(safe-area-inset-top)); left: 50%; transform: translateX(-50%); max-width: 92vw;
+            position: fixed; bottom: calc(96px + env(safe-area-inset-bottom)); left: 50%; transform: translateX(-50%); max-width: 92vw; box-shadow: 0 8px 24px rgba(0,0,0,.25);
             background: var(--ink); color: #fff; padding: 12px 20px; border-radius: 12px; font-size: 0.82rem; font-weight: 700;
             z-index: 9998; opacity: 0; transition: opacity .3s; pointer-events: none; text-align: center;
         }
@@ -671,3 +671,11 @@
             body.barber #barberToday { max-width: 1040px; }
             .svc-bar { max-width: 640px; }
         }
+        .bt-row.cancelled { opacity: .5; } .bt-row.cancelled .bt-what b, .bt-row.cancelled .bt-amt { text-decoration: line-through; }
+        .bt-undo { background: #fef2f2; border: none; border-radius: 10px; width: 36px; height: 36px; cursor: pointer; flex-shrink: 0; }
+        .due-card { background: #fff; border: 2px solid var(--red); border-radius: 18px; padding: 14px 16px; margin-top: 14px; }
+        .due-row { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-top: 1px solid #eef1f5; }
+        .due-row small { display: block; color: var(--gray); font-size: .72rem; }
+        .due-pay { background: var(--pos); color: #fff; border: none; border-radius: 10px; padding: 9px 14px; font-weight: 800; cursor: pointer; }
+        .tab-btn { position: relative; }
+        .tab-badge { position: absolute; top: 6px; right: calc(50% - 26px); background: var(--red); color: #fff; min-width: 18px; height: 18px; border-radius: 9px; font-size: .65rem; font-weight: 800; display: none; align-items: center; justify-content: center; padding: 0 4px; }

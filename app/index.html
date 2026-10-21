@@ -160,6 +160,7 @@
                 <button class="primary-cta green shop-only" style="flex:1;margin-bottom:0;" onclick="openManualSale()">✍️ Manual Sale</button>
             </div>
             <div id="barberSetup" class="barber-only"></div>
+            <div id="payDue" class="barber-only"></div>
             <div id="dashBarbers" class="barber-only"></div>
             <div style="height:14px;"></div>
             <div class="summary-grid shop-only">
@@ -804,7 +805,7 @@
             <div class="hint gray shop-only" style="margin-bottom:6px;">What <b>sellers</b> may do. Admins can always do everything. Changes save straight away.</div>
             <div class="tg-list">
                 <label class="tg-row shop-only"><span class="tg-ic">📒</span><span class="tg-tx"><b>Sell on credit</b><small>Let customers take goods and pay later</small></span><span class="switch"><input type="checkbox" id="setCredit" data-k="cashierCredit" onchange="setPerm(this)"><i></i></span></label>
-                <label class="tg-row shop-only"><span class="tg-ic">↩️</span><span class="tg-tx"><b>Returns & refunds</b><small>Take goods back and give money back</small></span><span class="switch"><input type="checkbox" id="setReturns" data-k="cashierReturns" onchange="setPerm(this)"><i></i></span></label>
+                <label class="tg-row"><span class="tg-ic">↩️</span><span class="tg-tx"><b data-bw="Cancel a client (mistakes)">Returns & refunds</b><small data-bw="Undo a client recorded by mistake today — money goes back the way it was paid">Take goods back and give money back</small></span><span class="switch"><input type="checkbox" id="setReturns" data-k="cashierReturns" onchange="setPerm(this)"><i></i></span></label>
                 <label class="tg-row shop-only"><span class="tg-ic">✍️</span><span class="tg-tx"><b>Manual sales</b><small>Record sales made without the till — today only</small></span><span class="switch"><input type="checkbox" id="setManual" data-k="cashierManual" onchange="setPerm(this)"><i></i></span></label>
                 <label class="tg-row"><span class="tg-ic">💸</span><span class="tg-tx"><b>Expenses</b><small>Record money paid from the drawer or Lipa kwa Simu</small></span><span class="switch"><input type="checkbox" id="setExpenses" data-k="cashierExpenses" onchange="setPerm(this)"><i></i></span></label>
                 <label class="tg-row"><span class="tg-ic">🔒</span><span class="tg-tx"><b>Close the day</b><small data-bw="The last person on shift closes the day and sends you the summary">The last seller closes the day and sends you the summary</small></span><span class="switch"><input type="checkbox" id="setCloseDay" data-k="cashierCloseDay" onchange="setPerm(this)"><i></i></span></label>

@@ -36,12 +36,14 @@ function renderBarberToday() {
     if (!isAdmin()) list = list.filter(s => s.staffUid === S.me.uid || (s.items || []).some(i => i.by === S.me.uid));
     list.sort((a, b) => (tms(b.createdAt) || 0) - (tms(a.createdAt) || 0));
     const time = s => { const t = tms(s.createdAt); return t ? new Date(t).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) : ''; };
-    box.innerHTML = `<div class="sr-head">${tl('Clients today')} · ${list.length}</div>` + (list.length ? list.slice(0, 40).map(s => {
+    box.innerHTML = `<div class="sr-head">${tl('Clients today')} · ${list.filter(x => !isCancelled(x)).length}</div>` + (list.length ? list.slice(0, 40).map(s => {
         const what = (s.items || []).map(i => esc(i.name) + (i.qty > 1 ? ' ×' + i.qty : '')).join(', ');
         const who = [...new Set((s.items || []).filter(i => i.by).map(i => i.byName || staffName(i.by)))].map(esc).join(', ');
-        return `<div class="bt-row"><span class="bt-time">${time(s)}</span>
+        const gone = isCancelled(s), canUndo = !gone && (isAdmin() || canReturn());
+        return `<div class="bt-row ${gone ? 'cancelled' : ''}"><span class="bt-time">${time(s)}</span>
             <span class="bt-what"><b class="notr">${what}</b>${who ? `<small>✂️ <span class="notr">${who}</span></small>` : ''}</span>
-            <span class="bt-amt">${n0(s.total)}<small>${s.mobile > 0 && !s.cash ? '📱' : s.cash > 0 && !s.mobile ? '💵' : '💵📱'}</small></span></div>`;
+            <span class="bt-amt">${n0(s.total)}<small>${gone ? tl('Cancelled') : s.mobile > 0 && !s.cash ? '📱' : s.cash > 0 && !s.mobile ? '💵' : '💵📱'}</small></span>
+            ${canUndo ? `<button class="bt-undo" onclick="cancelClient('${s.id}')" title="${tl('Cancel')}">↩️</button>` : ''}</div>`;
     }).join('') : `<div class="hint gray" style="margin-top:6px;">${tl('Tap a service above when a client is done.')}</div>`);
 }
 
@@ -72,7 +74,7 @@ async function renderBarbersPage() {
     const rows = staff.filter(x => x.active !== false).map(x => {
         let clients = 0, money = 0, earned = 0;
         today.forEach(s => {
-            const mine = (s.items || []).filter(i => i.service && i.by === x.uid);
+            const mine = liveItems(s).filter(i => i.service && i.by === x.uid);
             if (mine.length) clients++;
             mine.forEach(i => { money += Number(i.subtotal) || 0; earned += itemShare(i, i.qty); });
         });
@@ -125,7 +127,7 @@ function barberDay(sales) {
     const by = {};
     sales.filter(s => s.kind === 'pos' && !s.voided).forEach(s => {
         const seen = new Set();
-        (s.items || []).filter(i => i.service && i.by).forEach(i => {
+        liveItems(s).filter(i => i.service && i.by).forEach(i => {
             const r = by[i.by] = by[i.by] || { uid: i.by, name: i.byName || staffName(i.by) || '?', clients: 0, money: 0, share: 0 };
             if (!seen.has(i.by)) { seen.add(i.by); r.clients++; }
             r.money += Number(i.subtotal) || 0;
@@ -136,6 +138,7 @@ function barberDay(sales) {
 }
 function renderDashBarbers() {
     renderBarberSetup();
+    renderPayDue();
     const box = $('dashBarbers'); if (!box) return;
     if (!isBarberMode() || !isAdmin()) { box.innerHTML = ''; return; }
     const R = barberDay(S.todaySales || []);
@@ -342,4 +345,123 @@ function renderBarberSetup() {
     if (!isBarberMode() || !isAdmin() || done === steps.length) { box.innerHTML = ''; return; }
     box.innerHTML = `<div class="setup-card"><div class="setup-head">🚀 ${tl('Set up your barbershop')} <span>${done}/${steps.length}</span></div>
         ${steps.map(([ok, ic, t, tab], k) => `<button class="setup-step ${ok ? 'ok' : ''}" onclick="switchTab('${tab}')"><span class="ss-n">${ok ? '✓' : k + 1}</span><span>${ic} ${tl(t)}</span><span class="ss-go">${ok ? '' : '→'}</span></button>`).join('')}</div>`;
+}
+
+// ════════════════════════════════════════════════
+//  CANCEL A CLIENT (a mistake at the till)
+//  Recorded as a full return of that visit: the money goes back the way it was
+//  paid, the barber's share comes off, products go back on the shelf.
+//  Front desk can do it for today's clients when the owner allows it.
+// ════════════════════════════════════════════════
+// The items of a sale minus anything already given back
+function liveItems(s) {
+    const back = s.returned || {};
+    return (s.items || []).map((i, k) => {
+        const q = q3((Number(i.qty) || 0) - (Number(back[k]) || 0));
+        if (q <= 0) return null;
+        const f = q / (Number(i.qty) || 1);
+        return { ...i, qty: q, subtotal: Math.round((Number(i.subtotal) || 0) * f), ...(Number(i.share) > 0 ? { share: Math.round(i.share * f) } : {}) };
+    }).filter(Boolean);
+}
+const isCancelled = s => (s.items || []).length > 0 && liveItems(s).length === 0;
+
+async function cancelClient(id) {
+    const s = (S.todaySales || []).find(x => x.id === id);
+    if (!s || s.kind !== 'pos' || s.voided || isCancelled(s)) return;
+    if (!isAdmin() && !canReturn()) return toast('⚠️ ' + tl('The owner has not allowed front desk to cancel clients (Settings → Permissions).'), 'err');
+    if (s.day !== dayStr() && !isAdmin()) return toast('⚠️ ' + tl('Only today\'s clients can be cancelled here.'), 'err');
+    const done = s.returned || {}, gross = (s.items || []).reduce((a, i) => a + (Number(i.subtotal) || 0), 0), f = gross ? (Number(s.total) || 0) / gross : 1;
+    const picked = (s.items || []).map((i, k) => ({ k, i, qty: q3((Number(i.qty) || 0) - (done[k] || 0)) })).filter(x => x.qty > 0);
+    const refund = Math.round(picked.reduce((a, x) => a + x.qty * (Number(x.i.unitPrice) || 0) * f, 0));
+    const paid = (Number(s.cash) || 0) + (Number(s.mobile) || 0);
+    const cash = paid > 0 ? Math.round(refund * (Number(s.cash) || 0) / paid) : refund, mobile = refund - cash;
+    const who = [...new Set(picked.filter(x => x.i.by).map(x => x.i.byName || staffName(x.i.by)))].join(', ');
+    const howTxt = [cash ? `💵 ${tl('Cash')} <b>${n0(cash)}</b>` : '', mobile ? `📱 ${tl('Mobile')} <b>${n0(mobile)}</b>` : ''].filter(Boolean).join(' + ');
+    if (!await showConfirm(`${tl('Cancel this client?')}<br><br><b class="notr">${picked.map(x => esc(x.i.name)).join(', ')}</b>${who ? `<br>✂️ <span class="notr">${esc(who)}</span>` : ''}<br><br>${tl('Give back')} ${howTxt}`, tl('Cancel client'), 'var(--red)')) return;
+    const day = dayStr(), ref = col('sales').doc(), b = db.batch(), why = src('sales', ref.id);
+    const receiptNo = 'RT' + day.slice(2).replace(/-/g, '') + '-' + ref.id.slice(0, 4).toUpperCase();
+    const items = picked.map(x => ({ productId: x.i.productId, name: x.i.name, emoji: x.i.emoji || '', unit: x.i.unit || 'pc', qty: x.qty,
+        unitPrice: Math.round((Number(x.i.unitPrice) || 0) * f), subtotal: Math.round(x.qty * (Number(x.i.unitPrice) || 0) * f), serials: [], restock: !x.i.service && !!productById(x.i.productId),
+        ...(x.i.service ? { service: true } : {}), ...(x.i.by ? { by: x.i.by, byName: x.i.byName || '' } : {}) }));
+    b.set(ref, { kind: 'return', refOf: s.id, refReceipt: s.receiptNo || '', items, serials: [], total: refund, cash: -cash, mobile: -mobile, credit: 0,
+        customer: null, reason: 'Client cancelled at the till', receiptNo, day, month: day.slice(0, 7), voided: false, staffUid: S.me.uid, staffName: S.me.name, createdAt: now() });
+    const saleUp = { returnedTotal: inc(refund), updatedAt: now() };
+    picked.forEach(x => saleUp['returned.' + x.k] = inc(x.qty));
+    b.update(col('sales').doc(s.id), saleUp);
+    items.filter(i => i.restock).forEach(i => {
+        const mv = col('movements').doc();
+        b.update(col('products').doc(i.productId), { stock: inc(i.qty), src: src('movements', mv.id), updatedAt: now() });
+        b.set(mv, { productId: i.productId, name: i.name, type: 'return', qty: i.qty, saleId: ref.id, day, staffUid: S.me.uid, staffName: S.me.name, createdAt: now() });
+    });
+    const dayUp = { day, month: day.slice(0, 7), sales: inc(-refund), returns: inc(refund), src: why, updatedAt: now() };
+    if (cash) dayUp.cash = inc(-cash);
+    if (mobile) dayUp.mobile = inc(-mobile);
+    b.set(col('days').doc(day), dayUp, { merge: true });
+    b.set(col('meta').doc('balances'), { cash: inc(-cash), mobile: inc(-mobile), src: why, updatedAt: now() }, { merge: true });
+    // show it straight away on this phone
+    s.returned = { ...(s.returned || {}) }; picked.forEach(x => s.returned[x.k] = (s.returned[x.k] || 0) + x.qty);
+    commit(b, `↩️ ${tl('Client cancelled')} · ${fmt(refund)} ${tl('given back')}`, { label: `Cancel ${s.receiptNo || ''} · ${fmt(refund)}` });
+    if (S.bm) delete S.bm[day.slice(0, 7)];
+    renderBarberToday(); renderPosStrip();
+}
+
+// ════════════════════════════════════════════════
+//  BARBER PAY DUE — reminders for the owner
+//  Weekly: due 7 days after their last payment (or their first client).
+//  Monthly and salary: due from the last day of the month until paid.
+// ════════════════════════════════════════════════
+function barberPayDue() {
+    if (!isBarberMode() || !isAdmin()) return null;
+    const today = dayStr(), m = today.slice(0, 7), pm = prevMonth(m);
+    const cur = barberMonthData(m), prev = barberMonthData(pm);
+    if (!cur) { loadBarberMonth(m); return null; }
+    if (!prev) { loadBarberMonth(pm); return null; }
+    const last = new Date(today + 'T12:00:00'); const lastDay = new Date(last.getFullYear(), last.getMonth() + 1, 0).getDate() === last.getDate();
+    const dayOfMonth = +today.slice(8, 10);
+    const sales = prev.sales.concat(cur.sales), entries = prev.entries.concat(cur.entries);
+    const daysBetween = (a, b) => Math.round((new Date(b + 'T12:00:00') - new Date(a + 'T12:00:00')) / 864e5);
+    const out = [];
+    barbersAll().filter(b => b.active !== false).forEach(b => {
+        const pay = payOf(b); if (pay.every === 'day' && pay.type !== 'salary') return;
+        const one = [{ uid: b.id, name: b.name, pay: b.pay }];
+        const rowFor = (sl, en, months) => { const keep = S.spRange; S.spRange = {}; const r = staffPayRows(sl, en, one).find(x => x.p.uid === b.id); S.spRange = keep; if (pay.type === 'salary') { r.earned = pay.rate * months; r.owed = r.earned - r.paid; } return r; };
+        if (pay.every === 'week') {
+            const paidDays = entries.filter(e => e.payee === b.id && e.type === 'expense').map(e => e.day).sort();
+            const workDays = sales.filter(s => s.kind === 'pos' && !s.voided && liveItems(s).some(i => i.by === b.id)).map(s => s.day).sort();
+            const since = paidDays.length ? paidDays[paidDays.length - 1] : workDays[0];
+            if (!since) return;
+            const r = rowFor(sales, entries, 0);   // what they earned minus what they were paid, over the last two months
+            if (r.owed > 0 && daysBetween(since, today) >= 7) out.push({ b, r, why: `${tl('Weekly')} · ${daysBetween(since, today)} ${tl('days since last pay')}` });
+        } else {
+            // monthly (or salary): this month on its last day; last month in the first days of the new month
+            if (lastDay) { const r = rowFor(cur.sales, cur.entries, 1); if (r.owed > 0) out.push({ b, r, why: `${tl('Monthly')} · ${monthName(m)}` }); }
+            else if (dayOfMonth <= 10) {
+                const r = rowFor(prev.sales, prev.entries.concat(cur.entries.filter(e => +e.day.slice(8, 10) <= 10)), 1);
+                if (r.owed > 0) out.push({ b, r, why: `${tl('Monthly')} · ${monthName(pm)}`, forMonth: pm });
+            }
+        }
+    });
+    return out;
+}
+function renderPayDue() {
+    const box = $('payDue'); if (!box) return;
+    const due = barberPayDue() || [];
+    const badge = $('tab-barbers');
+    if (badge) { let n = badge.querySelector('.tab-badge'); if (!n) { n = document.createElement('span'); n.className = 'tab-badge'; badge.appendChild(n); } n.textContent = due.length || ''; n.style.display = due.length ? 'flex' : 'none'; }
+    S.payDue = due;
+    box.innerHTML = due.length ? `<div class="due-card"><div class="db-head"><span>💵 ${tl('Barber pay due')}</span></div>
+        ${due.map((d, i) => `<div class="due-row"><div style="flex:1;"><b class="notr">${esc(d.b.name)}</b><small>${esc(d.why)}</small></div><b>${fmt(d.r.owed)}</b><button class="due-pay" onclick="payDue(${i})">${tl('Pay')}</button></div>`).join('')}</div>` : '';
+}
+async function payDue(i) {
+    const d = (S.payDue || [])[i]; if (!d) return;
+    const v = await askValue(`${tl('Pay')} <b class="notr">${esc(d.b.name)}</b><br><span style="font-size:.78rem;color:#6b7280;">${esc(d.why)}</span>`, String(d.r.owed), tl('Next'), { value: String(d.r.owed) });
+    if (v === null) return;
+    const amount = Math.round(num(v)); if (!(amount > 0)) return toast('⚠️ ' + tl('Enter an amount.'), 'err');
+    const from = await choose(`${tl('Pay')} ${n0(amount)} ${tl('from')}`, [['cash', '💵 ' + tl('Cash'), '#0b0d12'], ['mobile', '📱 Lipa kwa Simu', '#1a56db'], ['bank', '🏦 ' + tl('Bank'), '#1a56db']]);
+    if (!from) return;
+    const b = db.batch();
+    writeEntries(b, [{ type: 'expense', category: 'Salaries', from, to: null, amount, payee: d.b.id, payeeName: d.b.name, note: `Pay ${d.b.name} · ${d.why}`, day: dayStr(), ...(d.forMonth ? { payFor: d.forMonth } : {}) }]);
+    await commit(b, `✅ ${tl('Paid')} ${d.b.name} ${n0(amount)}`, { label: `Barber pay ${d.b.name} ${n0(amount)}` });
+    delete S.bm[dayStr().slice(0, 7)];
+    renderDashboard();
 }
