@@ -351,18 +351,46 @@ function previewReceipt() {
     const pw = $('setPaper') ? Number($('setPaper').value) : 0;
     receiptPdf({ kind: 'pos', receiptNo: 'SAMPLE-0001', items, total, cash: total, mobile: 0, credit: 0, discount: 0, staffName: S.me ? S.me.name : '', customer: { name: 'Sample Customer', phone: '' }, createdAt: { toMillis: () => Date.now(), toDate: () => new Date() } }, { paperWidth: pw });
 }
+// Receipts always go to the customer on WhatsApp: as a text message, or as a PDF file.
+// Keep asks for the number every time (filled in when the customer is known).
 async function receiptMenu(s, afterSale) {
     if (!s) return;
-    const phone = s.customer && s.customer.phone;
-    const head = afterSale ? `✅ <b>${tl(isBarberMode() ? 'Client recorded' : 'Sale recorded')}</b> · ${fmt(s.total)}<br><span style="font-weight:500;">${tl('Send the customer a receipt?')}</span><br>`
-        : `🧾 ${s.kind === 'return' ? 'Return receipt' : 'Receipt'} `;
-    const how = await choose(`${head}<b>${esc(s.receiptNo || '')}</b>${afterSale ? '' : ' · ' + fmt(s.total)}${s.customer ? '<br>' + esc(s.customer.name) : ''}`,
-        [['wa', `📲 WhatsApp${phone ? ' to ' + esc(s.customer.name.split(' ')[0]) : ''}`, 'var(--pos)'], ['pdf', '⬇️ PDF / print', 'var(--blue)']], afterSale ? tl('No receipt') : undefined);
-    if (how === 'wa') {
-        let to = phone;
-        if (!to) { const v = await askValue('Customer WhatsApp number', '07XX XXX XXX', 'Send'); if (v === null || !v) return; to = normPhone(v); }
-        openWa(to, receiptText(s));
-    } else if (how === 'pdf') receiptPdf(s);
+    const head = afterSale ? `✅ <b>${tl(isBarberMode() ? 'Client recorded' : 'Sale recorded')}</b> · ${fmt(s.total)}<br><span style="font-weight:500;">${tl('Send the customer a receipt on WhatsApp?')}</span><br>`
+        : `🧾 ${tl(s.kind === 'return' ? 'Return receipt' : 'Receipt')} `;
+    const how = await choose(`${head}<b class="notr">${esc(s.receiptNo || '')}</b>${afterSale ? '' : ' · ' + fmt(s.total)}${s.customer ? '<br><span class="notr">' + esc(s.customer.name) + '</span>' : ''}`,
+        [['text', '💬 ' + tl('WhatsApp · text'), 'var(--pos)'], ['pdf', '📄 ' + tl('WhatsApp · PDF'), 'var(--blue)']], afterSale ? tl('No receipt') : undefined);
+    if (how !== 'text' && how !== 'pdf') return;
+    const to = await askReceiptNumber(s);
+    if (!to) return;
+    if (how === 'text') return openWa(to, receiptText(s));
+    sendReceiptPdf(s, to);
+}
+async function askReceiptNumber(s) {
+    let v = (s.customer && s.customer.phone) || '';
+    if (/^255\d{9}$/.test(v)) v = '0' + v.slice(3);
+    for (;;) {
+        v = await askValue(`📲 ${tl('Customer WhatsApp number')}`, '07XX XXX XXX', tl('Next'), { value: v });
+        if (v === null) return null;
+        const n = normPhone(v);
+        if (/^\d{10,15}$/.test(n)) return n;
+        toast(tl('Enter a phone number like 0712 345 678'), 'err');
+    }
+}
+// A web page cannot attach a file to a WhatsApp chat by itself, so this takes two taps:
+// 1) open the customer's chat (with a short note), 2) share the PDF and pick that chat (it is now at the top).
+async function sendReceiptPdf(s, to) {
+    const doc = receiptPdf(s, { returnDoc: true }); if (!doc) return;
+    const name = `${s.receiptNo || 'receipt'}.pdf`;
+    const file = new File([doc.output('blob')], name, { type: 'application/pdf' });
+    const canFile = !!(navigator.canShare && navigator.canShare({ files: [file] }));
+    const shown = '0' + to.slice(3);
+    openWa(to, `${tl('Hello')}${s.customer && s.customer.name ? ' ' + s.customer.name.split(' ')[0] : ''}, ${tl('your receipt')} ${s.receiptNo || ''} · ${fmt(s.total)} — ${S.tenantInfo.name || ''}. ${tl('PDF coming next')} 📄`);
+    if (!canFile) { doc.save(name); return toast(tl('PDF saved. Attach it in the WhatsApp chat that opened.')); }
+    const go = await choose(`📄 <b>${tl('Now send the PDF')}</b><br><span style="font-weight:500;">${tl('Tap below, choose WhatsApp, then pick the chat with')} <b class="notr">${esc(shown)}</b> ${tl('(at the top of the list).')}</span>`,
+        [['share', '📎 ' + tl('Send the PDF'), 'var(--pos)']], tl('Done'));
+    if (go !== 'share') return;
+    try { await navigator.share({ files: [file], title: name }); }
+    catch (e) { if (e && e.name !== 'AbortError') toast(tl('Could not open sharing on this phone.'), 'err'); }
 }
 
 // ════════════════════════════════════════════════
