@@ -846,3 +846,4 @@
             .modal .ms-grid { display: grid; grid-template-columns: 1fr 2fr; gap: 12px; align-items: end; }
             #sheetManual .modal { max-width: 620px; }
         }
+        .setup-guide { display: block; text-align: center; color: var(--blue); font-weight: 800; font-size: .82rem; text-decoration: none; padding: 8px 0 4px; }

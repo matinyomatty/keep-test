@@ -344,7 +344,7 @@ function renderBarberSetup() {
     const done = steps.filter(x => x[0]).length;
     if (!isBarberMode() || !isAdmin() || done === steps.length) { box.innerHTML = ''; return; }
     box.innerHTML = `<div class="setup-card"><div class="setup-head">🚀 ${tl('Set up your barbershop')} <span>${done}/${steps.length}</span></div>
-        ${steps.map(([ok, ic, t, tab], k) => `<button class="setup-step ${ok ? 'ok' : ''}" onclick="switchTab('${tab}')"><span class="ss-n">${ok ? '✓' : k + 1}</span><span>${ic} ${tl(t)}</span><span class="ss-go">${ok ? '' : '→'}</span></button>`).join('')}</div>`;
+        ${steps.map(([ok, ic, t, tab], k) => `<button class="setup-step ${ok ? 'ok' : ''}" onclick="switchTab('${tab}')"><span class="ss-n">${ok ? '✓' : k + 1}</span><span>${ic} ${tl(t)}</span><span class="ss-go">${ok ? '' : '→'}</span></button>`).join('')}<a class="setup-guide" href="help.html?m=barbershop&lang=${KeepLang.lang === 'sw' ? 'sw' : 'en'}">📘 ${tl('Read the barbershop guide')}</a></div>`;
 }
 
 // ════════════════════════════════════════════════

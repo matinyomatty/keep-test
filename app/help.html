@@ -6,7 +6,7 @@
 <title>Keep — Help, FAQ & Terms</title>
 <meta name="theme-color" content="#0b0d12">
 <link rel="icon" href="icon-192.png">
-<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@400;500;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700;800&display=swap" rel="stylesheet">
 <style>
     :root {
         --ink: #0b0d12; --ink2: #161b27; --blue: #1a56db; --yellow: #ffc72c;
@@ -17,19 +17,23 @@
     body { font-family: 'DM Sans', system-ui, sans-serif; background: var(--light); color: var(--text); line-height: 1.55; font-size: 15.5px; }
     header { background: var(--ink); color: #fff; padding: 18px 16px 0; position: sticky; top: 0; z-index: 5; }
     .top { max-width: 780px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-    .brand { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 1.45rem; letter-spacing: -.3px; }
+    .brand { font-family: 'DM Sans', sans-serif; font-weight: 800; font-size: 1.45rem; letter-spacing: -.3px; }
     .brand span { color: var(--yellow); }
     .back { color: #c9d2e3; text-decoration: none; font-size: .85rem; font-weight: 700; }
     .lang { display: flex; background: var(--ink2); border-radius: 999px; padding: 3px; }
     .lang button { border: 0; background: transparent; color: #c9d2e3; font: 800 .78rem 'DM Sans'; padding: 6px 12px; border-radius: 999px; cursor: pointer; }
     .lang button.on { background: var(--yellow); color: var(--ink); }
+    .mod { max-width: 780px; margin: 12px auto 0; display: flex; gap: 6px; }
+    .mod button { border: 1.5px solid #3a4256; background: transparent; color: #c9d2e3; font: 800 .8rem 'DM Sans'; padding: 6px 12px; border-radius: 999px; cursor: pointer; }
+    .mod button.on { background: #fff; color: var(--ink); border-color: #fff; }
+    @media print { .mod { display: none !important; } }
     nav { max-width: 780px; margin: 14px auto 0; display: flex; gap: 4px; overflow-x: auto; }
     nav button { flex: 1; min-width: 0; border: 0; background: transparent; color: #c9d2e3; font: 800 .86rem 'DM Sans'; padding: 11px 6px 12px; cursor: pointer; border-bottom: 3px solid transparent; white-space: nowrap; }
     nav button.on { color: #fff; border-bottom-color: var(--yellow); }
     main { max-width: 780px; margin: 0 auto; padding: 20px 16px 60px; }
-    h1 { font-family: 'Syne', sans-serif; font-size: 1.55rem; line-height: 1.2; margin-bottom: 6px; color: var(--ink); }
+    h1 { font-family: 'DM Sans', sans-serif; font-size: 1.55rem; line-height: 1.2; margin-bottom: 6px; color: var(--ink); }
     .lead { color: var(--gray); margin-bottom: 18px; }
-    h2 { font-family: 'Syne', sans-serif; font-size: 1.12rem; color: var(--ink); margin: 26px 0 8px; padding-top: 4px; }
+    h2 { font-family: 'DM Sans', sans-serif; font-size: 1.12rem; color: var(--ink); margin: 26px 0 8px; padding-top: 4px; }
     h3 { font-size: .98rem; margin: 16px 0 4px; color: var(--ink); }
     p { margin: 6px 0; }
     ul, ol { margin: 6px 0 6px 22px; }
@@ -90,6 +94,7 @@
             <button data-l="en" class="on">EN</button><button data-l="sw">SW</button>
         </div>
     </div>
+    <div class="mod" id="modSwitch"><button data-m="shop">🛒 Shop</button><button data-m="barbershop">💈 Barbershop</button></div>
     <nav id="tabs">
         <button data-d="guide" class="on"></button>
         <button data-d="faq"></button>
@@ -99,6 +104,7 @@
 <main id="main"></main>
 <footer class="screen" id="foot"></footer>
 
+<script src="help-barber.js"></script>
 <script>
 const CONTACT = { phone: '+255 740 116 251', wa: '255740116251', email: 'maternusadriano@gmail.com' };
 const TILL = './';
@@ -654,6 +660,9 @@ ${contactBox.sw}`
 // ── page logic ──
 const qs = new URLSearchParams(location.search);
 let lang = qs.get('lang') || (() => { try { return localStorage.getItem('keep.help.lang'); } catch (e) { return null; } })() || ((navigator.language || '').startsWith('sw') ? 'sw' : 'en');
+let mod = qs.get('m') || (() => { try { return localStorage.getItem('keep.help.m'); } catch (e) { return null; } })() || 'shop';
+if (mod !== 'barbershop') mod = 'shop';
+const docFor = d => (mod === 'barbershop' && BARBER[d]) ? BARBER[d] : DOCS[d];
 let doc = qs.get('doc') || (location.hash || '').replace('#', '') || 'guide';
 if (!DOCS[doc]) doc = 'guide';
 if (!DOCS.guide[lang]) lang = 'en';
@@ -665,8 +674,9 @@ function render() {
     document.querySelectorAll('#tabs button').forEach(b => { b.textContent = L[b.dataset.d]; b.classList.toggle('on', b.dataset.d === doc); });
     document.querySelectorAll('.lang button').forEach(b => b.classList.toggle('on', b.dataset.l === lang));
     const pdfHead = `<div class="pdfhead"><div class="brand">Keep<span>.</span></div><small>${TITLES[doc][lang]} · ${lang === 'sw' ? 'Kiswahili' : 'English'} · keep.co.tz</small></div>`;
-    document.getElementById('main').innerHTML = pdfHead + DOCS[doc][lang]();
-    document.getElementById('foot').textContent = L.foot;
+    document.getElementById('main').innerHTML = pdfHead + docFor(doc)[lang]();
+    document.querySelectorAll('#modSwitch button').forEach(b => b.classList.toggle('on', b.dataset.m === mod));
+    document.getElementById('foot').textContent = mod === 'barbershop' ? (lang === 'sw' ? 'Keep · Mfumo wa kinyozi · inatolewa na Matinyo, Zanzibar' : 'Keep · Barbershop · provided by Matinyo, Zanzibar') : L.foot;
     document.title = 'Keep — ' + TITLES[doc][lang];
     if (qs.get('print') === '1') document.querySelectorAll('details').forEach(d => d.open = true);
     // in-page links (table of contents) scroll without changing the tab
@@ -674,6 +684,7 @@ function render() {
 }
 document.querySelectorAll('#tabs button').forEach(b => b.onclick = () => { doc = b.dataset.d; history.replaceState(null, '', '#' + doc); render(); window.scrollTo(0, 0); });
 document.querySelectorAll('.lang button').forEach(b => b.onclick = () => { lang = b.dataset.l; try { localStorage.setItem('keep.help.lang', lang); } catch (e) {} render(); });
+document.querySelectorAll('#modSwitch button').forEach(b => b.onclick = () => { mod = b.dataset.m; try { localStorage.setItem('keep.help.m', mod); } catch (e) {} render(); window.scrollTo(0, 0); });
 window.addEventListener('beforeprint', () => document.querySelectorAll('details').forEach(d => d.open = true));
 render();
 </script>
