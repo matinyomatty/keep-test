@@ -225,6 +225,7 @@ function openTeam() {
     const st = S.tenantInfo.settings || {};
     $('setTarget').value = st.dailyTarget || ''; $('setWa').value = st.whatsapp ? prettyPhone(st.whatsapp) : '';
     $('setPhone').value = st.phone ? prettyPhone(st.phone) : ''; $('setAddr').value = st.address || ''; $('setFooter').value = st.footer || ''; $('setPaper').value = String(st.paperWidth || 80); renderLogoBox();
+    if ($('setAskReceipt')) $('setAskReceipt').checked = st.askReceipt !== false;
     renderWaFormats(); $('setMaxDisc').value = st.maxDiscount ?? 10; $('setCredit').checked = !!st.cashierCredit; $('setReturns').checked = !!st.cashierReturns; $('setManual').checked = !!st.cashierManual; $('setCloseDay').checked = !!st.cashierCloseDay; $('setExpenses').checked = !!st.cashierExpenses;
     toggleAddStaff(false);
     openSheet('sheetTeam'); teamTab(S.teamTab || 'team');
@@ -258,14 +259,14 @@ function openTeam() {
 
 // Ask for a value in a small dialog (mobile-safe replacement for prompt())
 // Pick one of several options; resolves to the option key, or null on cancel
-function choose(message, options) {
+function choose(message, options, cancelLabel) {
     return new Promise(resolve => {
         const o = document.createElement('div');
         o.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;';
         o.innerHTML = `<div style="background:#fff;border-radius:20px;padding:22px;max-width:340px;width:100%;text-align:center;">
             <div style="font-size:0.88rem;font-weight:600;margin-bottom:16px;line-height:1.45;">${message}</div>
             ${options.map(([k, l, c]) => `<button data-k="${k}" style="width:100%;padding:13px;border-radius:12px;border:none;background:${c};color:#fff;font-weight:800;margin-bottom:8px;cursor:pointer;">${l}</button>`).join('')}
-            <button data-k="" style="width:100%;padding:11px;border-radius:12px;border:2px solid #e3e8ef;background:#fff;font-weight:800;cursor:pointer;">Cancel</button></div>`;
+            <button data-k="" style="width:100%;padding:11px;border-radius:12px;border:2px solid #e3e8ef;background:#fff;font-weight:800;cursor:pointer;">${cancelLabel || 'Cancel'}</button></div>`;
         document.body.appendChild(o);
         o.addEventListener('click', e => { const t = e.target.closest && e.target.closest('[data-k]'); if (!t) return; o.remove(); resolve(t.dataset.k || null); });
     });
@@ -486,3 +487,10 @@ function saveSettings() {
 }
 
 // ════════════════════════════════════════════════
+
+// Owner's choice: pop up "send a receipt?" after every sale (on unless switched off)
+function setAskReceipt(el) {
+    const v = !!el.checked;
+    tRef().update({ 'settings.askReceipt': v }).then(() => { S.tenantInfo.settings = { ...(S.tenantInfo.settings || {}), askReceipt: v }; toast(v ? '✅ Keep will ask about a receipt after each sale' : '✅ No receipt question after sales'); })
+        .catch(e => { el.checked = !v; toast('⚠️ ' + friendlyErr(e), 'err'); });
+}

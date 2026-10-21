@@ -232,7 +232,7 @@ async function askDiscount() {
     if (!isAdmin() && discPctNow() > maxDiscPct() + 0.01) toast(`⚠️ That is ${discPctNow().toFixed(1)}% off — above your ${maxDiscPct()}% limit. The owner can give bigger discounts.`, 'err');
 }
 const discPctNow = () => { const l = cartList(); return l ? (l - cartTotal()) / l * 100 : 0; };
-function clearCart() { S.cart = {}; S.lineMeta = {}; S.saleDisc = null; S.saleCustomer = null; S.payTouched = false; renderPOS(); renderCart(); }
+function clearCart() { S.cart = {}; S.lineMeta = {}; S.saleDisc = null; S.saleCustomer = null; S.payTouched = false; S.elecAsked = false; renderPOS(); renderCart(); }
 
 function updateCartBar() {
     const n = Object.keys(S.cart).length;
@@ -267,6 +267,7 @@ function renderCartInner() {
                 <div class="cl-price">${changed ? `<s>${n0(p.sellPrice)}</s> ` : ''}<b style="color:${changed ? 'var(--amber)' : 'inherit'};">${n0(price)}</b>${perUnit(p)} × ${qtyTxt(q, p)} = <b>${n0(lineSub(id))}</b>
                     <button class="cl-edit" onclick="editLinePrice('${id}')">✏️ price</button></div>
                 ${p.warrantyMonths ? `<div class="cl-price">🛡️ ${p.warrantyMonths}-month warranty</div>` : ''}
+                ${isElectronic(p) && !p.trackSerial ? `<button class="cl-edit" style="padding:2px 0;" onclick="editRef('${id}')">🔢 ${meta(id).ref ? esc(meta(id).ref) : tl('Add serial / IMEI')}</button>` : ''}
                 ${isService(p) ? `<button class="cl-edit" style="padding:4px 0;color:${meta(id).by ? 'inherit' : 'var(--red)'};font-weight:800;" onclick="pickDoer('${id}')">✂️ ${meta(id).by ? esc(tl('Done by') + ' ' + (staffName(meta(id).by) || '…')) : esc(tl('Choose who did it'))}</button>` : ''}
                 ${serials}
             </div>
@@ -314,8 +315,25 @@ function checkPay() {
     return ok;
 }
 
+// Electronics: anything that tracks serials or has a warranty
+const isElectronic = p => !!p && !isService(p) && (p.trackSerial || Number(p.warrantyMonths) > 0);
 async function confirmSale() {
     if (S.saving) return;
+    // Electronics: ask for the customer and the serial / IMEI, for the warranty and for safety. The seller may skip.
+    const elec = Object.keys(S.cart).map(productById).filter(isElectronic);
+    if (elec.length && !S.elecAsked) {
+        S.elecAsked = true;
+        if (!S.saleCustomer) {
+            const k = await choose(`📱 <b>${tl('Electronics in this sale')}</b><br><span style="font-weight:500;">${tl('Add the customer for the warranty and safety?')}</span>`,
+                [['cust', '👤 ' + tl('Add customer'), 'var(--pos)'], ['skip', tl('Continue without customer'), '#5b6474']], tl('Back'));
+            if (!k) { S.elecAsked = false; return; }
+            if (k === 'cust') { S.elecAsked = false; openCustomers('pick'); return; }
+        }
+        for (const p of elec.filter(p => !p.trackSerial && !meta(p.id).ref)) {
+            const v = await askValue(`🔢 ${tl('Serial / IMEI / barcode for')} <b class="notr">${esc(p.name)}</b><br><span style="font-size:.75rem;color:#6b7280;">${tl('Optional — leave empty to skip.')}</span>`, 'IMEI / S/N', tl('Save'), { type: 'text' });
+            if (v) meta(p.id).ref = v.trim().slice(0, 60);
+        }
+    }
     // Serials not on the shelf list: make sure they weren't already sold (e.g. on another till)
     const unknown = [];
     Object.keys(S.cart).forEach(id => { const p = productById(id); if (p && p.trackSerial) (meta(id).serials || []).forEach(sn => { sn = (sn || '').trim(); if (sn && !S.serialsIn[serialId(sn)]) unknown.push(sn); }); });
@@ -359,6 +377,7 @@ async function confirmSale() {
         const unitPrice = linePrice(id);
         items.push({ productId: id, name: p.name, emoji: p.emoji || '📦', unit: unitOf(p), qty: q3(qty), listPrice: Number(p.sellPrice) || 0, unitPrice,
             subtotal: lineSub(id), serials, warrantyMonths: Number(p.warrantyMonths) || 0,
+            ...(meta(id).ref ? { ref: meta(id).ref } : {}),
             ...(isService(p) ? { service: true, share: shareOf(p, qty) } : {}), ...(meta(id).by ? { by: meta(id).by, byName: staffName(meta(id).by) } : {}) });
     }
     const total = cartTotal(), list = Math.round(cartList());
@@ -392,6 +411,7 @@ async function confirmSale() {
     clearCart();
     renderLastSale();
     navigator.vibrate?.(80);
+    if ((S.tenantInfo.settings || {}).askReceipt !== false) setTimeout(() => receiptMenu(S.lastSale, true), 350);
     commit(b, `✅ ${tl(isBarberMode() ? 'Client recorded' : 'Sale recorded')} · ${fmt(total)}`, { label: `Sale ${receiptNo} · ${fmt(total)} · ${items.map(i => qtyTxt(i.qty, { unit: i.unit }) + ' × ' + i.name).join(', ')}${credit ? ' · credit ' + n0(credit) + ' to ' + cust.name : ''}` });
 }
 function renderLastSale() {
@@ -402,3 +422,34 @@ function renderLastSale() {
 }
 
 // ════════════════════════════════════════════════
+
+// ── Today's sales: find a sale and send its receipt again ──
+// Sellers see their own sales; the owner and admins see everyone's.
+function openTodaySales() {
+    openSheet('sheetTodaySales');
+    renderTodaySales();
+}
+function renderTodaySales() {
+    const box = $('tsList'); if (!box) return;
+    const q = ($('tsSearch').value || '').toLowerCase().trim();
+    let L = (S.todaySales || []).filter(x => (x.kind === 'pos' || x.kind === 'return' || x.kind === 'manual') && (isAdmin() || x.staffUid === S.me.uid));
+    L.sort((a, b) => (tms(b.createdAt) || 9e15) - (tms(a.createdAt) || 9e15));
+    if (q) L = L.filter(x => [x.receiptNo, x.customer && x.customer.name, ...(x.items || []).map(i => i.name)].join(' ').toLowerCase().includes(q));
+    L.forEach(x => S.saleCache[x.id] = x);
+    box.innerHTML = L.length ? L.map(x => {
+        const gone = x.voided || (typeof isCancelled === 'function' && isCancelled(x));
+        const what = x.kind === 'manual' ? tl('Manual sale') : (x.items || []).map(i => esc(i.name) + (i.qty > 1 ? ' ×' + q3(i.qty) : '')).join(', ');
+        return `<div class="ts-row ${gone ? 'gone' : ''}">
+            <div class="ts-main"><b>${x.kind === 'return' ? '↩️ ' : ''}<span class="notr">${esc(x.receiptNo || '')}</span> · ${timeOf(x.createdAt)}</b>
+                <small class="notr">${what}</small>${x.customer ? `<small>👤 <span class="notr">${esc(x.customer.name)}</span></small>` : ''}${isAdmin() && x.staffName ? `<small>${tl('By')} <span class="notr">${esc(x.staffName)}</span></small>` : ''}</div>
+            <div class="ts-amt">${n0(x.total)}${gone ? `<small>${tl(x.voided ? 'Voided' : 'Cancelled')}</small>` : ''}</div>
+            ${x.kind !== 'manual' ? `<button class="ts-rcpt" onclick="receiptMenu(S.saleCache['${x.id}'])">🧾</button>` : ''}</div>`;
+    }).join('') : `<div class="hint gray">${tl(q ? 'Nothing matches.' : 'No sales yet today.')}</div>`;
+}
+
+async function editRef(id) {
+    const p = productById(id); if (!p) return;
+    const v = await askValue(`🔢 ${tl('Serial / IMEI / barcode for')} <b class="notr">${esc(p.name)}</b>`, 'IMEI / S/N', tl('Save'), { type: 'text', value: meta(id).ref || '' });
+    if (v === null) return;
+    meta(id).ref = v.trim().slice(0, 60) || null; renderCart();
+}

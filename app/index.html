@@ -226,7 +226,7 @@
                 <button class="strip-btn ghost" id="stExpense" onclick="openSellerExpense()">💸 Expense</button>
             </div>
             <div class="pos-strip"><span id="posStrip">Today: <b>0</b> sales</span>
-                <span style="display:flex;gap:6px;"><button class="strip-btn ghost shop-only" onclick="openCustomers('manage')">👥 Customers</button><button class="strip-btn ghost barber-only" onclick="payBarbersToday(false)">💵 Pay barbers</button><button class="strip-btn" onclick="openShiftEnd()">🔒 END SHIFT</button></span></div>
+                <span style="display:flex;gap:6px;"><button class="strip-btn ghost" onclick="openTodaySales()">🧾 <span data-bw="Clients">Sales</span></button><button class="strip-btn ghost shop-only" onclick="openCustomers('manage')">👥 Customers</button><button class="strip-btn ghost barber-only" onclick="payBarbersToday(false)">💵 Pay barbers</button><button class="strip-btn" onclick="openShiftEnd()">🔒 END SHIFT</button></span></div>
             <div class="search-wrap shop-only">
                 <span class="search-icon">🔍</span>
                 <input type="text" class="dark-search" id="posSearch" placeholder="Search or scan barcode..." oninput="renderPOS()" autocomplete="off" style="padding-right:58px !important;">
@@ -628,6 +628,18 @@
     </div>
 </div>
 
+<!-- Today's sales: send a receipt again -->
+<div class="modal-overlay" id="sheetTodaySales" onclick="overlayClose(event)">
+    <div class="modal green">
+        <div class="modal-handle"></div>
+        <div class="modal-title">🧾 <span data-bw="Today's clients">Today's sales</span></div>
+        <div class="hint gray" data-bw="Tap 🧾 to send a client's receipt again on WhatsApp or as a PDF.">Tap 🧾 to send a receipt again on WhatsApp or as a PDF (warranty included).</div>
+        <div class="search-wrap" style="margin-bottom:10px;"><span class="search-icon">🔍</span><input type="text" id="tsSearch" placeholder="Receipt no., customer or item" oninput="renderTodaySales()"></div>
+        <div id="tsList"></div>
+        <div class="save-bar"><button class="btn-sec wide ghost" onclick="closeModals()">CLOSE</button></div>
+    </div>
+</div>
+
 <!-- Find date / day detail -->
 <div class="modal-overlay" id="sheetDay" onclick="overlayClose(event)">
     <div class="modal">
@@ -849,6 +861,7 @@
             </div>
             <div class="tm-box">
                 <div class="tm-box-title">🧾 On customer receipts</div>
+                <label class="check" style="padding-top:0;margin-bottom:10px;"><input type="checkbox" id="setAskReceipt" onchange="setAskReceipt(this)"><span>Ask to send a receipt after every sale</span></label>
                 <div class="field-group"><span class="field-label">Shop logo</span>
                     <div id="logoBox" style="text-align:center;"></div>
                     <input type="file" id="logoFile" accept="image/png,image/jpeg,image/webp" class="hidden" onchange="pickLogo(this)">

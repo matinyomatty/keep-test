@@ -861,3 +861,10 @@
         #entryTabs button { white-space: normal; line-height: 1.2; padding: 8px 4px; }
         @media (min-width: 640px) { .modal { max-width: 520px; } }
         @media (min-width: 1024px) { .modal { max-width: 600px; } #entryTabs { grid-template-columns: repeat(6, minmax(0, 1fr)); } }
+        .bt-rcpt { background: var(--pos-l); border: none; border-radius: 10px; width: 36px; height: 36px; cursor: pointer; flex-shrink: 0; }
+        .ts-row { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid #eef1f5; }
+        .ts-row.gone { opacity: .5; }
+        .ts-main { flex: 1; min-width: 0; font-size: .84rem; }
+        .ts-main small { display: block; color: var(--gray); font-size: .74rem; margin-top: 2px; overflow-wrap: anywhere; }
+        .ts-amt { font-weight: 800; text-align: right; white-space: nowrap; } .ts-amt small { display: block; color: var(--red); font-size: .7rem; }
+        .ts-rcpt { background: var(--pos); color: #fff; border: none; border-radius: 10px; width: 42px; height: 40px; font-size: 1.05rem; cursor: pointer; flex-shrink: 0; }

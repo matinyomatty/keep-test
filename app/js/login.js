@@ -313,7 +313,7 @@ function startListeners() {
     });
     L(col('sales').where('day', '==', S.today), s => {
         S.todaySales = s.docs.map(d => ({ id: d.id, ...d.data() }));
-        renderPosStrip(); renderBarberToday(); if ($('page-barbers').classList.contains('active')) renderBarbersPage(); if (isAdmin()) renderDashboard();
+        renderPosStrip(); renderBarberToday(); if ($('sheetTodaySales') && $('sheetTodaySales').classList.contains('active')) renderTodaySales(); if ($('page-barbers').classList.contains('active')) renderBarbersPage(); if (isAdmin()) renderDashboard();
     });
     L(db.collection('announcements').where('active', '==', true), s => {
         S.announcements = s.docs.map(d => ({ id: d.id, ...d.data() }));

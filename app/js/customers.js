@@ -1,3 +1,5 @@
+// Serial / IMEI numbers on a sale line: tracked serials plus any number typed at the till
+const itemIds = i => [...(i.serials || []), ...(i.ref ? [i.ref] : [])];
 // Keep till — Customers, credit and receipts.
 // Part of app/index.html; the parts load in order and share one global scope.
 //  CUSTOMERS & CREDIT
@@ -134,7 +136,7 @@ function receiptText(s) {
     (s.items || []).forEach(i => {
         L.push(`${i.name}`);
         L.push(`  ${qtyTxt(i.qty, { unit: i.unit })} × ${n0(i.unitPrice)} = ${n0(i.subtotal)}`);
-        (i.serials || []).forEach(x => L.push(`  S/N: ${x}`));
+        itemIds(i).forEach(x => L.push(`  S/N: ${x}`));
         if (i.warrantyMonths) L.push(`  🛡️ Warranty to ${warrantyEnd(s, i).toLocaleDateString('en-GB')}`);
     });
     L.push('━━━━━━━━━━');
@@ -225,7 +227,7 @@ function receiptPdf(s, opts = {}) {
             font(7, 'normal', 40);
             const was = !isRet && i.listPrice && i.listPrice > i.unitPrice ? `   was ${n0(i.listPrice)}` : '';
             doc.text(`@ ${n0(i.unitPrice)}${was}`, M, y); y += lh(7) + 0.4;
-            (i.serials || []).forEach(x => { doc.setFont('courier', 'bold'); doc.setFontSize(fs(7.2)); doc.setTextColor(0); doc.text('S/N ' + x, M + 1, y); y += lh(7.2) + 0.3; });
+            itemIds(i).forEach(x => { doc.setFont('courier', 'bold'); doc.setFontSize(fs(7.2)); doc.setTextColor(0); doc.text('S/N ' + x, M + 1, y); y += lh(7.2) + 0.3; });
             y += 1.6;
         });
         rule(0.2); y += 4.4;
@@ -258,7 +260,7 @@ function receiptPdf(s, opts = {}) {
             y += 4.6; font(8, 'bold'); doc.setCharSpace(0.5); doc.text('WARRANTY', M + 2.6, y); doc.setCharSpace(0); y += 4.2;
             wItems.forEach(i => {
                 font(7.6, 'bold'); doc.splitTextToSize(i.name, CW - 5).slice(0, 2).forEach(t => { doc.text(t, M + 2.6, y); y += lh(7.6) + 0.2; });
-                (i.serials || []).forEach(x => { doc.setFont('courier', 'bold'); doc.setFontSize(fs(7.2)); doc.setTextColor(0); doc.text('S/N ' + x, M + 2.6, y); y += lh(7.2) + 0.3; });
+                itemIds(i).forEach(x => { doc.setFont('courier', 'bold'); doc.setFontSize(fs(7.2)); doc.setTextColor(0); doc.text('S/N ' + x, M + 2.6, y); y += lh(7.2) + 0.3; });
                 font(7.2, 'normal', 15); doc.splitTextToSize(`${i.warrantyMonths} month${i.warrantyMonths > 1 ? 's' : ''} · valid until ${warrantyEnd(s, i).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}`, CW - 5).forEach(t => { doc.text(t, M + 2.6, y); y += lh(7.2); });
                 y += 1.6;
             });
@@ -349,11 +351,13 @@ function previewReceipt() {
     const pw = $('setPaper') ? Number($('setPaper').value) : 0;
     receiptPdf({ kind: 'pos', receiptNo: 'SAMPLE-0001', items, total, cash: total, mobile: 0, credit: 0, discount: 0, staffName: S.me ? S.me.name : '', customer: { name: 'Sample Customer', phone: '' }, createdAt: { toMillis: () => Date.now(), toDate: () => new Date() } }, { paperWidth: pw });
 }
-async function receiptMenu(s) {
+async function receiptMenu(s, afterSale) {
     if (!s) return;
     const phone = s.customer && s.customer.phone;
-    const how = await choose(`🧾 ${s.kind === 'return' ? 'Return receipt' : 'Receipt'} <b>${esc(s.receiptNo || '')}</b> · ${fmt(s.total)}${s.customer ? '<br>' + esc(s.customer.name) : ''}`,
-        [['wa', `📲 WhatsApp${phone ? ' to ' + esc(s.customer.name.split(' ')[0]) : ''}`, 'var(--pos)'], ['pdf', '⬇️ PDF / print', 'var(--blue)']]);
+    const head = afterSale ? `✅ <b>${tl(isBarberMode() ? 'Client recorded' : 'Sale recorded')}</b> · ${fmt(s.total)}<br><span style="font-weight:500;">${tl('Send the customer a receipt?')}</span><br>`
+        : `🧾 ${s.kind === 'return' ? 'Return receipt' : 'Receipt'} `;
+    const how = await choose(`${head}<b>${esc(s.receiptNo || '')}</b>${afterSale ? '' : ' · ' + fmt(s.total)}${s.customer ? '<br>' + esc(s.customer.name) : ''}`,
+        [['wa', `📲 WhatsApp${phone ? ' to ' + esc(s.customer.name.split(' ')[0]) : ''}`, 'var(--pos)'], ['pdf', '⬇️ PDF / print', 'var(--blue)']], afterSale ? tl('No receipt') : undefined);
     if (how === 'wa') {
         let to = phone;
         if (!to) { const v = await askValue('Customer WhatsApp number', '07XX XXX XXX', 'Send'); if (v === null || !v) return; to = normPhone(v); }

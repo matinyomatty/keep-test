@@ -43,6 +43,7 @@ function renderBarberToday() {
         return `<div class="bt-row ${gone ? 'cancelled' : ''}"><span class="bt-time">${time(s)}</span>
             <span class="bt-what"><b class="notr">${what}</b>${who ? `<small>✂️ <span class="notr">${who}</span></small>` : ''}</span>
             <span class="bt-amt">${n0(s.total)}<small>${gone ? tl('Cancelled') : s.mobile > 0 && !s.cash ? '📱' : s.cash > 0 && !s.mobile ? '💵' : '💵📱'}</small></span>
+            ${gone ? '' : `<button class="bt-rcpt" onclick="S.saleCache['${s.id}']=(S.todaySales||[]).find(x=>x.id==='${s.id}');receiptMenu(S.saleCache['${s.id}'])" title="${tl('Receipt')}">🧾</button>`}
             ${canUndo ? `<button class="bt-undo" onclick="cancelClient('${s.id}')" title="${tl('Cancel')}">↩️</button>` : ''}</div>`;
     }).join('') : `<div class="hint gray" style="margin-top:6px;">${tl('Tap a service above when a client is done.')}</div>`);
 }
