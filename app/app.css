@@ -35,7 +35,7 @@
             padding: 30px 22px 22px; border-radius: 24px; text-align: center;
             box-shadow: 0 20px 60px rgba(0,0,0,0.5);
         }
-        .login-logo { font-family: 'Syne', sans-serif; font-size: 2rem; letter-spacing: 6px; color: var(--ink); }
+        .login-logo { font-family: 'DM Sans', system-ui, sans-serif; font-weight: 800; font-size: 2rem; letter-spacing: 6px; color: var(--ink); }
         .login-logo span { color: var(--blue); margin-left: 10px; }
         .login-bar { width: 56px; height: 4px; border-radius: 2px; background: var(--yellow); margin: 8px auto 6px; }
         .login-sub { color: var(--gray); font-size: 0.75rem; margin-bottom: 22px; }
@@ -155,7 +155,7 @@
             border-bottom: 3px solid rgba(255,199,44,0.3); box-shadow: 0 4px 16px rgba(0,0,0,0.25);
         }
         .header-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; gap: 8px; }
-        .header-logo { font-family: 'Syne', sans-serif; font-size: 1.1rem; letter-spacing: 2px; color: var(--yellow); line-height: 1.2; min-width: 0; overflow-wrap: anywhere; }
+        .header-logo { font-family: 'DM Sans', system-ui, sans-serif; font-weight: 800; font-size: 1.1rem; letter-spacing: 2px; color: var(--yellow); line-height: 1.2; min-width: 0; overflow-wrap: anywhere; }
         .header-meta { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
         .who { font-size: 0.62rem; color: rgba(255,255,255,0.6); letter-spacing: 1px; text-transform: uppercase; }
         .hdr-date { font-size: 0.62rem; color: rgba(255,255,255,0.45); }
@@ -352,7 +352,7 @@
         /* ── POS ── */
         .pos-header { background: var(--ink); color: #fff; padding: 14px 16px 12px; border-bottom: 3px solid var(--blue); }
         .pos-header .header-top { margin-bottom: 10px; }
-        .pos-logo { font-family: 'Syne', sans-serif; font-size: 1.05rem; letter-spacing: 3px; color: #60a5fa; }
+        .pos-logo { font-family: 'DM Sans', system-ui, sans-serif; font-weight: 800; font-size: 1.05rem; letter-spacing: 3px; color: #60a5fa; }
         .pos-logo { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         @media (max-width: 380px) { .header-meta .hdr-date { display: none; } .header-meta { gap: 2px; } .pos-logo, .inv-logo { letter-spacing: 1.5px; } }
         .pos-strip { font-size: 0.66rem; color: rgba(255,255,255,0.55); margin-bottom: 10px; }
@@ -446,7 +446,7 @@
 
         /* ── STOCK ── */
         .inv-header { background: var(--ink); padding: 14px 16px 12px; border-bottom: 3px solid rgba(255,199,44,0.3); }
-        .inv-logo { font-family: 'Syne', sans-serif; font-size: 1.05rem; letter-spacing: 3px; color: var(--yellow); }
+        .inv-logo { font-family: 'DM Sans', system-ui, sans-serif; font-weight: 800; font-size: 1.05rem; letter-spacing: 3px; color: var(--yellow); }
         .hdr-chip { background: rgba(255,255,255,0.1); border: none; border-radius: 10px; padding: 8px 12px; font-size: 0.7rem; font-weight: 800; cursor: pointer; color: #fff; letter-spacing: .5px; }
         .hdr-chip.yellow { background: var(--yellow); color: var(--ink); }
         .seller-tools { display: flex; gap: 6px; margin-bottom: 8px; }
@@ -692,7 +692,7 @@
             .tab-nav { position: fixed; top: 0; left: 0; bottom: 0; width: var(--side); flex-direction: column; border-bottom: none; border-right: 3px solid var(--yellow);
                 padding: 18px 12px 12px; overflow-y: auto; z-index: 700; gap: 2px; }
             .nav-brand { display: flex; flex-direction: column; gap: 2px; padding: 4px 10px 18px; border-bottom: 1px solid rgba(255,255,255,.08); margin-bottom: 12px; }
-            .nb-logo { font-family: 'Syne', sans-serif; color: var(--yellow); letter-spacing: 3px; font-size: .75rem; }
+            .nb-logo { font-family: 'DM Sans', system-ui, sans-serif; font-weight: 800; color: var(--yellow); letter-spacing: 3px; font-size: .75rem; }
             .nb-shop { color: #fff; font-weight: 800; font-size: 1rem; line-height: 1.25; overflow-wrap: anywhere; }
             .nb-date { color: rgba(255,255,255,.45); font-size: .72rem; }
             .tab-btn { flex: none; flex-direction: row; justify-content: flex-start; gap: 12px; padding: 12px 12px; border-radius: 12px; font-size: .78rem; letter-spacing: .5px; text-align: left; position: relative; }
@@ -799,3 +799,27 @@
         .pay-pick.credit.on { background: var(--amber); color: #fff; }
         .chip-btn { border-style: solid; border-color: #c7cfdb; color: var(--ink); }
         .modal-overlay.docked .chip-btn { border-color: #c7cfdb; }
+
+        /* ── Readability: boxes you type in stand out from the white pop-up ── */
+        .modal input[type=date], .modal input[type=number], .modal input[type=month], .modal input[type=text], .modal input[type=tel],
+        .modal input[type=password], .modal select, .modal textarea {
+            background: #f1f4f9; border: 1.5px solid #b9c3d1; color: var(--ink); font-weight: 600;
+        }
+        .modal input::placeholder, .modal textarea::placeholder { color: #8a94a6; font-weight: 500; }
+        .modal input:focus, .modal select:focus, .modal textarea:focus { background: #fff; border-color: var(--blue); box-shadow: 0 0 0 3px rgba(26,86,219,.15); }
+        /* the save buttons sit on a clear white strip with a line above, instead of fading over the form */
+        .modal .save-bar { background: #fff; border-top: 1px solid var(--line); box-shadow: none; }
+        .modal .save-bar .primary-cta { box-shadow: none; }
+        /* thin scrollbar inside pop-ups (no arrows) */
+        .modal { scrollbar-width: thin; scrollbar-color: #c3cbd8 transparent; }
+        .modal::-webkit-scrollbar { width: 8px; } .modal::-webkit-scrollbar-thumb { background: #c3cbd8; border-radius: 4px; } .modal::-webkit-scrollbar-button { display: none; height: 0; }
+        .modal-overlay.docked .save-bar { border-top: none; }
+        /* tab buttons inside pop-ups (Expense / Bank In / …, Team / Permissions / …): clearly visible when not chosen */
+        .seg { background: #e4e9f0; }
+        .seg button:not(.on) { color: #374151; background: transparent; border-color: transparent; }
+        .seg button:not(.on):hover { background: rgba(255,255,255,.6); }
+        .seg button.on { box-shadow: 0 1px 4px rgba(0,0,0,.18); }
+        /* secondary buttons: a firm outline so they don't disappear on white */
+        .btn-sec { border: 1.5px solid #c3ccd9; box-shadow: 0 1px 2px rgba(15,23,42,.06); }
+        .btn-sec:hover { background: #f4f6fa; }
+        .btn-sec.ghost, .btn-sec.wide.ghost { border-color: transparent; box-shadow: none; }

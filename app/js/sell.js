@@ -45,7 +45,7 @@ function renderMonthBanner() {
         <div style="background:rgba(255,199,44,0.08);border:1px solid rgba(255,199,44,0.35);border-radius:14px;padding:10px 12px;">
             <div style="display:flex;justify-content:space-between;align-items:center;">
                 <div>
-                    <div style="font-family:'Syne',sans-serif;font-size:0.95rem;color:var(--yellow);letter-spacing:1px;">${monthName(m).toUpperCase()}</div>
+                    <div style="font-family:'DM Sans',system-ui,sans-serif;font-weight:800;font-size:0.95rem;color:var(--yellow);letter-spacing:1px;">${monthName(m).toUpperCase()}</div>
                     <div style="font-size:0.6rem;color:rgba(255,255,255,0.5);margin-top:1px;">Day ${now.getDate()} of ${dim}</div>
                 </div>
                 <div style="text-align:right;">

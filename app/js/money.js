@@ -43,9 +43,9 @@ function entryTab(t) {
     document.querySelectorAll('#entryTabs button').forEach(b => {
         const on = b.dataset.t === t;
         b.classList.toggle('on', on);
-        b.style.background = on ? ENTRY_COLORS[b.dataset.t][0] : '#fff';
-        b.style.borderColor = on ? ENTRY_COLORS[b.dataset.t][0] : 'var(--line)';
-        b.style.color = on ? (b.dataset.t === 'expense' ? 'var(--ink)' : '#fff') : 'var(--gray)';
+        b.style.background = on ? ENTRY_COLORS[b.dataset.t][0] : '#eef2f7';
+        b.style.borderColor = on ? ENTRY_COLORS[b.dataset.t][0] : '#c7cfdb';
+        b.style.color = on ? (b.dataset.t === 'expense' ? 'var(--ink)' : '#fff') : '#1f2937';
     });
     document.querySelectorAll('#sheetEntry .ef').forEach(el => el.classList.toggle('hidden', el.dataset.for !== t));
     $('entryAmtLbl').textContent = t === 'adjust' ? 'Real balance now (TZS)' : 'Amount (TZS)';
