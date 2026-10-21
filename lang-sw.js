@@ -555,4 +555,13 @@ KeepLang.add({
   'Pay each barber paid daily what they earned today before ending the shift. Weekly, monthly and salaried barbers are paid by the owner.': 'Mlipe kila kinyozi wa kila siku alichopata leo kabla ya kumaliza zamu. Vinyozi wa wiki, mwezi na mshahara wanalipwa na mmiliki.',
   'Enter what the barber gets from this service (0 if nothing).': 'Weka kiasi kinyozi anachopata kwenye huduma hii (0 kama hakuna).',
   'Nothing to pay yet': 'Bado hakuna cha kulipa',
+  'Salary is paid once a month. Tap This month to pay it.': 'Mshahara unalipwa mara moja kwa mwezi. Gusa Mwezi huu kuulipa.',
+  'Paid in these dates': 'Imelipwa kwenye tarehe hizi',
+  'Set up your barbershop': 'Andaa kinyozi chako',
+  'Add your services and prices': 'Ongeza huduma zako na bei',
+  'Add your barbers and how they are paid': 'Ongeza vinyozi wako na jinsi wanavyolipwa',
+  'Record your first client on Today': 'Rekodi mteja wako wa kwanza kwenye Leo',
+  'Nothing matches.': 'Hakuna kinacholingana.',
+  'Add your services and prices first.': 'Ongeza huduma zako na bei kwanza.',
+  'Ask the owner to add the services.': 'Mwombe mmiliki aongeze huduma.',
 }, [[/^Today · (.+)$/, (m, a) => 'Leo · ' + KeepLang.tl(a)], [/^(\d+) clients?$/, 'wateja $1'], [/^([\d,.]+) left$/, 'zimebaki $1']]);

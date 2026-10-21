@@ -118,7 +118,8 @@ function renderPOS() {
     if (!list.length) {
         $('posGrid').innerHTML = '';
         empty.classList.remove('hidden');
-        empty.innerHTML = S.products.length
+        empty.innerHTML = isBarberMode() ? (S.products.length ? `<div class="icon">🔍</div>${tl('Nothing matches.')}` : `<div class="icon">✂️</div>${tl('No services yet.')}<br><span style="font-size:0.78rem;">${tl(isAdmin() ? 'Add your services and prices first.' : 'Ask the owner to add the services.')}</span>${isAdmin() ? `<br><button class="btn-sec" style="margin-top:12px;" onclick="switchTab('services')">✂️ ${tl('Add services')}</button>` : ''}`)
+            : S.products.length
             ? '<div class="icon">🔍</div>No items match your search.'
             : `<div class="icon">📦</div>No items yet.<br><span style="font-size:0.78rem;">${isAdmin() ? 'Go to <b>Stock → + ADD ITEM</b> to add your products.' : 'Ask the shop owner to add products.'}</span>`;
     } else {

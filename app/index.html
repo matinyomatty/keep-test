@@ -159,6 +159,7 @@
                 <button class="primary-cta" style="flex:1;margin-bottom:0;" onclick="openEntry()">📒 Accounting</button>
                 <button class="primary-cta green shop-only" style="flex:1;margin-bottom:0;" onclick="openManualSale()">✍️ Manual Sale</button>
             </div>
+            <div id="barberSetup" class="barber-only"></div>
             <div id="dashBarbers" class="barber-only"></div>
             <div style="height:14px;"></div>
             <div class="summary-grid shop-only">
@@ -362,7 +363,7 @@
 <div class="modal-overlay" id="sheetStaffPay" onclick="overlayClose(event)">
     <div class="modal">
         <div class="modal-handle"></div>
-        <div class="modal-title">✂️ Staff pay &amp; clients</div>
+        <div class="modal-title" data-bw="💵 Pay barbers">✂️ Staff pay &amp; clients</div>
         <div class="form-row">
             <div class="field-group"><span class="field-label">From</span><input type="date" id="spFrom" onchange="loadStaffPay()"></div>
             <div class="field-group"><span class="field-label">To</span><input type="date" id="spTo" onchange="loadStaffPay()"></div>

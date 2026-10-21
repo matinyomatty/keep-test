@@ -651,3 +651,23 @@
         .pt-pay { display: flex; align-items: center; gap: 8px; } .pt-pay span { flex: 1; font-size: .85rem; } .pt-pay b { font-size: 1rem; }
         .pt-pay button { border: none; color: #fff; border-radius: 10px; padding: 10px 12px; font-weight: 800; cursor: pointer; }
         .pt-ok { color: var(--pos); font-weight: 800; font-size: .85rem; }
+        .setup-card { background: #fff; border: 2px solid var(--yellow); border-radius: 18px; padding: 14px 14px 8px; margin-top: 14px; }
+        .setup-head { font-weight: 800; display: flex; justify-content: space-between; margin-bottom: 8px; } .setup-head span { color: var(--gray); font-size: .8rem; }
+        .setup-step { display: flex; align-items: center; gap: 10px; width: 100%; background: #f6f8fb; border: none; border-radius: 12px; padding: 12px; margin-bottom: 6px; font: inherit; font-weight: 700; text-align: left; color: var(--ink); cursor: pointer; }
+        .setup-step span:nth-child(2) { flex: 1; }
+        .setup-step.ok { opacity: .55; text-decoration: line-through; }
+        .ss-n { width: 26px; height: 26px; border-radius: 50%; background: var(--ink); color: var(--yellow); display: flex; align-items: center; justify-content: center; font-size: .8rem; flex-shrink: 0; }
+        .setup-step.ok .ss-n { background: var(--pos); color: #fff; }
+        .ss-go { color: var(--blue); font-weight: 800; }
+        /* Barbershop on a computer: centred, services in a grid */
+        @media (min-width: 900px) {
+            body.barber .pos-items, body.barber #page-services .inv-list, body.barber #page-barbers .inv-list { max-width: 1040px; margin-left: auto; margin-right: auto; }
+            body.barber .pos-grid.svc-list { grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px; }
+            body.barber .pos-grid.svc-list .sr-head { grid-column: 1 / -1; }
+            body.barber #svcList, body.barber #svcGoods { grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); }
+            body.barber #barberList { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 12px; }
+            body.barber #barberList .barber-card { margin-bottom: 0; }
+            body.barber #barberList > .hint, body.barber #barberList > .empty-state { grid-column: 1 / -1; }
+            body.barber #barberToday { max-width: 1040px; }
+            .svc-bar { max-width: 640px; }
+        }

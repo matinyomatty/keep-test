@@ -22,6 +22,7 @@ function applyBarberShell() {
         if (el.textContent !== want) el.textContent = want;
     });
     const sup = EXPENSE_CATS.find(c => c[0] === 'Supplier'); if (sup) sup[1] = on ? '🧴 Supplies (products, blades…)' : '📦 Supplier / Restock';
+    if (typeof syncCartDock === 'function') syncCartDock();
     if (on && $('page-inventory').classList.contains('active')) switchTab('pos');
     if (!on && ($('page-services').classList.contains('active') || $('page-barbers').classList.contains('active'))) switchTab('pos');
 }
@@ -134,6 +135,7 @@ function barberDay(sales) {
     return Object.values(by).sort((a, b) => b.money - a.money);
 }
 function renderDashBarbers() {
+    renderBarberSetup();
     const box = $('dashBarbers'); if (!box) return;
     if (!isBarberMode() || !isAdmin()) { box.innerHTML = ''; return; }
     const R = barberDay(S.todaySales || []);
@@ -324,4 +326,20 @@ async function payBarbersToday(forClosing, what) {
             }
         });
     });
+}
+
+// ── First steps for a new barbershop (owner) ──
+function renderBarberSetup() {
+    const box = $('barberSetup'); if (!box) return;
+    const svcs = S.products.filter(isService), barbers = barbersAll().filter(b => b.active !== false);
+    const noShare = svcs.filter(p => !(Number(p.staffPay) > 0) && p.staffPay !== 0);
+    const steps = [
+        [svcs.length > 0, '✂️', 'Add your services and prices', "services"],
+        [barbers.length > 0, '💈', 'Add your barbers and how they are paid', 'barbers'],
+        [(S.todaySales || []).length > 0 || Object.keys(S.days || {}).length > 0, '✅', 'Record your first client on Today', 'pos']
+    ];
+    const done = steps.filter(x => x[0]).length;
+    if (!isBarberMode() || !isAdmin() || done === steps.length) { box.innerHTML = ''; return; }
+    box.innerHTML = `<div class="setup-card"><div class="setup-head">🚀 ${tl('Set up your barbershop')} <span>${done}/${steps.length}</span></div>
+        ${steps.map(([ok, ic, t, tab], k) => `<button class="setup-step ${ok ? 'ok' : ''}" onclick="switchTab('${tab}')"><span class="ss-n">${ok ? '✓' : k + 1}</span><span>${ic} ${tl(t)}</span><span class="ss-go">${ok ? '' : '→'}</span></button>`).join('')}</div>`;
 }

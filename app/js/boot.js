@@ -22,7 +22,7 @@ function detectDevice() {
 }
 function syncCartDock() {
     const c = $('sheetCart');
-    const want = !!(S.dockCart && S.me && $('mainApp').style.display === 'block' && $('page-pos').classList.contains('active'));
+    const want = !!(S.dockCart && S.me && !isBarberMode() && $('mainApp').style.display === 'block' && $('page-pos').classList.contains('active'));
     if (want) { c.classList.add('docked', 'active'); renderCart(); }
     else if (c.classList.contains('docked')) c.classList.remove('docked', 'active');
     document.body.classList.toggle('cart-docked', want);

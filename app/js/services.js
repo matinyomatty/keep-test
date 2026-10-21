@@ -169,7 +169,8 @@ async function loadStaffPay() {
     S.spRange = { from, to };
     S.spRows = staffPayRows(sales, entries, staff);
     const R = S.spRows.filter(r => r.clients || r.paid || r.pay.type === 'salary');
-    const tot = R.reduce((a, r) => ({ takings: a.takings + r.takings, earned: a.earned + r.earned, paid: a.paid + r.paid }), { takings: 0, earned: 0, paid: 0 });
+    const wholeMonth = from.endsWith('-01');
+    const tot = R.reduce((a, r) => ({ takings: a.takings + r.takings, earned: a.earned + (r.pay.type === 'salary' && !wholeMonth ? 0 : r.earned), paid: a.paid + r.paid }), { takings: 0, earned: 0, paid: 0 });
     const unassigned = sales.filter(s => s.kind === 'pos' && !s.voided).reduce((n, s) => n + (s.items || []).filter(i => i.service && !i.by).length, 0);
     const noShare = R.some(r => r.pay.type === 'service') ? S.products.filter(p => isService(p) && !(Number(p.staffPay) > 0)) : [];
     box.innerHTML = (R.length ? R.map((r, i) => {
@@ -184,10 +185,11 @@ async function loadStaffPay() {
             <div class="sum-row"><span>${tl('Clients')}</span><b>${r.clients}</b></div>
             <div class="sum-row"><span>${tl('Money from their work')}</span><b>${fmt(r.takings)}</b></div>
             ${t === 'rent' ? `<div class="sum-row"><span>${tl('Chair rent')} · ${r.days.size} ${tl('days')} × ${n0(r.pay.rate)}</span><span>−${n0(r.pay.rate * r.days.size)}</span></div>` : ''}
+            ${t === 'salary' && !wholeMonth ? `<div class="hint gray" style="margin:6px 0 0;">📅 ${tl('Salary is paid once a month. Tap This month to pay it.')}${r.paid ? ` ${tl('Paid in these dates')}: <b>${n0(r.paid)}</b>` : ''}</div>` : `
             <div class="sum-row"><span>${tl(earnedLbl)}</span><b>${fmt(r.earned)}</b></div>
             <div class="sum-row"><span>${tl('Already paid')}</span><span>${r.paid ? '−' + n0(r.paid) : '0'}</span></div>
             <div class="sum-row big"><span>${r.owed >= 0 ? tl('Owed to them') : t === 'rent' ? tl('They owe the shop') : tl('Paid too much')}</span><strong style="color:${r.owed > 0 ? 'var(--red)' : 'var(--green)'};">${fmt(Math.abs(r.owed))}</strong></div>
-            ${r.owed > 0 ? `<button class="btn-sec wide" style="border-color:var(--green);color:var(--green);margin-top:8px;" onclick="payStaff(${i})">💵 ${tl('Pay')} ${n0(r.owed)}</button>` : ''}
+            ${r.owed > 0 ? `<button class="btn-sec wide" style="border-color:var(--green);color:var(--green);margin-top:8px;" onclick="payStaff(${i})">💵 ${tl('Pay')} ${n0(r.owed)}</button>` : ''}`}
         </div>`; }).join('') : `<div class="hint gray">${tl('No services recorded in these dates.')}</div>`)
         + (noShare.length ? `<div class="hint amber">⚠️ ${tl('No barber share set on')}: <span class="notr">${noShare.map(p => esc(p.name)).join(', ')}</span>. ${tl('Set it in Services.')}</div>` : '')
         + (unassigned ? `<div class="hint amber">⚠️ ${unassigned} ${tl('services were sold without choosing who did them.')}</div>` : '')
