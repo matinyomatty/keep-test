@@ -368,13 +368,14 @@ async function receiptMenu(s, afterSale) {
 async function askReceiptNumber(s) {
     let v = (s.customer && s.customer.phone) || '';
     if (/^255\d{9}$/.test(v)) v = '0' + v.slice(3);
-    for (;;) {
+    for (let tries = 0; tries < 5; tries++) {
         v = await askValue(`📲 ${tl('Customer WhatsApp number')}`, '07XX XXX XXX', tl('Next'), { value: v });
-        if (v === null) return null;
+        if (v == null || !String(v).trim()) return null;
         const n = normPhone(v);
         if (/^\d{10,15}$/.test(n)) return n;
         toast(tl('Enter a phone number like 0712 345 678'), 'err');
     }
+    return null;
 }
 // A web page cannot attach a file to a WhatsApp chat by itself, so this takes two taps:
 // 1) open the customer's chat (with a short note), 2) share the PDF and pick that chat (it is now at the top).
