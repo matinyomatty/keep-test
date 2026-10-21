@@ -94,7 +94,8 @@ function renderPosStrip() {
     const pos = live.filter(s => s.kind !== 'manual' && s.kind !== 'return');
     const mine = pos.filter(s => S.me && s.staffUid === S.me.uid);
     if (isBarberMode()) {
-        $('posStrip').innerHTML = `${tl('Today')}: <b>${pos.length}</b> ${tl(pos.length === 1 ? 'client' : 'clients')}` + (isAdmin() ? ` · <b>${fmt(live.reduce((a, s) => a + (s.kind === 'return' ? -1 : 1) * (s.total || 0), 0))}</b>` : '');
+        const nC = pos.filter(x => !isCancelled(x)).length;
+        $('posStrip').innerHTML = `${tl('Today')}: <b>${nC}</b> ${tl(nC === 1 ? 'client' : 'clients')}` + (isAdmin() ? ` · <b>${fmt(live.reduce((a, s) => a + (s.kind === 'return' ? -1 : 1) * (s.total || 0), 0))}</b>` : '');
         return;
     }
     $('posStrip').innerHTML = `Today: <b>${pos.length}</b> sale${pos.length === 1 ? '' : 's'}` +
