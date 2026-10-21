@@ -180,40 +180,94 @@ function barberCut(sales, entries) {
     rows.forEach(r => { if (r.pay.type === 'salary') return; cost += r.earned; paidOut += r.paid; });
     return { cost, paidOut };
 }
-const barberProfit = (x, cut) => x.sales - x.supplier - (x.expense - cut.paidOut) - cut.cost;
+// ════════════════════════════════════════════════
+//  PROFIT (every shop)
+//  Profit = sales − cost of the goods sold − expenses (− what barbers earned).
+//  Buying stock is not a cost until the goods are sold: it is shown on its own.
+//  Cost of goods = each item's cost price × the quantity sold.
+//  Returns put back on the shelf take their cost off again.
+// ════════════════════════════════════════════════
+function cogsOf(sales) {
+    let cogs = 0; const missing = {};
+    (sales || []).forEach(s => {
+        if (s.voided) return;
+        const ret = s.kind === 'return';
+        (s.items || []).forEach(i => {
+            if (i.service) return;
+            const p = productById(i.productId);
+            if (p && isService(p)) return;
+            if (!i.productId && !p) return;
+            if (ret && i.restock === false) return;
+            const q = Number(i.qty) || 0, c = Number(S.costs[i.productId]) || 0;
+            if (!c) { if (!ret) missing[i.name || '?'] = (missing[i.name || '?'] || 0) + q; return; }
+            cogs += (ret ? -1 : 1) * c * q;
+        });
+    });
+    return { cogs: Math.round(cogs), missing: Object.keys(missing) };
+}
+// x = dayFig/monthFig figures; sales/entries = the same period's records
+function fullProfit(x, sales, entries) {
+    const cut = barberCut(sales, entries), otherExpense = x.expense - cut.paidOut;
+    // Barbershop: supplies (shampoo, blades…) are used up, so they count when bought
+    if (isBarberMode()) return { cogs: 0, missing: [], supplies: x.supplier || 0, barbers: cut.cost, barberPaid: cut.paidOut, otherExpense,
+        profit: x.sales - (x.supplier || 0) - otherExpense - cut.cost };
+    const g = cogsOf(sales);
+    return { cogs: g.cogs, missing: g.missing, barbers: cut.cost, barberPaid: cut.paidOut, otherExpense,
+        profit: x.sales - g.cogs - otherExpense - cut.cost };
+}
+// Kept for older callers
+const barberProfit = (x, cut) => x.sales - (x.cogs || 0) - (x.expense - cut.paidOut) - cut.cost;
 
-// The month's clients and payments, loaded once (owner, online) and kept fresh with today's live sales
+// The month's sales and money entries, loaded once (owner, online) and kept fresh with today's live sales
 S.bm = {};
 async function loadBarberMonth(m, force) {
-    if (!isBarberMode() || !isAdmin() || !navigator.onLine) return;
+    if (!isAdmin() || !navigator.onLine) return;
     const c = S.bm[m];
-    if (c && (c.loading || (!force && Date.now() - c.at < 5 * 60e3))) return;
-    S.bm[m] = { ...(c || {}), loading: true, at: Date.now() };
+    if (c && c.loading) return c.loading;
+    if (c && !force && Date.now() - c.at < 5 * 60e3) return;
+    let done; const wait = new Promise(r => done = r);
+    S.bm[m] = { ...(c || {}), loading: wait, at: Date.now() };
     try {
         const [s, e] = await Promise.all([col('sales').where('month', '==', m).get(), col('entries').where('month', '==', m).get()]);
         S.bm[m] = { sales: s.docs.map(d => ({ id: d.id, ...d.data() })), entries: e.docs.map(d => ({ id: d.id, ...d.data() })), at: Date.now() };
     } catch (err) { S.bm[m] = { ...(c || {}), at: Date.now() }; }
-    renderDashboard();
+    done(); renderDashboard();
 }
+// Month figures with real profit; waits for the month's sales when online
+async function monthFigFull(m) {
+    if (!barberMonthData(m)) { try { await loadBarberMonth(m, true); } catch (e) {} }
+    return monthFig(m);
+}
+const loadMonthRecords = loadBarberMonth;
 function barberMonthData(m) {
     const c = S.bm[m]; if (!c || !c.sales) return null;
     const today = dayStr();
     const sales = m === today.slice(0, 7) ? c.sales.filter(s => s.day !== today).concat(S.todaySales || []) : c.sales;
     return { sales, entries: c.entries || [] };
 }
-// Called by monthFig: puts the barbers' earnings into the month's profit
+// Called by monthFig: works out the month's real profit once its sales are loaded
 function barberMonthAdjust(m, f) {
-    if (!isBarberMode()) return;
     const d = barberMonthData(m);
-    if (!d) { loadBarberMonth(m); f.barbersPending = true; return; }
-    const cut = barberCut(d.sales, d.entries);
-    f.barbers = cut.cost; f.barberPaid = cut.paidOut; f.otherExpense = f.expense - cut.paidOut;
-    f.profit = barberProfit(f, cut);
+    if (!d) { loadBarberMonth(m); f.barbersPending = true; f.pending = true; return; }
+    Object.assign(f, fullProfit(f, d.sales, d.entries));
+}
+function dayProfit(day, x) {
+    const d = barberMonthData(day.slice(0, 7));
+    if (!d) { loadBarberMonth(day.slice(0, 7)); return null; }
+    return fullProfit(x || dayFig(day), d.sales.filter(s => s.day === day), d.entries.filter(e => e.day === day));
 }
 function barberDayCut(day) {
     const d = barberMonthData(day.slice(0, 7));
     if (!d) { loadBarberMonth(day.slice(0, 7)); return { cost: 0, paidOut: 0 }; }
     return barberCut(d.sales.filter(s => s.day === day), d.entries.filter(e => e.day === day));
+}
+const costWord = () => isBarberMode() ? tl(stockWord()) : tl('Cost of goods sold');
+const costOf = f => isBarberMode() ? (f.supplies != null ? f.supplies : f.supplier || 0) : (f.cogs || 0);
+// Short warning when items were sold with no cost price (profit would look too high)
+function missingCostNote(missing) {
+    if (!missing || !missing.length) return '';
+    const names = missing.slice(0, 3).join(', ') + (missing.length > 3 ? ' +' + (missing.length - 3) : '');
+    return tl('No cost price for') + ': ' + names + ' — ' + tl('profit may look too high');
 }
 
 // ════════════════════════════════════════════════

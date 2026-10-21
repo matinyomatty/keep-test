@@ -18,11 +18,15 @@ function renderDashboard() {
 
     const m = today.slice(0, 7), f = monthFig(m), mon = monthShort(m);
     $('lblMSales').textContent = (isBarberMode() ? tl('Money in') : 'Sales') + ' · ' + mon; $('mSales').textContent = fmt(f.sales);
-    $('lblMStock').textContent = tl(stockWord()) + ' · ' + mon; $('mStock').textContent = fmt(f.supplier);
-    $('lblMExp').textContent = (isBarberMode() ? tl('Other expenses') : 'Expenses') + ' · ' + mon; $('mExp').textContent = fmt(isBarberMode() && f.otherExpense != null ? f.otherExpense : f.expense);
-    if ($('mBarb')) { $('lblMBarb').textContent = tl('Barbers earned') + ' · ' + mon; $('mBarb').textContent = f.barbersPending ? '…' : fmt(f.barbers || 0); }
-    $('lblMProfit').textContent = 'Profit · ' + mon; $('mProfit').textContent = f.barbersPending ? '…' : fmt(f.profit);
+    const wait = f.pending;
+    $('lblMStock').textContent = tl('Cost of goods sold') + ' · ' + mon; $('mStock').textContent = wait ? '…' : fmt(f.cogs || 0);
+    $('mStockSub').textContent = f.supplier ? tl('Stock bought') + ': ' + n0(f.supplier) : '';
+    $('lblMExp').textContent = (isBarberMode() ? tl('Other expenses') : 'Expenses') + ' · ' + mon; $('mExp').textContent = fmt(f.otherExpense != null ? f.otherExpense : f.expense);
+    if ($('mBarb')) { $('lblMBarb').textContent = tl('Barbers earned') + ' · ' + mon; $('mBarb').textContent = wait ? '…' : fmt(f.barbers || 0); }
+    $('lblMProfit').textContent = 'Profit · ' + mon; $('mProfit').textContent = wait ? '…' : fmt(f.profit);
     $('mProfit').style.color = f.profit >= 0 ? 'var(--green)' : 'var(--red)';
+    $('mProfitSub').textContent = wait ? '' : (f.missing && f.missing.length ? '⚠️ ' + missingCostNote(f.missing) : (isBarberMode() ? '' : tl('Sales − cost of goods − expenses')));
+    $('mProfitSub').style.color = f.missing && f.missing.length ? '#b45309' : '';
     renderMonthBanner();
     renderHistory();
 }
@@ -423,27 +427,62 @@ function renderLastSale() {
 
 // ════════════════════════════════════════════════
 
-// ── Today's sales: find a sale and send its receipt again ──
-// Sellers see their own sales; the owner and admins see everyone's.
+// ── My day: what this person sold today, receipts again, and a check before closing ──
+// Sellers see their own work; the owner and admins see the whole shop.
 function openTodaySales() {
     openSheet('sheetTodaySales');
+    S.myDayEntries = null;
     renderTodaySales();
+    // money this person paid out of the drawer today (expenses), for the reconciliation
+    const q = isAdmin() ? col('entries').where('day', '==', dayStr()) : col('entries').where('staffUid', '==', S.me.uid).where('day', '==', dayStr());
+    q.get().then(sn => { S.myDayEntries = sn.docs.map(d => d.data()); renderTodaySales(); }).catch(() => { S.myDayEntries = []; renderTodaySales(); });
+}
+function myDaySales() {
+    return (S.todaySales || []).filter(x => ['pos', 'return', 'manual', 'repay'].includes(x.kind || 'pos') && (isAdmin() || x.staffUid === S.me.uid));
+}
+function renderMyDay() {
+    const box = $('tsSummary'); if (!box) return;
+    const L = myDaySales().filter(x => !x.voided);
+    const sum = f => L.reduce((a, x) => a + (Number(x[f]) || 0), 0);
+    const pos = L.filter(x => (x.kind || 'pos') === 'pos'), rets = L.filter(x => x.kind === 'return'), repay = L.filter(x => x.kind === 'repay');
+    const salesTotal = L.filter(x => x.kind !== 'repay').reduce((a, x) => a + (x.kind === 'return' ? -1 : 1) * (Number(x.total) || 0), 0);
+    const cashIn = sum('cash'), mobileIn = sum('mobile');
+    const credit = pos.reduce((a, x) => a + (Number(x.credit) || 0), 0);
+    const ents = (S.myDayEntries || []).filter(e => e.type === 'expense');
+    const paidCash = ents.filter(e => e.from === 'cash').reduce((a, e) => a + (Number(e.amount) || 0), 0);
+    const paidMobile = ents.filter(e => e.from === 'mobile').reduce((a, e) => a + (Number(e.amount) || 0), 0);
+    const word = isBarberMode() ? (pos.length === 1 ? 'client' : 'clients') : (pos.length === 1 ? 'sale' : 'sales');
+    box.innerHTML = `<div class="md-card">
+        <div class="md-top"><div><small>${tl(isAdmin() ? 'Shop today' : 'Your day')}</small><b>${fmt(salesTotal)}</b></div><div class="md-n"><b>${pos.length}</b><small>${tl(word)}</small></div></div>
+        <div class="md-grid">
+            <div><small>💵 ${tl('Cash received')}</small><b>${n0(cashIn)}</b></div>
+            <div><small>📱 ${tl('Mobile received')}</small><b>${n0(mobileIn)}</b></div>
+            ${credit ? `<div><small>📒 ${tl('On credit')}</small><b>${n0(credit)}</b></div>` : ''}
+            ${repay.length ? `<div><small>💰 ${tl('Debts paid')}</small><b>${n0(repay.reduce((a, x) => a + (Number(x.total) || 0), 0))}</b></div>` : ''}
+            ${rets.length ? `<div><small>↩️ ${tl('Refunds')}</small><b>−${n0(rets.reduce((a, x) => a + (Number(x.total) || 0), 0))}</b></div>` : ''}
+            ${paidCash || paidMobile ? `<div><small>💸 ${tl('Paid out')}</small><b>−${n0(paidCash + paidMobile)}</b></div>` : ''}
+        </div>
+        <div class="md-check"><span>💵 ${tl(isAdmin() ? 'Cash from today\'s sales, less money paid out' : 'Cash from your sales, less money you paid out')}</span><b>${S.myDayEntries ? fmt(cashIn - paidCash) : '…'}</b></div>
+        <div class="md-note">${tl('Count the drawer: it should hold this plus the change it started with. Mobile money should show')} <b>${n0(mobileIn - paidMobile)}</b> ${tl('more than this morning.')}</div>
+    </div>`;
 }
 function renderTodaySales() {
     const box = $('tsList'); if (!box) return;
+    renderMyDay();
     const q = ($('tsSearch').value || '').toLowerCase().trim();
-    let L = (S.todaySales || []).filter(x => (x.kind === 'pos' || x.kind === 'return' || x.kind === 'manual') && (isAdmin() || x.staffUid === S.me.uid));
+    let L = myDaySales();
     L.sort((a, b) => (tms(b.createdAt) || 9e15) - (tms(a.createdAt) || 9e15));
     if (q) L = L.filter(x => [x.receiptNo, x.customer && x.customer.name, ...(x.items || []).map(i => i.name)].join(' ').toLowerCase().includes(q));
     L.forEach(x => S.saleCache[x.id] = x);
     box.innerHTML = L.length ? L.map(x => {
         const gone = x.voided || (typeof isCancelled === 'function' && isCancelled(x));
-        const what = x.kind === 'manual' ? tl('Manual sale') : (x.items || []).map(i => esc(i.name) + (i.qty > 1 ? ' ×' + q3(i.qty) : '')).join(', ');
+        const what = x.kind === 'manual' ? tl('Manual sale') : x.kind === 'repay' ? tl('Debt payment') : (x.items || []).map(i => esc(i.name) + (i.qty > 1 ? ' ×' + q3(i.qty) : '')).join(', ');
+        const how = [x.cash ? '💵' : '', x.mobile ? '📱' : '', x.credit > 0 ? '📒' : ''].join('');
         return `<div class="ts-row ${gone ? 'gone' : ''}">
             <div class="ts-main"><b>${x.kind === 'return' ? '↩️ ' : ''}<span class="notr">${esc(x.receiptNo || '')}</span> · ${timeOf(x.createdAt)}</b>
                 <small class="notr">${what}</small>${x.customer ? `<small>👤 <span class="notr">${esc(x.customer.name)}</span></small>` : ''}${isAdmin() && x.staffName ? `<small>${tl('By')} <span class="notr">${esc(x.staffName)}</span></small>` : ''}</div>
-            <div class="ts-amt">${n0(x.total)}${gone ? `<small>${tl(x.voided ? 'Voided' : 'Cancelled')}</small>` : ''}</div>
-            ${x.kind !== 'manual' ? `<button class="ts-rcpt" onclick="receiptMenu(S.saleCache['${x.id}'])">🧾</button>` : ''}</div>`;
+            <div class="ts-amt">${x.kind === 'return' ? '−' : ''}${n0(x.total)}<small style="color:var(--gray);">${gone ? `<span style="color:var(--red);">${tl(x.voided ? 'Voided' : 'Cancelled')}</span>` : how}</small></div>
+            ${x.kind === 'pos' || x.kind === 'return' ? `<button class="ts-rcpt" onclick="receiptMenu(S.saleCache['${x.id}'])">🧾</button>` : '<span style="width:42px;"></span>'}</div>`;
     }).join('') : `<div class="hint gray">${tl(q ? 'Nothing matches.' : 'No sales yet today.')}</div>`;
 }
 

@@ -171,7 +171,7 @@ function renderDayBody(d, sales, entries) {
     sales.sort(byTime); entries.sort(byTime);
     sales.forEach(s => S.saleCache[s.id] = s); entries.forEach(e => S.entryCache[e.id] = e);
     const x = dayFig(d);
-    const cut = barberCut(sales, entries);
+    const cut = barberCut(sales, entries), fp = fullProfit(x, sales, entries);
     const c = x.closing;
     let html = `<div style="font-size:0.7rem;font-weight:800;color:var(--gray);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">${prettyDay(d)}</div>
         <div class="sum-box">
@@ -181,12 +181,13 @@ function renderDayBody(d, sales, entries) {
             ${x.discount ? `<div class="sum-row"><span>&nbsp;&nbsp;🏷️ Discounts given</span><span>${n0(x.discount)}</span></div>` : ''}
             ${x.returns ? `<div class="sum-row"><span>&nbsp;&nbsp;↩️ Returns refunded</span><span style="color:#7c3aed;">−${n0(x.returns)}</span></div>` : ''}
             ${x.debtPaid ? `<div class="sum-row"><span>💰 Debts paid by customers</span><strong style="color:var(--pos);">${fmt(x.debtPaid)}</strong></div>` : ''}
-            <div class="sum-row"><span>📦 ${tl(stockWord())}</span><strong style="color:var(--red);">${fmt(x.supplier)}</strong></div>
+            <div class="sum-row"><span>📦 ${costWord()}</span><strong style="color:var(--red);">${fmt(costOf(fp))}</strong></div>
             ${cut.cost || cut.paidOut ? `<div class="sum-row"><span>💈 ${tl('Barbers earned')}</span><strong style="color:var(--red);">${fmt(cut.cost)}</strong></div>` : ''}
             <div class="sum-row"><span>💸 ${isBarberMode() ? tl('Other expenses') : 'Expenses'}</span><strong style="color:var(--red);">${fmt(x.expense - cut.paidOut)}</strong></div>
             <div class="sum-row"><span>🏦 Banked (net)</span><strong style="color:var(--blue);">${fmt(x.bankIn - x.bankOut)}</strong></div>
-            <div class="sum-row big"><span>📈 Day profit</span><strong style="color:${barberProfit(x, cut) >= 0 ? 'var(--green)' : 'var(--red)'};">${fmt(barberProfit(x, cut))}</strong></div>
-        </div>`;
+            <div class="sum-row big"><span>📈 Day profit</span><strong style="color:${fp.profit >= 0 ? 'var(--green)' : 'var(--red)'};">${fmt(fp.profit)}</strong></div>
+            ${x.supplier && !isBarberMode() ? `<div class="sum-row"><span style="color:var(--gray);">📥 ${tl('Stock bought (not in profit)')}</span><span>${n0(x.supplier)}</span></div>` : ''}
+        </div>${fp.missing.length ? `<div class="hint amber">⚠️ ${esc(missingCostNote(fp.missing))}</div>` : ''}`;
     if (c) html += `<div class="hint green">🔒 Closed by ${esc(c.by || '')}${c.bySeller ? ' (seller)' : ''}${c.countedCash != null ? ` · cash counted ${n0(c.countedCash)}` + (c.systemCash != null ? ` (${signed(c.countedCash - c.systemCash)})` : ' — see their cash-up for the difference') : ''}${afterClose(x) ? `<br>⚠️ ${fmt(afterClose(x))} of sales came in after the day was closed.` : ''}</div>`;
     html += `<button class="btn-sec wide" onclick="openEntry('${d}')">➕ Add expense / banking for this date</button>`;
     if (entries.length) html += `<span class="section-label" style="margin-top:12px;">📒 Money entries (${entries.length})</span>` + entries.map(entryLine).join('');

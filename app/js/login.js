@@ -330,7 +330,7 @@ function startListeners() {
         if ($('sheetSerials').classList.contains('active')) renderSerialList();
     });
     if (isAdmin()) {
-        L(col('costs'), s => { S.costs = {}; s.docs.forEach(d => S.costs[d.id] = Number(d.data().costPrice) || 0); renderInventory(); });
+        L(col('costs'), s => { S.costs = {}; s.docs.forEach(d => S.costs[d.id] = Number(d.data().costPrice) || 0); renderInventory(); renderDashboard(); });
         L(col('meta').doc('balances'), s => { S.balances = { cash: 0, mobile: 0, bank: 0, savings: 0, ...(s.data() || {}) }; renderDashboard(); });
         const from = dayStr(new Date(new Date().getFullYear(), new Date().getMonth() - 12, 1));
         L(col('days').where('day', '>=', from), s => { S.days = {}; s.docs.forEach(d => S.days[d.id] = d.data()); renderDashboard(); });
@@ -415,7 +415,7 @@ function monthFig(m) {
         ['sales', 'cash', 'mobile', 'tx', 'supplier', 'expense', 'bankIn', 'bankOut', 'toSavings', 'credit', 'discount', 'debtPaid', 'returns'].forEach(k => f[k] += x[k]);
         if (x.sales) f.days++;
     });
-    f.profit = f.sales - f.supplier - f.expense;
+    f.profit = f.sales - f.expense; f.cogs = 0; f.missing = [];
     barberMonthAdjust(m, f);
     f.hasData = !!(f.sales || f.supplier || f.expense);
     return f;

@@ -183,9 +183,9 @@
             <div class="summary-grid shop-only">
                 <div class="stat-card"><h4 id="lblMSales">Sales · Month</h4><p id="mSales">—</p></div>
                 <div class="stat-card barber-only" style="border-left-color:var(--pos);"><h4 id="lblMBarb">Barbers earned</h4><p id="mBarb">—</p></div>
-                <div class="stat-card shop-only"><h4 id="lblMStock">Stock · Month</h4><p id="mStock">—</p></div>
+                <div class="stat-card shop-only"><h4 id="lblMStock">Cost of goods sold · Month</h4><p id="mStock">—</p><small class="stat-sub" id="mStockSub"></small></div>
                 <div class="stat-card"><h4 id="lblMExp">Expenses · Month</h4><p id="mExp">—</p></div>
-                <div class="stat-card" style="border-left-color:var(--yellow);"><h4 id="lblMProfit">Profit · Month</h4><p id="mProfit">—</p></div>
+                <div class="stat-card" style="border-left-color:var(--yellow);"><h4 id="lblMProfit">Profit · Month</h4><p id="mProfit">—</p><small class="stat-sub" id="mProfitSub"></small></div>
             </div>
             <div class="row-btns in-sidebar">
                 <button class="btn-sec" onclick="openDay()">🔍 FIND DATE</button>
@@ -226,7 +226,7 @@
                 <button class="strip-btn ghost" id="stExpense" onclick="openSellerExpense()">💸 Expense</button>
             </div>
             <div class="pos-strip"><span id="posStrip">Today: <b>0</b> sales</span>
-                <span style="display:flex;gap:6px;"><button class="strip-btn ghost" onclick="openTodaySales()">🧾 <span data-bw="Clients">Sales</span></button><button class="strip-btn ghost shop-only" onclick="openCustomers('manage')">👥 Customers</button><button class="strip-btn ghost barber-only" onclick="payBarbersToday(false)">💵 Pay barbers</button><button class="strip-btn" onclick="openShiftEnd()">🔒 END SHIFT</button></span></div>
+                <span style="display:flex;gap:6px;"><button class="strip-btn ghost" onclick="openTodaySales()">📋 <span>My day</span></button><button class="strip-btn ghost shop-only" onclick="openCustomers('manage')">👥 Customers</button><button class="strip-btn ghost barber-only" onclick="payBarbersToday(false)">💵 Pay barbers</button><button class="strip-btn" onclick="openShiftEnd()">🔒 END SHIFT</button></span></div>
             <div class="search-wrap shop-only">
                 <span class="search-icon">🔍</span>
                 <input type="text" class="dark-search" id="posSearch" placeholder="Search or scan barcode..." oninput="renderPOS()" autocomplete="off" style="padding-right:58px !important;">
@@ -632,11 +632,12 @@
 <div class="modal-overlay" id="sheetTodaySales" onclick="overlayClose(event)">
     <div class="modal green">
         <div class="modal-handle"></div>
-        <div class="modal-title">🧾 <span data-bw="Today's clients">Today's sales</span></div>
-        <div class="hint gray" data-bw="Tap 🧾 to send a client's receipt again on WhatsApp or as a PDF.">Tap 🧾 to send a receipt again on WhatsApp or as a PDF (warranty included).</div>
-        <div class="search-wrap" style="margin-bottom:10px;"><span class="search-icon">🔍</span><input type="text" id="tsSearch" placeholder="Receipt no., customer or item" oninput="renderTodaySales()"></div>
+        <div class="modal-title">📋 <span>My day</span></div>
+        <div id="tsSummary"></div>
+        <span class="section-label" style="margin-top:14px;"><span data-bw="Clients today">Sales today</span> · <span data-bw="tap 🧾 to send a receipt again">tap 🧾 to send a receipt again</span></span>
+        <div class="search-wrap" style="margin-bottom:10px;"><span class="search-icon">🔍</span><input type="text" id="tsSearch" placeholder="Receipt no., customer or item" oninput="renderTodaySales()" style="padding-left:40px;"></div>
         <div id="tsList"></div>
-        <div class="save-bar"><button class="btn-sec wide ghost" onclick="closeModals()">CLOSE</button></div>
+        <div class="save-bar"><button class="primary-cta" onclick="closeModals();openShiftEnd()">🔒 END SHIFT</button><button class="btn-sec wide ghost" onclick="closeModals()">CLOSE</button></div>
     </div>
 </div>
 

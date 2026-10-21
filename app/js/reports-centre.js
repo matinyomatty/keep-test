@@ -123,23 +123,21 @@ async function buildReport(id) {
         const ents = await rpRange('entries'), exp = ents.filter(e => e.type === 'expense' && e.category !== 'Supplier');
         const byCat = {}; exp.forEach(e => byCat[e.category || 'Other'] = (byCat[e.category || 'Other'] || 0) + e.amount);
         const items = r._items || [], cogs = sum(items, x => x.cogs); delete r._items;
-        if (isBarberMode()) {
-            const cut = barberCut(await rpRange('sales'), ents);
-            const other = f('expense') - cut.paidOut, profit = f('sales') - f('supplier') - other - cut.cost;
-            r.summary = [['Money in', f('sales')], ['Barbers earned', cut.cost], ['Supplies bought', f('supplier')], ['Other expenses', other], ['Profit (money in - barbers - supplies - expenses)', profit],
-                ['Margin', f('sales') ? (profit / f('sales') * 100).toFixed(1) + '%' : '—'], ['Banked (net)', f('bankIn') - f('bankOut')], ['Moved to savings', f('toSavings')]];
-            T('Profit & loss', ['Line', 'TZS'], [['Money in', f('sales')], ['  of which cash', f('cash')], ['  of which Lipa kwa Simu', f('mobile')], ['Barbers earned', -cut.cost], ['Supplies bought', -f('supplier')],
-                ...Object.entries(byCat).sort((a, b) => b[1] - a[1]).map(([c, v]) => ['Expense: ' + catName(c), -v]), ['  less: barber pay already counted above', cut.paidOut], ['PROFIT', profit]]);
-            r.note = 'Barbers paid per service, by percentage or chair rent are counted the day they work; paying them later is not counted twice. Salaries count as expenses when paid.';
-            return r;
-        }
-        const profit = f('sales') - f('supplier') - f('expense');
-        r.summary = [['Sales', f('sales')], ['Stock bought', f('supplier')], ['Expenses', f('expense')], ['Profit (sales - stock bought - expenses)', profit], ['Margin', f('sales') ? (profit / f('sales') * 100).toFixed(1) + '%' : '—'],
-            ['Gross profit on items sold (est.)', Math.round(sum(items, x => x.revenue) - cogs)], ['Banked (net)', f('bankIn') - f('bankOut')], ['Moved to savings', f('toSavings')]];
-        T('Profit & loss', ['Line', 'TZS'], [['Sales', f('sales')], ['  of which cash', f('cash')], ['  of which Lipa kwa Simu', f('mobile')], ['  sold on credit', f('credit')], ['  discounts given', f('discount')], ['  returns refunded', f('returns')], ['Debts collected', f('debtPaid')],
-            ['Stock bought', -f('supplier')], ...Object.entries(byCat).sort((a, b) => b[1] - a[1]).map(([c, v]) => ['Expense: ' + catName(c), -v]), ['PROFIT', profit]]);
-        T('By day', ['Date', 'Sales', 'Stock bought', 'Expenses', 'Profit', 'Banked'], days.map(d => [dDay(d.id), d.sales || 0, d.supplier || 0, d.expense || 0, (d.sales || 0) - (d.supplier || 0) - (d.expense || 0), (d.bankIn || 0) - (d.bankOut || 0)]));
-        r.note = '"Profit" counts stock when it is bought. "Gross profit on items sold" uses current cost prices of what was sold.';
+        const rsales = await rpRange('sales'), x = { sales: f('sales'), expense: f('expense'), supplier: f('supplier') };
+        const fp = fullProfit(x, rsales, ents), profit = fp.profit, barber = isBarberMode();
+        r.summary = [[barber ? 'Money in' : 'Sales', f('sales')], barber ? ['Supplies bought', f('supplier')] : ['Cost of goods sold', fp.cogs], ...(fp.barbers || barber ? [['Barbers earned', fp.barbers]] : []), [fp.barbers || barber ? 'Other expenses' : 'Expenses', fp.otherExpense],
+            [barber ? 'Profit (money in - barbers - supplies - expenses)' : 'Profit (sales - cost of goods - expenses)', profit], ['Margin', f('sales') ? (profit / f('sales') * 100).toFixed(1) + '%' : '—'],
+            ...(barber ? [] : [['Stock bought (not in profit)', f('supplier')]]), ['Banked (net)', f('bankIn') - f('bankOut')], ['Moved to savings', f('toSavings')]];
+        T('Profit & loss', ['Line', 'TZS'], [[barber ? 'Money in' : 'Sales', f('sales')], ['  of which cash', f('cash')], ['  of which Lipa kwa Simu', f('mobile')], ['  sold on credit', f('credit')], ['  discounts given', f('discount')], ['  returns refunded', f('returns')],
+            ...(barber ? [['Supplies bought', -f('supplier')]] : [['Cost of goods sold', -fp.cogs], ['GROSS PROFIT', f('sales') - fp.cogs]]), ...(fp.barbers ? [['Barbers earned', -fp.barbers]] : []),
+            ...Object.entries(byCat).sort((a, b) => b[1] - a[1]).map(([c, v]) => ['Expense: ' + catName(c), -v]), ...(fp.barberPaid ? [['  less: barber pay already counted above', fp.barberPaid]] : []), ['PROFIT', profit]]);
+        T('By day', ['Date', 'Sales', 'Cost of goods', 'Expenses', 'Profit', 'Stock bought', 'Banked'], days.map(d => {
+            const dx = { sales: d.sales || 0, expense: d.expense || 0, supplier: d.supplier || 0 }, dp = fullProfit(dx, rsales.filter(s => s.day === d.id), ents.filter(e => e.day === d.id));
+            return [dDay(d.id), dx.sales, dp.cogs, dp.otherExpense + dp.barbers, dp.profit, d.supplier || 0, (d.bankIn || 0) - (d.bankOut || 0)];
+        }));
+        r.note = (barber ? 'Profit = money in − what barbers earned − supplies − other expenses.' : 'Profit = sales − cost of the goods sold − expenses. Cost of goods uses each item\'s cost price × quantity sold; buying stock is shown separately and only counts when the goods are sold.')
+            + (fp.missing.length ? ' WARNING: no cost price for ' + fp.missing.slice(0, 8).join(', ') + (fp.missing.length > 8 ? ' and more' : '') + ' — profit is too high until you add them.' : '')
+            + (barber ? ' Barbers paid per service, by percentage or chair rent are counted the day they work; salaries count as expenses when paid.' : '');
         return r;
     }
     if (id === 'expenses' || id === 'banking') {
