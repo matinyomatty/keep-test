@@ -260,7 +260,7 @@
         .modal.yellow { border-top-color: var(--yellow); }
         @keyframes slideUp { from { transform: translateY(40px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
         .modal-handle { width: 36px; height: 4px; border-radius: 2px; background: #ddd; margin: 0 auto 18px; }
-        .modal-title { font-family: 'Syne', sans-serif; font-size: 1.1rem; text-align: center; margin-bottom: 18px; }
+        .modal-title { font-family: 'DM Sans', system-ui, sans-serif; font-weight: 800; font-size: 1.15rem; letter-spacing: -.2px; text-align: center; margin-bottom: 18px; }
         .field-group { margin-bottom: 14px; }
         .field-label { font-size: 0.65rem; font-weight: 800; color: var(--blue); text-transform: uppercase; letter-spacing: .5px; margin-bottom: 6px; display: block; }
         input[type=date], input[type=number], input[type=month], input[type=text], input[type=tel], input[type=password], select, textarea {
@@ -763,8 +763,8 @@
         .cart-head { display: flex; justify-content: space-between; align-items: center; }
         .cart-head small { color: var(--gray); font-size: .8rem; font-weight: 600; }
         .modal-overlay.docked .modal { padding: 0; }
-        .modal-overlay.docked .cart-head { padding: 16px 18px 10px; margin: 0; font-size: 1.05rem; font-weight: 800; border-bottom: 1px solid var(--line); }
-        .modal-overlay.docked .cart-clear-top { display: inline-block; background: none; border: 1.5px solid #fecaca; color: var(--red); font-weight: 800; font-size: .72rem; border-radius: 8px; padding: 5px 10px; cursor: pointer; }
+        .modal-overlay.docked .cart-head { padding: 16px 18px 10px; margin: 0; font-size: 1.05rem; font-weight: 800; font-family: 'DM Sans', system-ui, sans-serif; border-bottom: 1px solid var(--line); }
+        .modal-overlay.docked .cart-clear-top { display: inline-block; font-family: 'DM Sans', system-ui, sans-serif; background: none; border: 1.5px solid #fecaca; color: var(--red); font-weight: 800; font-size: .72rem; border-radius: 8px; padding: 5px 10px; cursor: pointer; }
         .modal-overlay.docked .cart-clear-bottom { display: none; }
         .modal-overlay.docked #cartLines { padding: 4px 18px; scrollbar-width: thin; scrollbar-color: #cbd5e1 transparent; }
         .modal-overlay.docked #cartLines::-webkit-scrollbar { width: 6px; }
