@@ -323,7 +323,10 @@ function addInvite(b, code, uid, email, name, phone) {
     });
 }
 async function sendSetupCode(name, phone, code, isNew) {
-    const text = `Habari ${name.split(' ')[0]}! ${isNew ? `You have been added to *${S.tenantInfo.name || S.tenant}* on Keep.` : `Your Keep PIN for *${S.tenantInfo.name || S.tenant}* was reset.`}\n\nTap the link to choose your own PIN:\n${setupLink(code)}\n\nOr open keep.co.tz → "First time here?" and enter setup code *${prettyCode(code)}*.\nThe code works once and expires in ${SETUP_HOURS} hours. Do not share it.`;
+    const shop = S.tenantInfo.name || S.tenant, fn = name.split(' ')[0];
+    const text = KEEP_RAW + (isSw()
+        ? `Habari ${fn}! ${isNew ? `Umeongezwa kwenye *${shop}* katika Keep.` : `PIN yako ya Keep kwa *${shop}* imebadilishwa.`}\n\nGusa kiungo kuchagua PIN yako:\n${setupLink(code)}\n\nAu fungua keep.co.tz → "Mara ya kwanza hapa?" na uweke namba ya kuanzia *${prettyCode(code)}*.\nNamba hii inatumika mara moja na inaisha baada ya saa ${SETUP_HOURS}. Usimpe mtu.`
+        : `Habari ${fn}! ${isNew ? `You have been added to *${shop}* on Keep.` : `Your Keep PIN for *${shop}* was reset.`}\n\nTap the link to choose your own PIN:\n${setupLink(code)}\n\nOr open keep.co.tz → "First time here?" and enter setup code *${prettyCode(code)}*.\nThe code works once and expires in ${SETUP_HOURS} hours. Do not share it.`);
     const ok = await showConfirm(`Setup code for <b>${esc(name)}</b><br><br><span style="font-size:1.6rem;font-weight:800;letter-spacing:3px;">${prettyCode(code)}</span><br><br><span style="font-size:0.78rem;color:#6b7280;">They use it once to choose their own PIN. It expires in ${SETUP_HOURS} hours.</span><br><br>Send it to ${esc(prettyPhone(phone))} on WhatsApp?`, '📲 WhatsApp', 'var(--pos)');
     if (ok) openWa(phone, text);
 }

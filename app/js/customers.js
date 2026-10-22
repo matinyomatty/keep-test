@@ -105,14 +105,19 @@ async function receivePayment(id) {
     commit(b, `✅ ${fmt(amt)} received from ${c.name}`, { label: `Debt payment ${fmt(amt)} from ${c.name} (${how})` });
     if (c.phone && await showConfirm('Send them a confirmation on WhatsApp?', '📲 WhatsApp', 'var(--pos)')) {
         const left = Math.max(0, (c.balance || 0) - amt);
-        const text = `${S.tenantInfo.name || ''}: Asante ${c.name.split(' ')[0]}! We received ${fmt(amt)} (${receiptNo}).\n${left ? `Balance remaining: ${fmt(left)}` : 'Your account is fully paid ✅'}`;
+        const fn = c.name.split(' ')[0];
+        const text = KEEP_RAW + (isSw()
+            ? `${S.tenantInfo.name || ''}: Asante ${fn}! Tumepokea ${fmt(amt)} (${receiptNo}).\n${left ? `Deni lililobaki: ${fmt(left)}` : 'Deni lako limelipwa lote ✅'}`
+            : `${S.tenantInfo.name || ''}: Asante ${fn}! We received ${fmt(amt)} (${receiptNo}).\n${left ? `Balance remaining: ${fmt(left)}` : 'Your account is fully paid ✅'}`);
         openWa(c.phone, text);
     }
 }
 function remindCustomer(id) {
     const c = S.customers.find(x => x.id === id); if (!c || !c.phone) return;
-    const pay = (S.tenantInfo.settings || {}).phone ? `\nCall us: ${prettyPhone(S.tenantInfo.settings.phone)}` : '';
-    const text = `Habari ${c.name.split(' ')[0]}, this is ${S.tenantInfo.name || 'the shop'}. A friendly reminder that your balance is ${fmt(c.balance)}. Asante!${pay}`;
+    const ph = (S.tenantInfo.settings || {}).phone, fn = c.name.split(' ')[0];
+    const text = KEEP_RAW + (isSw()
+        ? `Habari ${fn}, ni ${S.tenantInfo.name || 'duka'}. Tunakukumbusha kwa upendo kuwa deni lako ni ${fmt(c.balance)}. Asante!${ph ? `\nTupigie: ${prettyPhone(ph)}` : ''}`
+        : `Habari ${fn}, this is ${S.tenantInfo.name || 'the shop'}. A friendly reminder that your balance is ${fmt(c.balance)}. Asante!${ph ? `\nCall us: ${prettyPhone(ph)}` : ''}`);
     openWa(c.phone, text);
 }
 
@@ -126,17 +131,17 @@ const warrantyEnd = (sale, i) => {
 };
 function receiptText(s) {
     const st = S.tenantInfo.settings || {}, L = [];
-    L.push(`*${(S.tenantInfo.name || '').toUpperCase()}*`);
-    if (st.address) L.push(st.address);
+    L.push(`*${(S.tenantInfo.name || '').toUpperCase()}*` + KEEP_RAW);
+    if (st.address) L.push(KEEP_RAW + st.address);
     if (st.phone) L.push('📞 ' + prettyPhone(st.phone));
     L.push('', `🧾 ${s.receiptNo || ''} · ${shortDay(s.day)} ${timeOf(s.createdAt)}`);
     if (s.kind === 'return') L.push(`↩️ *RETURN* of receipt ${s.refReceipt || ''}`);
-    if (s.customer) L.push('👤 ' + s.customer.name);
+    if (s.customer) L.push(KEEP_RAW + '👤 ' + s.customer.name);
     L.push('');
     (s.items || []).forEach(i => {
-        L.push(`${i.name}`);
+        L.push(KEEP_RAW + i.name);
         L.push(`  ${qtyTxt(i.qty, { unit: i.unit })} × ${n0(i.unitPrice)} = ${n0(i.subtotal)}`);
-        itemIds(i).forEach(x => L.push(`  S/N: ${x}`));
+        itemIds(i).forEach(x => L.push(KEEP_RAW + `  S/N: ${x}`));
         if (i.warrantyMonths) L.push(`  🛡️ Warranty to ${warrantyEnd(s, i).toLocaleDateString('en-GB')}`);
     });
     L.push('━━━━━━━━━━');
@@ -153,7 +158,7 @@ function receiptText(s) {
     if (s.credit) L.push(`On credit: ${n0(s.credit)}`);
     }
     L.push('', `Served by ${s.staffName || ''}`);
-    if (st.footer) L.push(st.footer);
+    if (st.footer) L.push(KEEP_RAW + st.footer);
     L.push('Asante kwa kununua!');
     return L.join('\n');
 }
@@ -168,7 +173,7 @@ function receiptPdf(s, opts = {}) {
     const fs = n => Math.max(6.6, n * k);
     const isRet = s.kind === 'return', when = new Date(tms(s.createdAt) || Date.now());
     const logo = st.logo || null;
-    const date = when.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) + '  ' + when.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+    const date = (isSw() && window.KeepDate ? KeepDate : x => x)(when.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })) + '  ' + when.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
     const xQty = M + CW * 0.66;                      // right edge of the QTY column
 
     const draw = doc => {
@@ -201,19 +206,19 @@ function receiptPdf(s, opts = {}) {
 
         // ─ Title, number, details
         font(narrow ? 8.5 : 9, 'bold'); doc.setCharSpace(narrow ? 0.3 : 0.6);
-        doc.text(isRet ? (narrow ? 'RETURN' : 'RETURN RECEIPT') : 'RECEIPT', M, y); doc.setCharSpace(0);
+        doc.text(isRet ? (narrow ? tl('RETURN') : tl('RETURN RECEIPT')) : tl('RECEIPT'), M, y); doc.setCharSpace(0);
         doc.text(String(s.receiptNo || ''), R, y, { align: 'right' }); y += 4.8;
-        row('Date', date, 7.5, 'normal', 25);
-        if (isRet) row('Original receipt', s.refReceipt || '', 7.5, 'normal', 25);
-        row('Served by', s.staffName || '', 7.5, 'normal', 25);
+        row(tl('Date'), date, 7.5, 'normal', 25);
+        if (isRet) row(tl('Original receipt'), s.refReceipt || '', 7.5, 'normal', 25);
+        row(tl('Served by'), s.staffName || '', 7.5, 'normal', 25);
         if (s.customer) {
-            row('Customer', s.customer.name, 7.5, 'normal', 25);
-            if (s.customer.phone) row('Phone', prettyPhone(s.customer.phone), 7.5, 'normal', 25);
+            row(tl('Customer'), s.customer.name, 7.5, 'normal', 25);
+            if (s.customer.phone) row(tl('Phone'), prettyPhone(s.customer.phone), 7.5, 'normal', 25);
         }
         y += 1; rule(0.2); y += 4;
 
         // ─ Items
-        font(6.8, 'bold', 40); doc.text('ITEM', M, y); doc.text('QTY', xQty, y, { align: 'right' }); doc.text('AMOUNT', R, y, { align: 'right' }); y += 2.2;
+        font(6.8, 'bold', 40); doc.text(tl('ITEM'), M, y); doc.text(tl('QTY'), xQty, y, { align: 'right' }); doc.text(tl('AMOUNT'), R, y, { align: 'right' }); y += 2.2;
         rule(0.15, [0.6, 0.6]); y += 3.9;
         (s.items || []).forEach(i => {
             font(8, 'bold');
@@ -240,31 +245,31 @@ function receiptPdf(s, opts = {}) {
             y += 3.2; rule(0.7); y += 4.6;
         };
         if (isRet) {
-            big('REFUND', 'TZS ' + n0(s.total));
-            if (s.cash) row('Cash given back', n0(-s.cash), 7.6, 'normal', 15);
-            if (s.mobile) row('Sent by Lipa kwa Simu', n0(-s.mobile), 7.6, 'normal', 15);
-            if (s.credit) row('Taken off your balance', n0(-s.credit), 7.6, 'normal', 15);
+            big(tl('REFUND'), 'TZS ' + n0(s.total));
+            if (s.cash) row(tl('Cash given back'), n0(-s.cash), 7.6, 'normal', 15);
+            if (s.mobile) row(tl('Sent by Lipa kwa Simu'), n0(-s.mobile), 7.6, 'normal', 15);
+            if (s.credit) row(tl('Taken off your balance'), n0(-s.credit), 7.6, 'normal', 15);
         } else {
-            if (s.discount) { row('Subtotal', n0((s.total || 0) + (s.discount || 0)), 7.5, 'normal', 25); row('Discount', '- ' + n0(s.discount), 7.5, 'normal', 25); y += 0.6; }
-            big('TOTAL', 'TZS ' + n0(s.total));
-            label('PAID BY');
-            if (s.cash) row('Cash', n0(s.cash), 7.6, 'normal', 15);
-            if (s.mobile) row('Lipa kwa Simu', n0(s.mobile), 7.6, 'normal', 15);
+            if (s.discount) { row(tl('Subtotal'), n0((s.total || 0) + (s.discount || 0)), 7.5, 'normal', 25); row(tl('Discount'), '- ' + n0(s.discount), 7.5, 'normal', 25); y += 0.6; }
+            big(tl('TOTAL'), 'TZS ' + n0(s.total));
+            label(tl('PAID BY'));
+            if (s.cash) row(tl('Cash'), n0(s.cash), 7.6, 'normal', 15);
+            if (s.mobile) row(tl('Lipa kwa Simu'), n0(s.mobile), 7.6, 'normal', 15);
             if (s.credit) row('On credit — to pay', n0(s.credit), 7.8, 'bold', 0);
-            if (s.discount) { y += 0.8; center(`You saved TZS ${n0(s.discount)}`, 7.4, 'bold', 0); }
+            if (s.discount) { y += 0.8; center(`${tl('You saved')} TZS ${n0(s.discount)}`, 7.4, 'bold', 0); }
         }
         // ─ Warranty card
         const wItems = isRet ? [] : (s.items || []).filter(i => i.warrantyMonths);
         if (wItems.length) {
             y += 2.6; const top = y;
-            y += 4.6; font(8, 'bold'); doc.setCharSpace(0.5); doc.text('WARRANTY', M + 2.6, y); doc.setCharSpace(0); y += 4.2;
+            y += 4.6; font(8, 'bold'); doc.setCharSpace(0.5); doc.text(tl('WARRANTY'), M + 2.6, y); doc.setCharSpace(0); y += 4.2;
             wItems.forEach(i => {
                 font(7.6, 'bold'); doc.splitTextToSize(i.name, CW - 5).slice(0, 2).forEach(t => { doc.text(t, M + 2.6, y); y += lh(7.6) + 0.2; });
                 itemIds(i).forEach(x => { doc.setFont('courier', 'bold'); doc.setFontSize(fs(7.2)); doc.setTextColor(0); doc.text('S/N ' + x, M + 2.6, y); y += lh(7.2) + 0.3; });
-                font(7.2, 'normal', 15); doc.splitTextToSize(`${i.warrantyMonths} month${i.warrantyMonths > 1 ? 's' : ''} · valid until ${warrantyEnd(s, i).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}`, CW - 5).forEach(t => { doc.text(t, M + 2.6, y); y += lh(7.2); });
+                font(7.2, 'normal', 15); doc.splitTextToSize(`${isSw() ? 'Miezi ' + i.warrantyMonths + ' · inaisha ' : i.warrantyMonths + ' month' + (i.warrantyMonths > 1 ? 's' : '') + ' · valid until '}${(isSw() && window.KeepDate ? KeepDate : x => x)(warrantyEnd(s, i).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }))}`, CW - 5).forEach(t => { doc.text(t, M + 2.6, y); y += lh(7.2); });
                 y += 1.6;
             });
-            font(6.8, 'normal', 40); doc.splitTextToSize('Bring this receipt for any warranty claim.', CW - 5).forEach(t => { doc.text(t, M + 2.6, y); y += lh(6.8); });
+            font(6.8, 'normal', 40); doc.splitTextToSize(tl('Bring this receipt for any warranty claim.'), CW - 5).forEach(t => { doc.text(t, M + 2.6, y); y += lh(6.8); });
             y += 0.8;
             doc.setDrawColor(0); doc.setLineWidth(0.35); doc.setLineDashPattern([1.2, 0.8], 0);
             doc.roundedRect(M, top, CW, y - top, 1.6, 1.6); doc.setLineDashPattern([], 0); y += 2;
@@ -273,15 +278,15 @@ function receiptPdf(s, opts = {}) {
         // ─ Void stamp
         if (s.voided) {
             y += 3; doc.setDrawColor(220, 38, 38); doc.setLineWidth(0.8); doc.rect(W / 2 - 16, y - 6, 32, 10);
-            doc.setTextColor(220, 38, 38); doc.setFont('helvetica', 'bold'); doc.setFontSize(16); doc.text('VOID', W / 2, y + 1.6, { align: 'center' }); y += 9;
+            doc.setTextColor(220, 38, 38); doc.setFont('helvetica', 'bold'); doc.setFontSize(16); doc.text(tl('VOID'), W / 2, y + 1.6, { align: 'center' }); y += 9;
         }
 
         // ─ Footer
         y += 4;
         if (st.footer) center(st.footer, 7.2, 'italic', 25, 1.2);
         center('Asante kwa kununua!', 8.6, 'bold', 0, 1.6);
-        center('Not a tax (EFD) receipt', 6.8, 'normal', 50, 0.4);
-        center('Receipt by Keep', 6.6, 'normal', 90);
+        center(tl('Not a tax (EFD) receipt'), 6.8, 'normal', 50, 0.4);
+        center(tl('Receipt by Keep'), 6.6, 'normal', 90);
         return y + 3;
     };
     const probe = new jsPDF({ unit: 'mm', format: [W, 1000] });

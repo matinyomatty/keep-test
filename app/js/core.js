@@ -22,7 +22,7 @@ const ENTRY_COLORS = {
 
 firebase.initializeApp(firebaseConfig);
 // App version — shown on the sign-in screen and saved on each sale, so you can tell when every till has updated.
-const APP_VERSION = 62;
+const APP_VERSION = 63;
 // App Check: proves requests come from the real Keep app, not a script. Paste your reCAPTCHA v3 SITE key
 // between the quotes to switch it on (see the setup guide). Empty = off.
 const APP_CHECK_SITE_KEY = '';

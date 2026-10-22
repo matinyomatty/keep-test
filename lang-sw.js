@@ -334,7 +334,7 @@ KeepLang.add({
     [/^That phone number or (PIN|password) doesn't match\. Try again$/, (m, a) => 'Namba ya simu au ' + (a === 'PIN' ? 'PIN' : 'nenosiri') + ' hailingani. Jaribu tena'],
     [/^(\d+) POS sales today$/, 'mauzo $1 ya POS leo'], [/^(\d+) waiting to sync$/, '$1 zinasubiri kutuma'], [/^([\d,]+) TZS\/month$/, '$1 TZS/mwezi'],
     [/^Amount: ([\d,]+) TZS per month$/, 'Kiasi: $1 TZS kwa mwezi'], [/^Reference: (.+)$/, 'Kumbukumbu: $1'], [/^Day (\d+) of (\d+)$/, 'Siku $1 kati ya $2'],
-    [/^(.+?) → (.+)$/, (m, a, b) => (KeepLang.tl(a) + ' → ' + KeepLang.tl(b))],
+    [/^([^:]+?) → (.+)$/, (m, a, b) => (KeepLang.tl(a) + ' → ' + KeepLang.tl(b))],
     [/^Nothing recorded in (.+) yet$/, (m, a) => 'Bado hakuna kilichorekodiwa ' + D(a)],
     [/^(.+) isn't over yet — these are month-to-date figures$/, (m, a) => D(a) + ' bado haujaisha — hizi ni takwimu za mwezi hadi sasa'],
     [/^You can close (.+) once the month has ended$/, (m, a) => 'Unaweza kufunga ' + D(a) + ' mwezi ukishaisha'],
@@ -682,3 +682,28 @@ KeepLang.add({
   [/^([↑↓] [\d+]+%) vs (yesterday|day before|last month|last week)$/, (m, a, b) => a + ' ' + KeepLang.tl('vs ' + b)],
   [/^(Cash|Bank|Savings|Lipa kwa Simu|Mobile) → (.+)$/, (m, a, b) => KeepLang.tl(a) + ' → ' + KeepLang.tl(b)],
 ]);
+
+// WhatsApp summaries (close day, month, cash-up, receipts, deliveries)
+KeepLang.add({
+  'Cash given back': 'Taslimu iliyorudishwa', 'Put in savings': 'Iliyowekwa akiba', 'Balances now': 'Salio kwa sasa', 'Simu in': 'Simu iliyoingia', 'Out': 'Iliyotoka',
+  'REFUND': 'IMERUDISHWA', 'My cash-up': 'Hesabu yangu', 'My sales this shift': 'Mauzo yangu zamu hii', 'Simu balance': 'Salio la simu', 'Paid out of the drawer': 'Imelipwa kutoka droo',
+  'Check the cash-up in Keep POS to see if the drawer matches.': 'Kagua hesabu kwenye Keep kuona kama droo inalingana.', 'Please review it in Keep POS.': 'Tafadhali ikague kwenye Keep.',
+  'Paid from the drawer': 'Imelipwa kutoka droo', 'Paid by the owner': 'Imelipwa na mmiliki', 'On credit — pay later': 'Kwa mkopo — kulipa baadaye', 'Paid from Cash': 'Imelipwa kwa taslimu',
+  'Paid from Lipa kwa Simu': 'Imelipwa kwa Lipa kwa Simu', 'Paid from Bank': 'Imelipwa kutoka benki', 'Exact': 'Sawasawa', 'not checked': 'haijakaguliwa',
+}, [
+  [/^\*?(Day closed|Cash-up|Delivery) — (.+)\*$/, (m, a, b) => (m[0] === '*' ? '*' : '') + ({ 'Day closed': 'Siku imefungwa', 'Cash-up': 'Hesabu ya droo', 'Delivery': 'Mzigo' })[a] + ' — ' + b + '*'],
+  [/^(\*?)([^*]+)\* — (.+)$/, (m, s, a, b) => s + a + '* — ' + KeepLang.tl(b)],
+  [/^(\*?)RETURN\* of receipt (.+)$/, '$1MAREJESHO* ya risiti $2'],
+  [/^(\d+) POS sales?$/, 'mauzo $1 ya POS'],
+  [/^(.+) \((\d+) POS sales?\)$/, (m, a, n) => a.replace(/^([^:]+):/, (x, l) => KeepLang.tl(l) + ':') + ' (mauzo ' + n + ' ya POS)'],
+  [/^Closed by (.+)$/, 'Imefungwa na $1'], [/^closed by (.+) at (.+)$/, 'imefungwa na $1 saa $2'], [/^Served by (.+)$/, 'Umehudumiwa na $1'],
+  [/^(.+): counted (.+) vs system (.+) → (.+)$/, (m, a, b, c, d) => KeepLang.tl(a) + ': imehesabiwa ' + b + ', mfumo ' + c + ' → ' + d],
+  [/^(.+): counted ([\d,.]+) — (.+)$/, (m, a, b, c) => a + ': imehesabiwa ' + b + ' — ' + KeepLang.tl(c)],
+  [/^Short (.+)$/, 'Upungufu $1'], [/^Over (.+)$/, 'Ziada $1'],
+]);
+
+// Receipt PDF
+KeepLang.add({
+  'AMOUNT': 'KIASI', 'ITEM': 'BIDHAA', 'PAID BY': 'IMELIPWA KWA', 'QTY': 'IDADI', 'RECEIPT': 'RISITI', 'RETURN RECEIPT': 'RISITI YA MAREJESHO', 'RETURN': 'MAREJESHO',
+  'Taken off your balance': 'Imetolewa kwenye deni lako', 'VOID': 'IMEFUTWA', 'WARRANTY': 'DHAMANA', 'Bring this receipt for any warranty claim.': 'Leta risiti hii kudai dhamana.',
+});

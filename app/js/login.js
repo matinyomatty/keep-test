@@ -12,10 +12,30 @@ function normPhone(v) {
     else if (d.length === 9 && /^[67]/.test(d)) d = '255' + d;
     return d;
 }
+// ── WhatsApp messages follow the app language ──
+// Lines are "emoji Label: value"; each label (and short phrase) goes through the dictionary.
+// Lines holding an invisible mark (KEEP_RAW) are names, notes or items typed by people: never translated.
+const KEEP_RAW = '\u200B';
+const isSw = () => !!(window.KeepLang && KeepLang.lang === 'sw');
+function msgTl(text) {
+    if (!isSw() || !text) return text;
+    const seg = p => {
+        if (!/[A-Za-z]/.test(p)) return p;
+        const t = tl(p); if (t !== p) return t;
+        const m = /^([^A-Za-z]*)([A-Za-z][^:]*?): (.*)$/.exec(p);
+        if (m) { const v = /[A-Za-z]/.test(m[3]) ? tl(m[3]) : m[3]; return m[1] + tl(m[2]) + ': ' + v; }
+        return p;
+    };
+    return text.split('\n').map(line => {
+        if (!line.trim() || line.includes(KEEP_RAW) || line.trim().startsWith('•')) return line;
+        const t = tl(line); if (t !== line) return t;
+        return line.split(/( · | \| )/).map((p, i) => i % 2 ? p : seg(p)).join('');
+    }).join('\n');
+}
 // WhatsApp links need the number in international form (2557XXXXXXXX), never 07XX…
 // With no number, WhatsApp opens and lets you pick who to send it to.
 function openWa(number, text) {
-    const n = normPhone(number);
+    const n = normPhone(number); text = msgTl(text);
     window.open(`https://wa.me/${/^\d{10,15}$/.test(n) ? n : ''}?text=${encodeURIComponent(text)}`, '_blank');
 }
 function normLoginId(v) {

@@ -187,9 +187,9 @@ function deliveryPdf(d) {
     return doc;
 }
 function deliveryText(d) {
-    return `🚚 *Delivery — ${S.tenantInfo.name || S.tenant}*\n${d.receiptNo} · ${prettyDay(d.day)} ${timeOf(d.createdAt)}\n👤 ${d.staffName}${d.supplier ? '\n🏪 ' + d.supplier : ''}\n\n` +
+    return `🚚 *Delivery — ${S.tenantInfo.name || S.tenant}*\n${d.receiptNo} · ${prettyDay(d.day)} ${timeOf(d.createdAt)}\n${KEEP_RAW}👤 ${d.staffName}${d.supplier ? '\n' + KEEP_RAW + '🏪 ' + d.supplier : ''}\n\n` +
         d.items.map(i => `• ${i.name} — ${qtyTxt(i.qty, { unit: i.unit })}${i.unitCost != null ? ' × ' + n0(i.unitCost) + ' = ' + n0(i.lineTotal) : ''}`).join('\n') +
-        `\n\n💰 Total: ${n0(d.total)} TZS\n${PAID_LABEL[d.paidFrom] || ''}${d.note ? '\n📝 ' + d.note : ''}`;
+        `\n\n💰 Total: ${n0(d.total)} TZS\n${PAID_LABEL[d.paidFrom] || ''}${d.note ? '\n' + KEEP_RAW + '📝 ' + d.note : ''}`;
 }
 async function deliveryShare(d, justSaved) {
     const how = await choose(`${justSaved ? '✅ <b>Delivery saved.</b><br>' : ''}🚚 <b>${esc(d.receiptNo)}</b> · ${d.items.length} item${d.items.length > 1 ? 's' : ''} · ${fmt(d.total)}<br>Send the delivery note to the owner?`,
