@@ -720,3 +720,5 @@ KeepLang.add({
 
 // Buying prices over time
 KeepLang.add({ 'Average buying price now': 'Wastani wa bei ya kununulia sasa', 'type what you paid this time — Keep mixes it in': 'andika ulicholipa safari hii — Keep itachanganya', 'Bought at': 'Ilinunuliwa kwa', 'Avg cost': 'Wastani wa gharama' });
+KeepLang.add({ 'Buying price now': 'Bei ya kununulia sasa', 'A different price starts a new batch.': 'Bei tofauti inaanzisha kundi jipya.', 'On the shelf': 'Kwenye rafu', 'from': 'kutoka', 'before': 'awali', 'Oldest is sold first. A different price starts a new batch.': 'Za zamani zinauzwa kwanza. Bei tofauti inaanzisha kundi jipya.' });
+KeepLang.add({ 'What you paid per': 'Ulicholipa kwa', 'this time': 'safari hii' });

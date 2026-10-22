@@ -326,7 +326,7 @@ async function runImport() {
                     updated++;
                 }
                 b.set(ref, d, { merge: true });
-                if (x.cost !== null && !(x.match && x.keepPrices) && (!x.match || Math.round(x.cost) !== (Number(S.costs[ref.id]) || 0))) costSet(b, ref.id, x.cost);
+                if (x.cost !== null && !(x.match && x.keepPrices) && (!x.match || Math.round(x.cost) !== (Number(S.costs[ref.id]) || 0))) costTyped(b, ref.id, x.cost);
                 const before = x.match ? x.oldStock : 0;
                 if (x.newStock !== before) b.set(col('movements').doc(), {
                     productId: ref.id, name: x.name, type: x.match ? (mode === 'add' ? 'restock' : 'stocktake') : 'opening', qty: x.newStock - before,

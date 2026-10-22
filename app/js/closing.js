@@ -601,7 +601,7 @@ async function generatePDF() {
 
         if (S.products.length) {
             doc.addPage(); header('Stock Snapshot', 'As of ' + new Date().toLocaleDateString('en-GB'));
-            const value = S.products.reduce((s, p) => s + (S.costs[p.id] || 0) * Math.max(0, p.stock || 0), 0);
+            const value = S.products.reduce((s, p) => s + stockValue(p), 0);
             doc.setTextColor(...ink); doc.setFontSize(8); doc.setFont('helvetica', 'normal');
             doc.text(`Items: ${S.products.length}   |   Stock value at cost: ${fmt(value)}`, 14, 34);
             doc.autoTable({

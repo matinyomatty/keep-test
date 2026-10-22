@@ -168,9 +168,9 @@ async function buildReport(id) {
         const P = S.products.filter(p => !isService(p)).sort((a, b) => (a.category || '').localeCompare(b.category || '') || (a.name || '').localeCompare(b.name || ''));
         const st = p => (Number(p.stock) || 0) <= 0 ? 'Out of stock' : (Number(p.stock) || 0) <= (Number(p.reorderLevel) || 5) ? 'Low' : 'OK';
         if (id === 'stockList') {
-            r.summary = [['Items', P.length], ['Units in stock', q3(sum(P, p => Math.max(0, p.stock)))], ['Value at cost', Math.round(sum(P, p => Math.max(0, p.stock) * (S.costs[p.id] || 0)))], ['Value at selling price', Math.round(sum(P, p => Math.max(0, p.stock) * (p.sellPrice || 0)))], ['Low', P.filter(p => st(p) === 'Low').length], ['Out of stock', P.filter(p => st(p) === 'Out of stock').length]];
+            r.summary = [['Items', P.length], ['Units in stock', q3(sum(P, p => Math.max(0, p.stock)))], ['Value at cost', Math.round(sum(P, p => stockValue(p)))], ['Value at selling price', Math.round(sum(P, p => Math.max(0, p.stock) * (p.sellPrice || 0)))], ['Low', P.filter(p => st(p) === 'Low').length], ['Out of stock', P.filter(p => st(p) === 'Out of stock').length]];
             T('Stock', ['Item', 'Category', 'Unit', 'Barcode', 'In stock', 'Cost', 'Price', 'Value at cost', 'Value at price', 'Status'],
-                P.map(p => [p.name, p.category || '', unitOf(p), p.barcode || '', q3(p.stock || 0), S.costs[p.id] || 0, p.sellPrice || 0, Math.round(Math.max(0, p.stock) * (S.costs[p.id] || 0)), Math.round(Math.max(0, p.stock) * (p.sellPrice || 0)), st(p)]));
+                P.map(p => [p.name, p.category || '', unitOf(p), p.barcode || '', q3(p.stock || 0), S.costs[p.id] || 0, p.sellPrice || 0, Math.round(stockValue(p)), Math.round(Math.max(0, p.stock) * (p.sellPrice || 0)), st(p)]));
         } else {
             const L = P.filter(p => st(p) !== 'OK').sort((a, b) => (a.stock || 0) - (b.stock || 0));
             r.summary = [['Out of stock', L.filter(p => st(p) === 'Out of stock').length], ['Low', L.filter(p => st(p) === 'Low').length], ['Cost to restock to 2× reorder level (est.)', Math.round(sum(L, p => Math.max(0, 2 * (Number(p.reorderLevel) || 5) - Math.max(0, p.stock)) * (S.costs[p.id] || 0)))]];

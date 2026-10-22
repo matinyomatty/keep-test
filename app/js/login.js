@@ -364,7 +364,7 @@ function startListeners() {
         S.products = s.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => (a.name || '').localeCompare(b.name || ''));
         applyServiceMode();
         Object.keys(S.cart).forEach(id => { if (!productById(id)) delete S.cart[id]; });
-        renderPOS(); renderInventory(); renderServicesPage(); renderNotices(); if (isAdmin()) renderDashboard();
+        renderPOS(); renderInventory(); renderServicesPage(); renderNotices(); if (isAdmin()) { renderDashboard(); checkLotFronts(); }
     });
     L(col('sales').where('day', '==', S.today), s => {
         S.todaySales = s.docs.map(d => ({ id: d.id, ...d.data() }));
@@ -385,7 +385,7 @@ function startListeners() {
         if ($('sheetSerials').classList.contains('active')) renderSerialList();
     });
     if (isAdmin()) {
-        L(col('costs'), s => { S.costs = {}; S.costDocs = {}; s.docs.forEach(d => { const x = d.data(); S.costDocs[d.id] = x; S.costs[d.id] = Number(x.costPrice) || 0; }); renderInventory(); renderDashboard(); });
+        L(col('costs'), s => { S.costs = {}; S.costDocs = {}; s.docs.forEach(d => { const x = d.data(); S.costDocs[d.id] = x; S.costs[d.id] = Number(x.costPrice) || 0; }); renderInventory(); renderDashboard(); checkLotFronts(); });
         L(col('meta').doc('balances'), s => { S.balances = { cash: 0, mobile: 0, bank: 0, savings: 0, ...(s.data() || {}) }; renderDashboard(); });
         const from = dayStr(new Date(new Date().getFullYear(), new Date().getMonth() - 12, 1));
         L(col('days').where('day', '>=', from), s => { S.days = {}; s.docs.forEach(d => S.days[d.id] = d.data()); renderDashboard(); });

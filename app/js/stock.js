@@ -26,7 +26,7 @@ function renderInventory() {
     const G = P.filter(p => !isService(p));
     const low = G.filter(p => p.stock > 0 && p.stock <= (Number(p.reorderLevel) || 5)).length;
     const out = G.filter(p => (Number(p.stock) || 0) <= 0).length;
-    const value = P.reduce((s, p) => s + (S.costs[p.id] || 0) * Math.max(0, Number(p.stock) || 0), 0);
+    const value = P.reduce((s, p) => s + stockValue(p), 0);
     $('invStrip').innerHTML = `
         <div class="inv-strip-card"><h4>Items</h4><p>${P.length}</p></div>
         <div class="inv-strip-card ${low ? 'alert' : ''}"><h4>Low stock</h4><p>${low}</p></div>
@@ -56,7 +56,7 @@ function renderInventory() {
             <span class="inv-emoji">${esc(p.emoji || '📦')}</span>
             <div class="inv-info">
                 <div class="inv-name">${esc(p.name)}</div>
-                <div class="inv-detail">${esc(p.category || 'General')} · Sell ${n0(p.sellPrice)}${perUnit(p)}${isAdmin() ? ' · ' + (((S.costDocs[p.id] || {}).hist || []).length > 1 ? tl('Avg cost') : 'Cost') + ' ' + n0(S.costs[p.id] || 0) : ''}${p.trackSerial ? ` · 🔢 ${inStockSerials(p.id).length} serials` : ''}${p.warrantyMonths ? ' · 🛡️ ' + p.warrantyMonths + 'm' : ''}${p.packSize > 1 ? ' · ' + p.packSize + '/pack' : ''}${(() => { const d = daysToExpiry(p); return d === null ? '' : ` · <span style="color:${d <= 0 ? 'var(--red)' : d <= EXPIRY_WARN_DAYS ? '#b45309' : 'inherit'};font-weight:${d <= EXPIRY_WARN_DAYS ? 800 : 400};">⏳ ${d <= EXPIRY_WARN_DAYS ? esc(expiryTxt(d)) : 'Exp ' + esc(p.expiry)}</span>`; })()}</div>
+                <div class="inv-detail">${esc(p.category || 'General')} · Sell ${n0(p.sellPrice)}${perUnit(p)}${isAdmin() ? (lotsLeft(p.id).filter(l => l.left > 0).length > 1 ? ' · ' + lotsLine(p.id) : ' · Cost ' + n0(S.costs[p.id] || 0)) : ''}${p.trackSerial ? ` · 🔢 ${inStockSerials(p.id).length} serials` : ''}${p.warrantyMonths ? ' · 🛡️ ' + p.warrantyMonths + 'm' : ''}${p.packSize > 1 ? ' · ' + p.packSize + '/pack' : ''}${(() => { const d = daysToExpiry(p); return d === null ? '' : ` · <span style="color:${d <= 0 ? 'var(--red)' : d <= EXPIRY_WARN_DAYS ? '#b45309' : 'inherit'};font-weight:${d <= EXPIRY_WARN_DAYS ? 800 : 400};">⏳ ${d <= EXPIRY_WARN_DAYS ? esc(expiryTxt(d)) : 'Exp ' + esc(p.expiry)}</span>`; })()}</div>
             </div>
             <div class="inv-stock">${svc ? `<b style="font-size:1rem;">✂️</b><small>${tl('Service')}</small>` : `<b class="${isOut ? 'out' : isLow ? 'low' : ''}">${q3(st).toLocaleString('en-US')}</b><small>${unitOf(p) === 'pc' ? 'pcs' : unitShort(p)}</small>`}</div>
             <div class="inv-actions">
@@ -144,7 +144,7 @@ function saveItem() {
         unit: $('itemUnit').value, partQty: part, packSize: Math.max(0, Math.round(num($('itemPack').value))) || 0,
         warrantyMonths: Math.max(0, Math.round(num($('itemWarranty').value))) || 0, trackSerial: serial, expiry: $('itemExpiry').value || '',
         service: svc, staffPay: svc ? Math.max(0, Math.round(num($('itemStaffPay').value))) || 0 : 0, updatedAt: now() }, { merge: true });
-    if (!id || cost !== (Number(S.costs[ref.id]) || 0)) costSet(b, ref.id, cost);
+    if (!id || cost !== (Number(S.costs[ref.id]) || 0)) costTyped(b, ref.id, cost);
     if (!id) usageAdd(b, 'products', ref.id);
     if (!before || (Number(before.stock) || 0) !== stock) {
         b.set(col('movements').doc(), {
@@ -198,33 +198,90 @@ function lineCost(i, t) {
     }
     return avg > 0 ? q * avg : null;
 }
-// New stock came in at `cost` each: mix it into the average and remember serial prices
+// ── Batches: a new batch starts whenever stock comes in at a different buying price ──
+// lots: [{ id, at, cost, qty }] oldest first. Same price as the newest batch → added to it.
+// What is on the shelf is the NEWEST stock (oldest is sold first), so each batch's "left" comes from today's stock count.
+// The price used for sales is the oldest batch that still has stock; when it runs out, the next batch's price takes over.
+function lotsLeft(pid, stock) {
+    const lots = (S.costDocs[pid] || {}).lots || [];
+    let rest = Math.max(0, Number(stock != null ? stock : (productById(pid) || {}).stock) || 0);
+    const left = new Array(lots.length).fill(0);
+    for (let k = lots.length - 1; k >= 0 && rest > 0; k--) { left[k] = Math.min(rest, Number(lots[k].qty) || 0); rest -= left[k]; }
+    if (rest > 0 && lots.length) left[0] += rest;      // more on the shelf than recorded batches: count it in the oldest
+    return lots.map((l, k) => ({ ...l, left: q3(left[k]) }));
+}
+function frontCost(pid, stock) {
+    const L = lotsLeft(pid, stock); if (!L.length) return null;
+    const f = L.find(l => l.left > 0) || L[L.length - 1];
+    return Math.round(Number(f.cost) || 0);
+}
+// New stock came in at `cost` each
 function costIn(b, pid, qty, cost, stockBefore, serials = []) {
-    cost = Number(cost) || 0; qty = Number(qty) || 0;
+    cost = Math.round(Number(cost) || 0); qty = Number(qty) || 0;
     if (!(cost > 0) || !(qty > 0)) return;
     const d = S.costDocs[pid] || {}, old = Number(d.costPrice) || 0, sb = Math.max(0, Number(stockBefore) || 0);
-    const avg = old > 0 && sb > 0 ? Math.round((sb * old + qty * cost) / (sb + qty)) : Math.round(cost);
+    const lots = (d.lots || []).map(l => ({ ...l }));
+    if (!lots.length && sb > 0 && old > 0) lots.push({ id: 'B0', at: 0, cost: old, qty: sb });     // what was already on the shelf
+    const last = lots[lots.length - 1];
+    if (last && Math.round(last.cost) === cost) last.qty = q3((Number(last.qty) || 0) + qty);
+    else lots.push({ id: 'B' + (lots.length ? Number(String(last.id).slice(1)) + 1 : 1), at: Date.now(), cost, qty });
+    while (lots.length > 30) lots.shift();
     let units = null;
     if (serials.length) {
         units = {};
-        // units already on the shelf without their own price keep the old average they were bought at
+        // phones already on the shelf without their own price keep the price they were bought at
         if (old > 0) Object.values(S.serialsIn || {}).forEach(x => { if (x.productId === pid && !((d.units || {})[x.id] > 0)) units[x.id] = old; });
-        serials.forEach(sn => units[serialId(sn)] = Math.round(cost));
+        serials.forEach(sn => units[serialId(sn)] = cost);
     }
-    costSet(b, pid, avg, units);
+    S.costDocs[pid] = { ...d, lots };
+    costSet(b, pid, frontCost(pid, sb + qty), units, { lots });
 }
-// Owner sets the price by hand (item form, Excel): applies from now on
-function costSet(b, pid, price, units) {
+// Owner's app: when the oldest batch sells out, the next batch's price takes over (dated by the last sale)
+function checkLotFronts() {
+    clearTimeout(S.lotTimer); S.lotTimer = setTimeout(checkLotFrontsNow, 2000);   // let the stock and price lists both catch up first
+}
+function checkLotFrontsNow() {
+    if (!isAdmin() || !S.products) return;
+    let b = null, n = 0;
+    S.products.forEach(p => {
+        const d = S.costDocs[p.id]; if (!d || !(d.lots || []).length) return;
+        const f = frontCost(p.id, p.stock); if (f == null || f === Math.round(Number(d.costPrice) || 0)) return;
+        b = b || db.batch(); costSet(b, p.id, f, null, null, tms(p.updatedAt) || Date.now()); n++;
+    });
+    if (b && n) b.commit().catch(() => {});
+}
+// Sets the price used for sales from time `t` (default now). Typed by hand (item form, Excel) it also corrects the current batch.
+function costSet(b, pid, price, units, extra, t) {
     const d = S.costDocs[pid] || {}, old = Number(d.costPrice) || 0, hist = (d.hist || []).slice(-199);
     price = Math.round(Number(price) || 0);
     if (!hist.length && old > 0) hist.push({ t: 0, c: old });          // sales before today keep the old price
-    if (price !== old || !hist.length) hist.push({ t: Date.now(), c: price });
-    const doc = { costPrice: price, hist, updatedAt: now() };
+    if (price !== old || !hist.length) hist.push({ t: t || Date.now(), c: price });
+    const doc = { costPrice: price, hist, updatedAt: now(), ...(extra || {}) };
     if (units) doc.units = units;
     b.set(col('costs').doc(pid), doc, { merge: true });
-    S.costDocs[pid] = { ...d, costPrice: price, hist, units: { ...(d.units || {}), ...(units || {}) } }; S.costs[pid] = price;
+    S.costDocs[pid] = { ...d, ...(extra || {}), costPrice: price, hist, units: { ...(d.units || {}), ...(units || {}) } }; S.costs[pid] = price;
 }
-
+// "1 left from 5 Sep at 1,000,000 · 3 left from 22 Oct at 1,200,000"
+function lotsLine(pid, long) {
+    const p = productById(pid) || {}, L = lotsLeft(pid).filter(l => l.left > 0);
+    const when = l => l.at ? new Date(l.at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) : tl('before');
+    if (!L.length) return long && S.costs[pid] ? `${tl('Buying price now')}: ${n0(S.costs[pid])}. ${tl('A different price starts a new batch.')}` : '';
+    const parts = L.map(l => long ? `<b>${qtyTxt(l.left, p)}</b> ${tl('from')} ${when(l)} @ ${n0(l.cost)}` : `${q3(l.left)} @ ${n0(l.cost)}`);
+    return long ? `${tl('On the shelf')}: ${parts.join(' · ')}<br>${tl('Oldest is sold first. A different price starts a new batch.')}` : '📦 ' + parts.join(' · ');
+}
+// Value of what is on the shelf at buying price (each batch at its own price)
+function stockValue(p) {
+    const L = lotsLeft(p.id, p.stock);
+    return L.length ? L.reduce((a, l) => a + l.left * (Number(l.cost) || 0), 0) : (S.costs[p.id] || 0) * Math.max(0, Number(p.stock) || 0);
+}
+function costTyped(b, pid, price) {
+    const d = S.costDocs[pid] || {}, lots = (d.lots || []).map(l => ({ ...l }));
+    if (lots.length) {
+        const L = lotsLeft(pid), k = Math.max(0, L.findIndex(l => l.left > 0));
+        lots[k].cost = Math.round(Number(price) || 0);
+        costSet(b, pid, price, null, { lots });
+    } else costSet(b, pid, price);
+}
 function openRestock(id) {
     const p = productById(id); if (!p) return;
     $('restockId').value = id;
@@ -232,9 +289,9 @@ function openRestock(id) {
     $('restockQty').value = '';
     const un = unitOf(p) === 'pc' ? 'pieces' : unitName(p) + 's';
     $('restockIn').innerHTML = `<option value="1">${un}</option>` + (p.packSize > 1 ? `<option value="${p.packSize}">packs of ${p.packSize}</option>` : '');
-    $('lblRestockCost').textContent = `Cost per ${unitOf(p) === 'pc' ? 'piece' : unitName(p)} (TZS)`;
+    $('lblRestockCost').textContent = `${tl('What you paid per')} ${tl(unitOf(p) === 'pc' ? 'piece' : unitName(p))} ${tl('this time')} (TZS)`;
     $('restockCost').value = S.costs[id] || '';
-    if ($('restockCostNow')) $('restockCostNow').textContent = S.costs[id] ? `${tl('Average buying price now')}: ${n0(S.costs[id])} · ${tl('type what you paid this time — Keep mixes it in')}` : '';
+    if ($('restockCostNow')) $('restockCostNow').innerHTML = isAdmin() ? lotsLine(id, true) : '';
     $('restockPaid').value = '';
     $('restockExpiry').value = '';
     const ser = !!p.trackSerial;
