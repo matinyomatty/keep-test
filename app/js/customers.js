@@ -109,7 +109,7 @@ async function receivePayment(id) {
         const text = KEEP_RAW + (isSw()
             ? `${S.tenantInfo.name || ''}: Asante ${fn}! Tumepokea ${fmt(amt)} (${receiptNo}).\n${left ? `Deni lililobaki: ${fmt(left)}` : 'Deni lako limelipwa lote ✅'}`
             : `${S.tenantInfo.name || ''}: Asante ${fn}! We received ${fmt(amt)} (${receiptNo}).\n${left ? `Balance remaining: ${fmt(left)}` : 'Your account is fully paid ✅'}`);
-        openWa(c.phone, text);
+        waAuto(c.phone, 'payment', [fn, S.tenantInfo.name || '', fmt(amt), receiptNo, left ? fmt(left) : '0'], text);
     }
 }
 function remindCustomer(id) {
@@ -118,7 +118,7 @@ function remindCustomer(id) {
     const text = KEEP_RAW + (isSw()
         ? `Habari ${fn}, ni ${S.tenantInfo.name || 'duka'}. Tunakukumbusha kwa upendo kuwa deni lako ni ${fmt(c.balance)}. Asante!${ph ? `\nTupigie: ${prettyPhone(ph)}` : ''}`
         : `Habari ${fn}, this is ${S.tenantInfo.name || 'the shop'}. A friendly reminder that your balance is ${fmt(c.balance)}. Asante!${ph ? `\nCall us: ${prettyPhone(ph)}` : ''}`);
-    openWa(c.phone, text);
+    waAuto(c.phone, 'reminder', [fn, S.tenantInfo.name || '', fmt(c.balance), ph ? prettyPhone(ph) : '-'], text);
 }
 
 // ════════════════════════════════════════════════
@@ -362,6 +362,19 @@ async function receiptMenu(s, afterSale) {
     if (!s) return;
     const head = afterSale ? `✅ <b>${tl(isBarberMode() ? 'Client recorded' : 'Sale recorded')}</b> · ${fmt(s.total)}<br><span style="font-weight:500;">${tl('Send the customer a receipt on WhatsApp?')}</span><br>`
         : `🧾 ${tl(s.kind === 'return' ? 'Return receipt' : 'Receipt')} `;
+    // Automatic receipts (plan + owner's choice): one tap, sent from Keep's WhatsApp number
+    if (waCloud('receipt')) {
+        const pdfOn = waPdfReceipts();
+        const go = await choose(`${head}<b class="notr">${esc(s.receiptNo || '')}</b>${afterSale ? '' : ' · ' + fmt(s.total)}${s.customer ? '<br><span class="notr">' + esc(s.customer.name) + '</span>' : ''}`,
+            [['auto', '📲 ' + tl(pdfOn ? 'Send receipt (PDF) on WhatsApp' : 'Send receipt on WhatsApp'), 'var(--pos)']], afterSale ? tl('No receipt') : undefined);
+        if (go !== 'auto') return;
+        const to = await askReceiptNumber(s); if (!to) return;
+        const vars = receiptVars(s);
+        if (!pdfOn) return waAuto(to, 'receipt', vars, receiptText(s));
+        const doc = window.jspdf ? receiptPdf(s, { returnDoc: true }) : null;
+        if (doc && await waAuto(to, 'receipt', vars, null, { pdf: doc.output('datauristring').split(',')[1], fileName: `${s.receiptNo || 'receipt'}.pdf` })) return;
+        return doc ? sendReceiptPdf(s, to) : openWa(to, receiptText(s));
+    }
     let how = await choose(`${head}<b class="notr">${esc(s.receiptNo || '')}</b>${afterSale ? '' : ' · ' + fmt(s.total)}${s.customer ? '<br><span class="notr">' + esc(s.customer.name) + '</span>' : ''}`,
         [['text', '💬 ' + tl('WhatsApp · text'), 'var(--pos)'], ['pdf', '📄 ' + tl('WhatsApp · PDF'), 'var(--blue)']], afterSale ? tl('No receipt') : undefined);
     if (how !== 'text' && how !== 'pdf') return;
@@ -370,6 +383,11 @@ async function receiptMenu(s, afterSale) {
     if (!to) return;
     if (how === 'text') return openWa(to, receiptText(s));
     sendReceiptPdf(s, to);
+}
+// Values for the WhatsApp receipt template: customer, shop, receipt no., total, items
+function receiptVars(s) {
+    const items = (s.items || []).map(i => `${i.name}${Number(i.qty) !== 1 ? ' ×' + q3(i.qty) : ''}`).join(', ');
+    return [(s.customer && s.customer.name ? s.customer.name.split(' ')[0] : tl('customer')), S.tenantInfo.name || S.tenant, s.receiptNo || '-', fmt(s.kind === 'return' ? -Math.abs(s.total || 0) : s.total || 0), items.slice(0, 300) || '-'];
 }
 async function askReceiptNumber(s) {
     let v = (s.customer && s.customer.phone) || '';

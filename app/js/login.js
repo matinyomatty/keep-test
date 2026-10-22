@@ -32,6 +32,41 @@ function msgTl(text) {
         return line.split(/( · | \| )/).map((p, i) => i % 2 ? p : seg(p)).join('');
     }).join('\n');
 }
+// ── Sending straight from Keep's WhatsApp number (Twilio, through the Keep server) ──
+// Only when the server is set up AND the shop's plan includes it (Keep HQ → plan → WhatsApp). Otherwise Keep opens WhatsApp.
+// receipts also need the owner's choice (Settings → WhatsApp: Off / Text / PDF).
+function waCloud(kind = 'receipt') {
+    if (!(window.KEEP_ENV && KEEP_ENV.waWorker && S.tenantInfo && navigator.onLine && auth.currentUser)) return false;
+    const sv = typeof shopServices === 'function' ? shopServices() : {}, st = S.tenantInfo.settings || {};
+    if (kind === 'receipt') return sv.receipts !== 'manual' && (st.waReceipts || 'text') !== 'off';
+    if (kind === 'reminder' || kind === 'payment') return !!sv.debtReminders;
+    if (kind === 'cashup') return !!sv.alerts;
+    return false;
+}
+const waPdfReceipts = () => shopServices().receipts === 'both' && (S.tenantInfo.settings || {}).waReceipts === 'pdf';
+const WA_ERR = { not_in_plan: 'Not included in this shop\'s plan', pdf_not_in_plan: 'PDF receipts are not in this shop\'s plan', quota: 'This month\'s receipt allowance is used up', daily_limit: 'Today\'s WhatsApp limit is reached', bad_number: 'That number does not look right', not_in_shop: 'Your login cannot send for this shop', not_signed_in: 'Please sign in again', shop_not_active: 'This shop is not active', pdf_too_big: 'The PDF is too big', twilio: 'WhatsApp did not accept the message' };
+async function waSend(to, kind, vars, opts = {}) {
+    try {
+        const token = await auth.currentUser.getIdToken();
+        const r = await fetch(KEEP_ENV.waWorker.replace(/\/$/, '') + '/send', {
+            method: 'POST', headers: { authorization: 'Bearer ' + token, 'content-type': 'application/json' },
+            body: JSON.stringify({ project: KEEP_ENV.firebaseConfig.projectId, tenant: S.tenant, to: normPhone(to), kind, lang: isSw() ? 'sw' : 'en', vars, text: opts.text ? msgTl(opts.text) : '', pdf: opts.pdf || null, fileName: opts.fileName || null })
+        });
+        return await r.json().catch(() => ({ ok: false, error: 'server' }));
+    } catch (e) { return { ok: false, error: 'offline' }; }
+}
+// Try to send automatically; on any problem fall back to opening WhatsApp with the text. Returns true if sent.
+async function waAuto(to, kind, vars, fallbackText, opts = {}) {
+    if (waCloud(kind) && /^\d{10,15}$/.test(normPhone(to))) {
+        loader(true, tl('SENDING…'));
+        const r = await waSend(to, kind, vars, { text: fallbackText, ...opts });
+        loader(false);
+        if (r.ok) { toast(`✅ ${tl('Sent on WhatsApp to')} ${'0' + normPhone(to).slice(3)}`); return true; }
+        toast(`⚠️ ${tl(WA_ERR[r.error] || 'Could not send automatically')}. ${tl('Opening WhatsApp instead.')}`, 'err');
+    }
+    if (fallbackText != null) openWa(to, fallbackText);
+    return false;
+}
 // WhatsApp links need the number in international form (2557XXXXXXXX), never 07XX…
 // With no number, WhatsApp opens and lets you pick who to send it to.
 function openWa(number, text) {

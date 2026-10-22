@@ -707,3 +707,13 @@ KeepLang.add({
   'AMOUNT': 'KIASI', 'ITEM': 'BIDHAA', 'PAID BY': 'IMELIPWA KWA', 'QTY': 'IDADI', 'RECEIPT': 'RISITI', 'RETURN RECEIPT': 'RISITI YA MAREJESHO', 'RETURN': 'MAREJESHO',
   'Taken off your balance': 'Imetolewa kwenye deni lako', 'VOID': 'IMEFUTWA', 'WARRANTY': 'DHAMANA', 'Bring this receipt for any warranty claim.': 'Leta risiti hii kudai dhamana.',
 });
+
+// WhatsApp sending from Keep's number
+KeepLang.add({
+  'SENDING…': 'INATUMA…', 'Sent on WhatsApp to': 'Imetumwa kwa WhatsApp kwa', 'Opening WhatsApp instead.': 'Inafungua WhatsApp badala yake.', 'Could not send automatically': 'Imeshindikana kutuma moja kwa moja',
+  'Send receipt on WhatsApp': 'Tuma risiti kwa WhatsApp', 'Send receipt (PDF) on WhatsApp': 'Tuma risiti (PDF) kwa WhatsApp', 'customer': 'mteja',
+  "Not included in this shop's plan": 'Haimo kwenye mpango wa duka hili', "PDF receipts are not in this shop's plan": 'Risiti za PDF hazimo kwenye mpango wa duka hili',
+  "This month's receipt allowance is used up": 'Risiti za mwezi huu zimeisha', "Today's WhatsApp limit is reached": 'Kikomo cha WhatsApp cha leo kimefikiwa', 'That number does not look right': 'Namba hiyo si sahihi',
+  'Your login cannot send for this shop': 'Akaunti yako haiwezi kutuma kwa duka hili', 'Please sign in again': 'Tafadhali ingia tena', 'This shop is not active': 'Duka hili halijawashwa',
+  'The PDF is too big': 'PDF ni kubwa mno', 'WhatsApp did not accept the message': 'WhatsApp haikukubali ujumbe', 'Day closed': 'Siku imefungwa', 'Cash-up': 'Hesabu ya droo',
+});

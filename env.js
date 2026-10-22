@@ -21,7 +21,9 @@
     messagingSenderId: '260455775669',
     appId: '1:260455775669:web:a6b9db9e95bb3cbc896dfc'
   };
-  window.KEEP_ENV = { test, firebaseConfig: test ? TEST : LIVE, site: location.origin + '/' };
+  // WhatsApp sending server (Cloudflare Worker holding the Twilio key). Empty = not set up: Keep opens WhatsApp instead.
+  const WA_WORKER = '';
+  window.KEEP_ENV = { test, firebaseConfig: test ? TEST : LIVE, site: location.origin + '/', waWorker: WA_WORKER };
 
   // A yellow strip on every page of the test copy, so nobody mistakes it for the real shop.
   if (test) {

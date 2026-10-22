@@ -241,6 +241,13 @@
                     <div style="font-size:.7rem;color:var(--gray);margin-bottom:8px;">When a shop runs out of receipts, sales never stop: the till falls back to the free manual WhatsApp button.</div>
                     <button class="btn blue" style="width:100%;" onclick="saveAddons()">💾 Save add-ons</button>
                 </div>
+                <span class="section-label">WhatsApp sending (Twilio)</span>
+                <div class="card">
+                    <div id="waHqState" style="font-size:.78rem;margin-bottom:8px;"></div>
+                    <div style="font-size:.7rem;color:var(--gray);margin-bottom:8px;">Receipts, debt reminders and cash-up alerts go from Keep's WhatsApp number for shops whose plan includes them. WhatsApp must approve the message templates first (usually minutes to a day).</div>
+                    <div class="fr"><button class="btn blue" style="flex:1;" onclick="waTemplates('POST')">📝 Create templates</button><button class="btn" style="flex:1;" onclick="waTemplates('GET')">🔄 Check approval</button></div>
+                    <div id="waTplList" style="margin-top:8px;font-size:.74rem;"></div>
+                </div>
                 <span class="section-label">Billing</span>
                 <div class="card">
                     <div class="fr">
@@ -417,6 +424,21 @@ function toast(msg, type) {
     clearTimeout(t._h); t._h = setTimeout(() => t.classList.remove('show'), type === 'err' ? 4500 : 2600);
 }
 function loader(on, text) { $('loading').style.display = on ? 'flex' : 'none'; $('loadingText').textContent = text || 'LOADING...'; }
+// ── WhatsApp templates on the Keep server ──
+function renderWaHq() {
+    const el = document.getElementById('waHqState'); if (!el) return;
+    el.innerHTML = window.KEEP_ENV.waWorker ? `✅ Server: <b>${esc(window.KEEP_ENV.waWorker)}</b>` : '⚠️ Server not set up yet (env.js → WA_WORKER).';
+}
+async function waTemplates(method) {
+    const w = window.KEEP_ENV.waWorker; if (!w) return toast('Server not set up yet', 'err');
+    const box = document.getElementById('waTplList'); box.textContent = 'Working…';
+    try {
+        const r = await fetch(w.replace(/\/$/, '') + '/admin/templates', { method, headers: { authorization: 'Bearer ' + await auth.currentUser.getIdToken() } }).then(x => x.json());
+        if (!r.ok) { box.textContent = '⚠️ ' + (r.error || 'Failed'); return; }
+        const rows = Object.entries(r.made || r.templates || {}).map(([k, v]) => `<div class="line"><span>${esc(k)}</span><b>${esc(typeof v === 'string' ? v : v.status + (v.reason ? ' · ' + v.reason : ''))}</b></div>`);
+        box.innerHTML = rows.join('') || 'No templates yet.';
+    } catch (e) { box.textContent = '⚠️ ' + e.message; }
+}
 const plans = () => (V.config.plans && V.config.plans.length ? V.config.plans : DEFAULT_CONFIG.plans);
 const planById = id => plans().find(p => p.id === id) || plans().find(p => p.name === id) || null;
 const SVC_DEFAULT = { dailyReport: 'off', receipts: 'manual', receiptQuota: 0, debtReminders: false, alerts: false };
@@ -1124,7 +1146,7 @@ function fillSettings() {
     $('cfTrial').value = c.trialDays; $('cfGrace').value = c.graceDays; $('cfPayHow').value = c.payHow || '';
     $('cfPhone').value = c.supportPhone || ''; $('cfTill').value = c.tillUrl || ''; $('cfBiz').value = c.bizLine || '';
     const ad = { ...DEFAULT_CONFIG.addons, ...(c.addons || {}) };
-    $('adStaff').value = ad.extraStaffPrice; $('adTopN').value = ad.topupReceipts; $('adTopP').value = ad.topupPrice;
+    renderWaHq(); $('adStaff').value = ad.extraStaffPrice; $('adTopN').value = ad.topupReceipts; $('adTopP').value = ad.topupPrice;
 }
 async function saveAddons() {
     const addons = { extraStaffPrice: Number($('adStaff').value) || 0, topupReceipts: Number($('adTopN').value) || 0, topupPrice: Number($('adTopP').value) || 0 };
