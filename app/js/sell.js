@@ -41,16 +41,16 @@ function renderMonthBanner() {
         const closed = S.months[pm] && S.months[pm].closed;
         prev = closed
             ? `<div onclick="openMonth('${pm}')" style="cursor:pointer;margin-top:8px;background:rgba(74,222,128,0.12);border:1px solid rgba(74,222,128,0.35);border-radius:12px;padding:9px 12px;font-size:0.74rem;color:#bbf7d0;">
-                ✅ <strong>${monthName(pm)} closed</strong> · Profit ${n0(pf.profit)} · Saved ${n0(S.months[pm].saved)} TZS</div>`
+                ✅ <strong>${monthName(pm)} closed</strong> · Profit ${pf.pending ? '…' : n0(pf.profit)} · Saved ${n0(S.months[pm].saved)} TZS</div>`
             : `<div onclick="openMonth('${pm}')" style="cursor:pointer;margin-top:8px;background:rgba(245,158,11,0.15);border:1px solid rgba(245,158,11,0.5);border-radius:12px;padding:9px 12px;font-size:0.74rem;color:#fde68a;display:flex;justify-content:space-between;align-items:center;gap:8px;">
-                <span>⚠️ <strong>${monthName(pm)} not closed</strong> · Profit ${n0(pf.profit)} TZS</span>
+                <span>⚠️ <strong>${monthName(pm)} not closed</strong> · Profit ${pf.pending ? '…' : n0(pf.profit) + ' TZS'}</span>
                 <span style="background:var(--amber);color:var(--ink);font-weight:800;border-radius:8px;padding:4px 9px;white-space:nowrap;">CLOSE ›</span></div>`;
     }
     $('monthBanner').innerHTML = `
         <div style="background:rgba(255,199,44,0.08);border:1px solid rgba(255,199,44,0.35);border-radius:14px;padding:10px 12px;">
             <div style="display:flex;justify-content:space-between;align-items:center;">
                 <div>
-                    <div style="font-family:'DM Sans',system-ui,sans-serif;font-weight:800;font-size:0.95rem;color:var(--yellow);letter-spacing:1px;">${monthName(m).toUpperCase()}</div>
+                    <div style="font-family:'DM Sans',system-ui,sans-serif;font-weight:800;font-size:0.95rem;color:var(--yellow);letter-spacing:1px;text-transform:uppercase;">${monthName(m)}</div>
                     <div style="font-size:0.6rem;color:rgba(255,255,255,0.5);margin-top:1px;">Day ${now.getDate()} of ${dim}</div>
                 </div>
                 <div style="text-align:right;">

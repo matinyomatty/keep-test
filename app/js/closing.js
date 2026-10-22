@@ -281,8 +281,7 @@ async function confirmCloseDay() {
     const val = id => $(id).value.trim() === '' ? null : num($(id).value);
     const counted = { cash: val('cdCash'), mobile: val('cdMobile'), bank: val('cdBank') };
     const x = dayFig(d), bal = S.balances;
-    if (!barberMonthData(d.slice(0, 7))) { try { await loadBarberMonth(d.slice(0, 7), true); } catch (e) {} }
-    const fp = dayProfit(d, x) || fullProfit(x, d === dayStr() ? (S.todaySales || []) : [], []);
+    const fp = (await dayProfitFull(d, x)) || fullProfit(x, d === dayStr() ? (S.todaySales || []) : [], []);
     const dcut = { cost: fp.barbers, paidOut: fp.barberPaid }, profit = fp.profit;
     const outItems = S.products.filter(p => !isService(p) && (Number(p.stock) || 0) <= 0);
     const lowItems = S.products.filter(p => !isService(p) && p.stock > 0 && p.stock <= (Number(p.reorderLevel) || 5));
@@ -384,10 +383,10 @@ function renderMonthHistory() {
     const cur = dayStr().slice(0, 7);
     $('mcHistory').innerHTML = '<span class="section-label">Profit by month</span>' + (rows.length ? rows.map(([m, f]) => {
         const pct = f.sales ? Math.round(f.profit / f.sales * 100) : 0;
-        const tag = m === cur ? '<span class="tag tag-prog">IN PROGRESS</span>' : (S.months[m] && S.months[m].closed) ? '<span class="tag tag-closed">✅ CLOSED</span>' : '<span class="tag tag-open">NOT CLOSED</span>';
+        const tag = m === cur ? `<span class="tag tag-prog">${tl('In progress')}</span>` : (S.months[m] && S.months[m].closed) ? `<span class="tag tag-closed">✅ ${tl('Closed')}</span>` : `<span class="tag tag-open">${tl('Not closed')}</span>`;
         return `<div class="entry-item" style="padding:10px 14px;" onclick="$('mcPick').value='${m}';renderMonthClose();">
-            <div><div class="entry-date">${monthName(m)}${tag}</div><div class="entry-meta">Sales ${n0(f.sales)} · Spent ${n0(f.supplier + f.expense)}</div></div>
-            <div style="text-align:right;font-weight:800;color:${f.profit >= 0 ? 'var(--green)' : 'var(--red)'};">${signed(f.profit)}<div style="font-size:0.62rem;color:var(--gray);font-weight:600;">${pct}% margin</div></div>
+            <div><div class="entry-date">${monthName(m)}${tag}</div><div class="entry-meta">${tl(isBarberMode() ? 'Money in' : 'Sales')} ${n0(f.sales)} · ${tl('Expenses')} ${n0(isBarberMode() ? f.supplier + f.expense : f.expense)}</div></div>
+            <div style="text-align:right;font-weight:800;color:${f.profit >= 0 ? 'var(--green)' : 'var(--red)'};">${f.pending ? '…' : signed(f.profit)}<div style="font-size:0.62rem;color:var(--gray);font-weight:600;">${f.pending ? '' : pct + '% margin'}</div></div>
         </div>`;
     }).join('') : '<div class="empty-state">No data yet.</div>');
 }
@@ -402,7 +401,7 @@ async function renderMonthClose() {
             ${row(isBarberMode() ? '💈 ' + tl('Money in') : '🛒 Sales', fmt(f.sales), 'var(--green)')}
             ${row('📦 ' + costWord(), f.pending ? '…' : '-' + fmt(costOf(f)), 'var(--red)')}
             ${f.barbers ? row('💈 ' + tl('Barbers earned'), '-' + fmt(f.barbers), 'var(--red)') : ''}
-            ${row(f.otherExpense != null ? '💸 ' + tl('Other expenses') : '💸 Expenses', '-' + fmt(f.otherExpense != null ? f.otherExpense : f.expense), 'var(--red)')}
+            ${row(f.barbers || f.barberPaid ? '💸 ' + tl('Other expenses') : '💸 ' + tl('Expenses'), '-' + fmt(f.otherExpense != null ? f.otherExpense : f.expense), 'var(--red)')}
             ${row('📈 Profit', f.pending ? '…' : fmt(f.profit), f.profit >= 0 ? 'var(--green)' : 'var(--red)')}
             ${f.supplier && !isBarberMode() ? row('📥 ' + tl('Stock bought (not in profit)'), fmt(f.supplier), 'var(--gray)') : ''}
             ${row('🏦 Banked (net)', fmt(f.bankIn - f.bankOut), 'var(--blue)')}
@@ -445,6 +444,7 @@ async function closeMonth() {
     if (extra) lines.push(`${ACCT[from]} → Savings: ${fmt(extra)}`);
     const msg = total ? `${already ? 'Move to savings' : 'Close ' + monthName(m)}?<br><br>${lines.join('<br>')}<br><b>Total: ${fmt(total)}</b>` : `Close ${monthName(m)} without saving anything?`;
     if (!await showConfirm(msg, already ? 'Move' : 'Close month', 'var(--blue)')) return;
+    const figs = already ? null : await monthFigFull(m);
     const day = dayStr(), note = `Month close – ${monthName(m)}`, entries = [];
     if (bankAmt) entries.push({ type: 'savings', category: 'Savings', from: 'bank', to: 'savings', amount: bankAmt, note, day });
     if (extra) entries.push({ type: 'savings', category: 'Savings', from, to: 'savings', amount: extra, note, day });
@@ -452,7 +452,7 @@ async function closeMonth() {
     if (entries.length) writeEntries(b, entries);
     b.set(col('months').doc(m), already
         ? { saved: inc(total), updatedAt: now() }
-        : { month: m, closed: true, saved: total, closedBy: S.me.name, closedAt: now(), figures: monthFig(m) }, { merge: true });
+        : { month: m, closed: true, saved: total, closedBy: S.me.name, closedAt: now(), figures: figs }, { merge: true });
     commit(b, total ? `💰 ${fmt(total)} moved to savings` : `🔒 ${monthName(m)} closed — tap Send month summary to share`);
     setTimeout(() => { renderMonthHistory(); renderMonthClose(); }, 400);
 }
@@ -511,7 +511,7 @@ async function previewReport() {
             ${f.debtPaid ? `<div class="sum-row"><span>💰 Debts collected</span><span>${n0(f.debtPaid)}</span></div>` : ''}
             <div class="sum-row"><span>📦 ${costWord()}</span><strong style="color:var(--red);">${fmt(costOf(f))}</strong></div>
             ${f.barbers ? `<div class="sum-row"><span>💈 ${tl('Barbers earned')}</span><strong style="color:var(--red);">${fmt(f.barbers)}</strong></div>` : ''}
-            <div class="sum-row"><span>💸 ${f.otherExpense != null ? tl('Other expenses') : 'Expenses'}</span><strong style="color:var(--red);">${fmt(f.otherExpense != null ? f.otherExpense : f.expense)}</strong></div>
+            <div class="sum-row"><span>💸 ${f.barbers || f.barberPaid ? tl('Other expenses') : tl('Expenses')}</span><strong style="color:var(--red);">${fmt(f.otherExpense != null ? f.otherExpense : f.expense)}</strong></div>
             <div class="sum-row"><span>🏦 Banked (net)</span><strong style="color:var(--blue);">${fmt(f.bankIn - f.bankOut)}</strong></div>
             <div class="sum-row big"><span>📈 Profit</span><strong style="color:${f.profit >= 0 ? 'var(--green)' : 'var(--red)'};">${fmt(f.profit)} (${margin}%)</strong></div>
             ${f.supplier && !isBarberMode() ? `<div class="sum-row"><span style="color:var(--gray);">📥 ${tl('Stock bought (not in profit)')}</span><span>${n0(f.supplier)}</span></div>` : ''}

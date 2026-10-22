@@ -357,9 +357,10 @@ async function receiptMenu(s, afterSale) {
     if (!s) return;
     const head = afterSale ? `✅ <b>${tl(isBarberMode() ? 'Client recorded' : 'Sale recorded')}</b> · ${fmt(s.total)}<br><span style="font-weight:500;">${tl('Send the customer a receipt on WhatsApp?')}</span><br>`
         : `🧾 ${tl(s.kind === 'return' ? 'Return receipt' : 'Receipt')} `;
-    const how = await choose(`${head}<b class="notr">${esc(s.receiptNo || '')}</b>${afterSale ? '' : ' · ' + fmt(s.total)}${s.customer ? '<br><span class="notr">' + esc(s.customer.name) + '</span>' : ''}`,
+    let how = await choose(`${head}<b class="notr">${esc(s.receiptNo || '')}</b>${afterSale ? '' : ' · ' + fmt(s.total)}${s.customer ? '<br><span class="notr">' + esc(s.customer.name) + '</span>' : ''}`,
         [['text', '💬 ' + tl('WhatsApp · text'), 'var(--pos)'], ['pdf', '📄 ' + tl('WhatsApp · PDF'), 'var(--blue)']], afterSale ? tl('No receipt') : undefined);
     if (how !== 'text' && how !== 'pdf') return;
+    if (how === 'pdf' && !window.jspdf) { toast(tl('PDF is not available right now (check the internet). Sending as text.'), 'err'); how = 'text'; }
     const to = await askReceiptNumber(s);
     if (!to) return;
     if (how === 'text') return openWa(to, receiptText(s));

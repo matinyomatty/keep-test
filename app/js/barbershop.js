@@ -218,43 +218,113 @@ function fullProfit(x, sales, entries) {
 // Kept for older callers
 const barberProfit = (x, cut) => x.sales - (x.cogs || 0) - (x.expense - cut.paidOut) - cut.cost;
 
-// The month's sales and money entries, loaded once (owner, online) and kept fresh with today's live sales
+// ── Barbershop: the month's clients and payments, loaded once a day (owner, online) and kept fresh with today's live sales ──
 S.bm = {};
 async function loadBarberMonth(m, force) {
     if (!isAdmin() || !navigator.onLine) return;
-    const c = S.bm[m];
+    const c = S.bm[m], today = dayStr();
     if (c && c.loading) return c.loading;
-    if (c && !force && Date.now() - c.at < 5 * 60e3) return;
+    if (c && !force && c.sales && c.day === today) return;          // already have it today
+    if (c && !force && !c.sales && Date.now() - c.at < 60e3) return; // failed a moment ago
     let done; const wait = new Promise(r => done = r);
     S.bm[m] = { ...(c || {}), loading: wait, at: Date.now() };
     try {
         const [s, e] = await Promise.all([col('sales').where('month', '==', m).get(), col('entries').where('month', '==', m).get()]);
-        S.bm[m] = { sales: s.docs.map(d => ({ id: d.id, ...d.data() })), entries: e.docs.map(d => ({ id: d.id, ...d.data() })), at: Date.now() };
-    } catch (err) { S.bm[m] = { ...(c || {}), at: Date.now() }; }
-    done(); renderDashboard();
+        S.bm[m] = { sales: s.docs.map(d => ({ id: d.id, ...d.data() })), entries: e.docs.map(d => ({ id: d.id, ...d.data() })), at: Date.now(), day: today };
+    } catch (err) { S.bm[m] = { ...(c || {}), loading: null, at: Date.now() }; }
+    done(); afterMonthLoad();
 }
-// Month figures with real profit; waits for the month's sales when online
-async function monthFigFull(m) {
-    if (!barberMonthData(m)) { try { await loadBarberMonth(m, true); } catch (e) {} }
-    return monthFig(m);
-}
-const loadMonthRecords = loadBarberMonth;
 function barberMonthData(m) {
     const c = S.bm[m]; if (!c || !c.sales) return null;
     const today = dayStr();
     const sales = m === today.slice(0, 7) ? c.sales.filter(s => s.day !== today).concat(S.todaySales || []) : c.sales;
     return { sales, entries: c.entries || [] };
 }
-// Called by monthFig: works out the month's real profit once its sales are loaded
+function afterMonthLoad() {
+    renderDashboard();
+    if ($('sheetMonth') && $('sheetMonth').classList.contains('active')) renderMonthHistory();
+}
+
+// ── Shop: cost of goods per day, worked out once and remembered ──
+// Each finished day's cost of goods is saved on the month record (months/{m}.pd), so opening Keep
+// does not read every sale again. A day is worked out again if its sales total changes (e.g. a void).
+// Today is always worked out live from today's sales.
+S.dayCalc = {}; S.dayLoading = {};
+function shopDayCalc(d) {
+    const today = dayStr();
+    if (d === today) { const g = cogsOf(S.todaySales || []); return { c: g.cogs, m: g.missing }; }
+    const sv = Math.round(dayFig(d).sales || 0), ok = c => c && Math.round(c.s) === sv;
+    const mem = S.dayCalc[d]; if (ok(mem)) return mem;
+    const st = ((S.months[d.slice(0, 7)] || {}).pd || {})[d]; if (ok(st)) return st;
+    return null;
+}
+function monthDays(m) { return Object.keys(S.days).filter(d => d.slice(0, 7) === m && d <= dayStr()); }
+// Reads the sales of the days not worked out yet (one day at a time, or the whole month when many are missing)
+function ensureShopDays(days) {
+    days = days.filter(d => d < dayStr() && !shopDayCalc(d));
+    if (!days.length || !isAdmin() || !navigator.onLine) return Promise.resolve();
+    const key = days.join(','); if (S.dayLoading[key]) return S.dayLoading[key];
+    const byMonth = {}; days.forEach(d => (byMonth[d.slice(0, 7)] = byMonth[d.slice(0, 7)] || []).push(d));
+    const job = (async () => {
+        try {
+            for (const [m, ds] of Object.entries(byMonth)) {
+                const snaps = ds.length > 3 ? [await col('sales').where('month', '==', m).get()] : await Promise.all(ds.map(d => col('sales').where('day', '==', d).get()));
+                const all = snaps.flatMap(sn => sn.docs.map(x => ({ id: x.id, ...x.data() })));
+                const save = {};
+                ds.forEach(d => {
+                    const g = cogsOf(all.filter(x => x.day === d));
+                    const calc = { s: Math.round(dayFig(d).sales || 0), c: g.cogs, m: g.missing.slice(0, 10) };
+                    S.dayCalc[d] = calc; save[d] = calc;
+                });
+                col('months').doc(m).set({ month: m, pd: save }, { merge: true }).catch(() => {});
+            }
+        } catch (e) { /* offline or no permission: try again later */ }
+        delete S.dayLoading[key];
+        afterMonthLoad();
+    })();
+    return (S.dayLoading[key] = job);
+}
+function shopMonthAdjust(m, f) {
+    const days = monthDays(m), calcs = days.map(shopDayCalc);
+    const need = days.filter((d, i) => !calcs[i]);
+    if (need.length) { ensureShopDays(need); f.pending = true; return; }
+    const missing = [...new Set(calcs.flatMap(c => c.m || []))];
+    const cogs = calcs.reduce((a, c) => a + (Number(c.c) || 0), 0);
+    Object.assign(f, { cogs, missing, barbers: 0, barberPaid: 0, otherExpense: f.expense, profit: f.sales - cogs - f.expense });
+}
+
+// Called by monthFig: works out the month's real profit
 function barberMonthAdjust(m, f) {
+    if (!isBarberMode()) return shopMonthAdjust(m, f);
     const d = barberMonthData(m);
     if (!d) { loadBarberMonth(m); f.barbersPending = true; f.pending = true; return; }
     Object.assign(f, fullProfit(f, d.sales, d.entries));
 }
+// Month figures with real profit; waits for what is missing when online
+async function monthFigFull(m) {
+    try {
+        if (isBarberMode()) { if (!barberMonthData(m)) await loadBarberMonth(m, true); }
+        else await ensureShopDays(monthDays(m));
+    } catch (e) {}
+    return monthFig(m);
+}
+// One day's profit (null while it is still being worked out)
 function dayProfit(day, x) {
+    x = x || dayFig(day);
+    if (!isBarberMode()) {
+        const c = shopDayCalc(day); if (!c) { ensureShopDays([day]); return null; }
+        return { cogs: c.c || 0, missing: c.m || [], barbers: 0, barberPaid: 0, otherExpense: x.expense, profit: x.sales - (c.c || 0) - x.expense };
+    }
     const d = barberMonthData(day.slice(0, 7));
     if (!d) { loadBarberMonth(day.slice(0, 7)); return null; }
-    return fullProfit(x || dayFig(day), d.sales.filter(s => s.day === day), d.entries.filter(e => e.day === day));
+    return fullProfit(x, d.sales.filter(s => s.day === day), d.entries.filter(e => e.day === day));
+}
+async function dayProfitFull(day, x) {
+    try {
+        if (isBarberMode()) { if (!barberMonthData(day.slice(0, 7))) await loadBarberMonth(day.slice(0, 7), true); }
+        else await ensureShopDays([day]);
+    } catch (e) {}
+    return dayProfit(day, x);
 }
 function barberDayCut(day) {
     const d = barberMonthData(day.slice(0, 7));

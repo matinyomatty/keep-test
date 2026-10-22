@@ -422,8 +422,8 @@ function monthFig(m) {
 }
 function trendBadge(curr, prev, label) {
     if (!prev) return '';
-    const diff = (curr - prev) / Math.abs(prev) * 100;
-    return `<span class="trend-badge ${diff >= 0 ? 'trend-up' : 'trend-down'}">${diff >= 0 ? '↑' : '↓'} ${Math.abs(diff).toFixed(0)}% ${label}</span>`;
+    const diff = (curr - prev) / Math.abs(prev) * 100, pct = Math.abs(diff) > 999 ? '999+' : Math.abs(diff).toFixed(0);
+    return `<span class="trend-badge ${diff >= 0 ? 'trend-up' : 'trend-down'}">${diff >= 0 ? '↑' : '↓'} ${pct}% ${label}</span>`;
 }
 
 // ════════════════════════════════════════════════
