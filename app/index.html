@@ -353,16 +353,22 @@
         <label class="check goods-only barber-hide" style="padding-top:0;"><input type="checkbox" id="itemPart"><span>Can sell part units (e.g. 2.5 m, 0.5 kg)</span></label>
         <div class="form-row">
             <div class="field-group"><span class="field-label" id="lblSell">Sell price / piece (TZS)</span><input type="number" id="itemSell" inputmode="decimal" placeholder="0" oninput="shopKeeps()"></div>
-            <div class="field-group svc-hide"><span class="field-label" id="lblCost">Cost / piece (TZS)</span><input type="number" id="itemCost" inputmode="decimal" placeholder="0"></div>
+            <div class="field-group svc-hide"><span class="field-label" id="lblCost">Cost / piece (TZS)</span><input type="number" id="itemCost" inputmode="decimal" placeholder="0" oninput="itemSerialCount()"></div>
         </div>
         <div class="field-group svc-only hidden"><span class="field-label">Staff member gets per service (TZS, optional)</span><input type="number" id="itemStaffPay" inputmode="numeric" placeholder="e.g. 2000" oninput="shopKeeps()"><div id="svcKeeps" class="svc-keeps"></div><div id="svcPayNote" class="svc-keeps hidden">ℹ️ For barbers paid per service. Barbers on a percentage, salary or chair rent are paid by their own method — set it in Barbers.</div></div>
+        <div class="form-row goods-only barber-hide">
+            <div class="field-group"><span class="field-label">Warranty (months)</span><input type="number" id="itemWarranty" inputmode="numeric" placeholder="0 = none"></div>
+            <div class="field-group" style="display:flex;align-items:flex-end;"><label class="check" style="padding:0 0 10px;"><input type="checkbox" id="itemSerial" onchange="itemSerialToggle()"><span>Each unit has an IMEI / serial (phones, laptops…)</span></label></div>
+        </div>
+        <div id="itemSerialWrap" class="field-group goods-only barber-hide hidden">
+            <span class="field-label" id="lblItemSerials">🔢 IMEI / serial of each unit you have — one per line</span>
+            <textarea id="itemSerials" rows="4" placeholder="Scan or type each IMEI / serial, one per line" oninput="itemSerialCount()" style="font-family:monospace;"></textarea>
+            <button class="btn-sec wide" style="margin:6px 0 4px;" onclick="scanSerialsInto('itemSerials', itemSerialCount)">📷 SCAN WITH CAMERA</button>
+            <div id="itemSerialInfo" style="font-size:.74rem;color:var(--gray);"></div>
+        </div>
         <div class="form-row goods-only">
             <div class="field-group"><span class="field-label" id="lblStock">In stock</span><input type="number" id="itemStock" inputmode="decimal" placeholder="0"></div>
             <div class="field-group"><span class="field-label">Warn when below</span><input type="number" id="itemReorder" inputmode="decimal" placeholder="5"></div>
-        </div>
-        <div class="form-row goods-only barber-hide">
-            <div class="field-group"><span class="field-label">Warranty (months)</span><input type="number" id="itemWarranty" inputmode="numeric" placeholder="0 = none"></div>
-            <div class="field-group" style="display:flex;align-items:flex-end;"><label class="check" style="padding:0 0 10px;"><input type="checkbox" id="itemSerial"><span>Ask for serial / IMEI when selling</span></label></div>
         </div>
         <div class="field-group goods-only barber-hide"><span class="field-label">Expiry date (optional) — the soonest on the shelf</span><input type="date" id="itemExpiry"></div>
         <div class="field-group goods-only barber-hide"><span class="field-label">Barcode (optional)</span><div style="display:flex;gap:6px;"><input type="text" id="itemBarcode" inputmode="numeric" placeholder="Scan or type the code on the pack"><button class="btn-sec" style="flex:none;" onclick="scanItemBarcode()">📷</button></div></div>

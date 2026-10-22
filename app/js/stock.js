@@ -99,6 +99,7 @@ function openItem(id) {
     $('itemPack').value = p && p.packSize > 1 ? p.packSize : '';
     $('itemWarranty').value = p && p.warrantyMonths ? p.warrantyMonths : '';
     $('itemSerial').checked = !!(p && p.trackSerial);
+    $('itemSerials').value = ''; itemSerialToggle();
     unitChanged(true);
     $('itemDeleteBtn').classList.toggle('hidden', !p);
     $('catList').innerHTML = [...new Set(S.products.map(x => x.category).filter(Boolean))].map(c => `<option value="${esc(c)}">`).join('');
@@ -116,6 +117,23 @@ function unitChanged(keepPart) {
     $('lblStock').textContent = `In stock (${u === 'pc' ? 'pieces' : name + 's'})`;
     if ($('itemService').checked) { $('lblSell').textContent = 'Price (TZS)'; $('lblCost').textContent = 'Cost to you (TZS, optional)'; }
 }
+// Phones, laptops…: the IMEI of each unit goes straight into the item form (no second step)
+function itemSerialToggle() {
+    const on = $('itemSerial').checked, p = productById($('itemId').value);
+    $('itemSerialWrap').classList.toggle('hidden', !on);
+    $('itemStock').readOnly = on;
+    $('lblItemSerials').textContent = p && p.trackSerial ? tl('🔢 New units arriving: IMEI / serial of each — one per line') : tl('🔢 IMEI / serial of each unit you have — one per line');
+    itemSerialCount();
+}
+function itemSerialCount() {
+    if (!$('itemSerial').checked) return;
+    const p = productById($('itemId').value), have = p && p.trackSerial ? Number(p.stock) || 0 : 0;
+    const list = parseSerials($('itemSerials').value), dup = list.filter(x => S.serialsIn[serialId(x)]);
+    $('itemStock').value = have + list.length;
+    const cost = num($('itemCost').value);
+    $('itemSerialInfo').innerHTML = `${have ? `${have} ${tl('on the shelf')} + ` : ''}<b>${list.length}</b> ${tl(list.length === 1 ? 'new unit' : 'new units')}${list.length && cost ? ` · ${tl('bought at')} ${n0(cost)} ${tl('each')}` : ''}`
+        + (dup.length ? `<br><span style="color:var(--red);">⚠️ ${tl('Already in stock')}: ${esc(dup.join(', '))}</span>` : '');
+}
 function saveItem() {
     const id = $('itemId').value;
     const name = $('itemName').value.trim();
@@ -132,7 +150,10 @@ function saveItem() {
     const stock = roundQ(num($('itemStock').value)), reorderLevel = roundQ(num($('itemReorder').value)) || 5;
     if (serial && part) return toast('⚠️ Items with serial numbers are sold in whole units — untick "part units".', 'err');
     const prev = id ? productById(id) : null;
-    if (serial && stock !== (prev ? Number(prev.stock) || 0 : 0)) return toast(prev ? '⚠️ For serial items, add stock with 📥 Restock so each serial is scanned in.' : '⚠️ Save serial items with stock 0, then use 📥 Restock to scan each serial in.', 'err');
+    const newSerials = serial ? parseSerials($('itemSerials').value) : [];
+    if (newSerials.some(x => S.serialsIn[serialId(x)])) return toast('⚠️ ' + tl('Already in stock') + ': ' + newSerials.filter(x => S.serialsIn[serialId(x)]).join(', '), 'err');
+    if (serial && stock !== (prev && prev.trackSerial ? Number(prev.stock) || 0 : 0) + newSerials.length) return toast('⚠️ ' + tl('For items with IMEI / serial, the stock is the number of IMEIs. Type or scan each one.'), 'err');
+    if (newSerials.length && !(cost > 0)) return toast('⚠️ ' + tl('Enter what you paid for each unit (buying price).'), 'err');
     const maxP = Number((S.tenantInfo.limits || {}).maxProducts) || 0;
     if (!id && maxP && usedItems() >= maxP) return toast(`⚠️ Your plan allows ${maxP} items. Ask Keep to upgrade your plan.`, 'err');
     const ref = id ? col('products').doc(id) : col('products').doc();
@@ -144,11 +165,15 @@ function saveItem() {
         unit: $('itemUnit').value, partQty: part, packSize: Math.max(0, Math.round(num($('itemPack').value))) || 0,
         warrantyMonths: Math.max(0, Math.round(num($('itemWarranty').value))) || 0, trackSerial: serial, expiry: $('itemExpiry').value || '',
         service: svc, staffPay: svc ? Math.max(0, Math.round(num($('itemStaffPay').value))) || 0 : 0, updatedAt: now() }, { merge: true });
-    if (!id || cost !== (Number(S.costs[ref.id]) || 0)) costTyped(b, ref.id, cost);
+    if (newSerials.length) {
+        costIn(b, ref.id, newSerials.length, cost, prev && prev.trackSerial ? Number(prev.stock) || 0 : 0, newSerials);
+        newSerials.forEach(sn => b.set(col('serials').doc(serialId(sn)), { serial: sn, productId: ref.id, name, status: 'in', receivedAt: now(), receivedBy: S.me.name,
+            saleId: null, soldAt: null, soldBy: null, customerName: null, updatedAt: now() }, { merge: true }));
+    } else if (!id || cost !== (Number(S.costs[ref.id]) || 0)) costTyped(b, ref.id, cost);
     if (!id) usageAdd(b, 'products', ref.id);
     if (!before || (Number(before.stock) || 0) !== stock) {
         b.set(col('movements').doc(), {
-            productId: ref.id, name, type: before ? 'edit' : 'opening', qty: stock - (before ? Number(before.stock) || 0 : 0),
+            productId: ref.id, name, type: before ? (newSerials.length ? 'restock' : 'edit') : 'opening', ...(newSerials.length ? { serials: newSerials, unitCost: cost } : {}), qty: stock - (before ? Number(before.stock) || 0 : 0),
             before: before ? Number(before.stock) || 0 : 0, after: stock, day: dayStr(), staffUid: S.me.uid, staffName: S.me.name, createdAt: now()
         });
     }
