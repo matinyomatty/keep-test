@@ -9,7 +9,7 @@ const REPORTS = [
     { g: 'Sales', id: 'salesDaily', icon: '📅', t: 'Daily sales summary', d: 'Day-by-day sales, cash, mobile, credit' },
     { g: 'Sales', id: 'salesStaff', icon: '👤', t: 'Sales by seller', d: 'How much each seller sold' },
     { g: 'Sales', id: 'returns', icon: '↩️', t: 'Returns & voids', d: 'Refunds given and cancelled sales' },
-    { g: 'Money', id: 'pnl', icon: '📈', t: 'Profit & loss', d: 'Sales, stock bought, expenses and profit' },
+    { g: 'Money', id: 'pnl', icon: '📈', t: 'Profit & loss', d: 'Sales, cost of goods sold, expenses and profit' },
     { g: 'Money', id: 'expenses', icon: '💸', t: 'Expenses', d: 'All expenses by category, with who recorded them' },
     { g: 'Money', id: 'banking', icon: '🏦', t: 'Banking, transfers & savings', d: 'Money moved between cash, mobile, bank and savings' },
     { g: 'Money', id: 'cashups', icon: '🧮', t: 'Cash-ups', d: 'Each seller\'s counts, shortages and overs' },
@@ -229,11 +229,18 @@ async function runReport(id, fmtType) {
     loader(true, 'PREPARING REPORT...');
     try {
         const r = await buildReport(id);
-        const shop = S.tenantInfo.name || S.tenant, period = def.now ? 'As of ' + new Date().toLocaleString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : rpPeriodText();
+        const shop = S.tenantInfo.name || S.tenant; let period = def.now ? 'As of ' + new Date().toLocaleString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : rpPeriodText();
         const base = `${shop}_${r.title}_${def.now ? dayStr() : RP.from + (RP.from === RP.to ? '' : '_to_' + RP.to)}`.replace(/[^\w\-]+/g, '_');
         loader(false);
-        if (fmtType === 'xlsx') await reportXlsx(r, shop, period, base); else await reportPdf(r, shop, period, base);
+        const rr = rtlReport(r); period = rtl(period);
+        if (fmtType === 'xlsx') await reportXlsx(rr, shop, period, base); else await reportPdf(rr, shop, period, base);
     } catch (e) { loader(false); console.error(e); toast('⚠️ Could not make the report: ' + friendlyErr(e), 'err'); }
+}
+// Report words follow the app language (data such as item and customer names stay as typed)
+const rtl = s => (typeof s === 'string' && window.KeepLang) ? KeepLang.tl(s) : s;
+function rtlReport(r) {
+    return { ...r, title: rtl(r.title), note: r.note ? rtl(r.note) : r.note, summary: r.summary.map(([k, v]) => [rtl(k), typeof v === 'string' ? rtl(v) : v]),
+        tables: r.tables.map(t => ({ ...t, name: rtl(t.name), head: t.head.map(rtl), foot: t.foot ? t.foot.map(v => typeof v === 'string' ? rtl(v) : v) : t.foot })) };
 }
 const money = v => typeof v === 'number' ? (Number.isInteger(v) ? v.toLocaleString('en-US') : v.toLocaleString('en-US', { maximumFractionDigits: 2 })) : v;
 async function reportPdf(r, shop, period, base) {
@@ -243,7 +250,7 @@ async function reportPdf(r, shop, period, base) {
     doc.setFillColor(11, 13, 18); doc.rect(0, 0, W, 26, 'F');
     doc.setTextColor(255, 199, 44); doc.setFont('helvetica', 'bold'); doc.setFontSize(15); doc.text(String(shop).toUpperCase(), 12, 11);
     doc.setTextColor(255); doc.setFontSize(10.5); doc.text(r.title.toUpperCase(), 12, 19);
-    doc.setFont('helvetica', 'normal'); doc.setFontSize(8.5); doc.text(period, W - 12, 11, { align: 'right' }); doc.text('Generated ' + new Date().toLocaleString('en-GB'), W - 12, 19, { align: 'right' });
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(8.5); doc.text(period, W - 12, 11, { align: 'right' }); doc.text(rtl('Generated') + ' ' + new Date().toLocaleString('en-GB'), W - 12, 19, { align: 'right' });
     let y = 32;
     if (r.summary.length) {
         doc.autoTable({ startY: y, body: r.summary.map(([k, v]) => [k, money(v)]), theme: 'plain', styles: { fontSize: 9, cellPadding: 1.4 },
@@ -263,16 +270,16 @@ async function reportPdf(r, shop, period, base) {
             didParseCell: c => { if ((c.section === 'body' || c.section === 'foot') && numCols[c.column.index]) c.cell.styles.halign = 'right'; } });
         y = doc.lastAutoTable.finalY + 8;
     });
-    if (!r.tables.some(t => t.rows.length)) { doc.setFontSize(10); doc.setTextColor(120); doc.text('Nothing recorded in this period.', 12, y + 6); }
+    if (!r.tables.some(t => t.rows.length)) { doc.setFontSize(10); doc.setTextColor(120); doc.text(rtl('Nothing recorded in this period.'), 12, y + 6); }
     const n = doc.internal.getNumberOfPages();
-    for (let i = 1; i <= n; i++) { doc.setPage(i); doc.setFontSize(7); doc.setTextColor(150); doc.text(`Keep POS · ${shop} · page ${i} of ${n}`, W / 2, doc.internal.pageSize.getHeight() - 6, { align: 'center' }); }
+    for (let i = 1; i <= n; i++) { doc.setPage(i); doc.setFontSize(7); doc.setTextColor(150); doc.text(`Keep POS · ${shop} · ${rtl('page')} ${i} / ${n}`, W / 2, doc.internal.pageSize.getHeight() - 6, { align: 'center' }); }
     await shareOrSave(doc.output('blob'), base + '.pdf', 'application/pdf', `${r.title} — ${shop} (${period})`);
 }
 async function reportXlsx(r, shop, period, base) {
     const X = await needXLSX(), wb = X.utils.book_new();
     const sumRows = [[String(shop).toUpperCase()], [r.title], [period], [], ...r.summary.map(([k, v]) => [k, v])];
     if (r.note) sumRows.push([], [r.note]);
-    const ws0 = X.utils.aoa_to_sheet(sumRows); ws0['!cols'] = [{ wch: 42 }, { wch: 18 }]; X.utils.book_append_sheet(wb, ws0, 'Summary');
+    const ws0 = X.utils.aoa_to_sheet(sumRows); ws0['!cols'] = [{ wch: 42 }, { wch: 18 }]; X.utils.book_append_sheet(wb, ws0, rtl('Summary'));
     r.tables.forEach(t => {
         // dd/mm/yyyy text → real Excel dates, so they sort and filter properly
         const asDate = v => { const m = typeof v === 'string' && /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(v); return m ? new Date(Date.UTC(+m[3], +m[2] - 1, +m[1], 12)) : v; };
