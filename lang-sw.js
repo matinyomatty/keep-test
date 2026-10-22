@@ -717,3 +717,6 @@ KeepLang.add({
   'Your login cannot send for this shop': 'Akaunti yako haiwezi kutuma kwa duka hili', 'Please sign in again': 'Tafadhali ingia tena', 'This shop is not active': 'Duka hili halijawashwa',
   'The PDF is too big': 'PDF ni kubwa mno', 'WhatsApp did not accept the message': 'WhatsApp haikukubali ujumbe', 'Day closed': 'Siku imefungwa', 'Cash-up': 'Hesabu ya droo',
 });
+
+// Buying prices over time
+KeepLang.add({ 'Average buying price now': 'Wastani wa bei ya kununulia sasa', 'type what you paid this time — Keep mixes it in': 'andika ulicholipa safari hii — Keep itachanganya', 'Bought at': 'Ilinunuliwa kwa', 'Avg cost': 'Wastani wa gharama' });

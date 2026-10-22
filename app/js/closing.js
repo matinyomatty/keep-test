@@ -495,7 +495,7 @@ function itemTotals(sales) {
     sales.forEach(s => (s.items || []).forEach(i => {
         const sg = s.kind === 'return' ? -1 : 1, k = i.productId || i.name;
         t[k] = t[k] || { name: i.name, unit: i.unit, qty: 0, revenue: 0, cogs: 0 };
-        t[k].qty += sg * i.qty; t[k].revenue += sg * i.subtotal; t[k].cogs += sg * (S.costs[i.productId] || 0) * i.qty;
+        t[k].qty += sg * i.qty; t[k].revenue += sg * i.subtotal; t[k].cogs += sg * (lineCost(i, tms(s.createdAt) || Date.parse((s.day || dayStr()) + 'T23:59:59')) || 0);
     }));
     return Object.values(t).sort((a, b) => b.revenue - a.revenue);
 }

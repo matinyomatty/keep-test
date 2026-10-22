@@ -198,9 +198,9 @@ function cogsOf(sales) {
             if (p && isService(p)) return;
             if (!i.productId && !p) return;
             if (ret && i.restock === false) return;
-            const q = Number(i.qty) || 0, c = Number(S.costs[i.productId]) || 0;
-            if (!c) { if (!ret) missing[i.name || '?'] = (missing[i.name || '?'] || 0) + q; return; }
-            cogs += (ret ? -1 : 1) * c * q;
+            const q = Number(i.qty) || 0, c = lineCost(i, tms(s.createdAt) || Date.parse((s.day || dayStr()) + 'T23:59:59'));
+            if (c == null) { if (!ret) missing[i.name || '?'] = (missing[i.name || '?'] || 0) + q; return; }
+            cogs += (ret ? -1 : 1) * c;
         });
     });
     return { cogs: Math.round(cogs), missing: Object.keys(missing) };

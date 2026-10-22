@@ -38,7 +38,7 @@ function renderSerialList() {
         ${L.length ? L.map(x => `
             <div class="list-line" style="background:#f8fafc;border-left-color:var(--pos);">
                 <div class="ll-main"><div class="ll-title" style="font-family:monospace;font-size:.8rem;">${esc(x.serial)}</div>
-                    <div class="ll-sub">In since ${tms(x.receivedAt) ? new Date(tms(x.receivedAt)).toLocaleDateString('en-GB') : '—'}${x.receivedBy ? ' · ' + esc(x.receivedBy) : ''}${x.returnedAt ? ' · came back on a return' : ''}</div></div>
+                    <div class="ll-sub">In since ${tms(x.receivedAt) ? new Date(tms(x.receivedAt)).toLocaleDateString('en-GB') : '—'}${x.receivedBy ? ' · ' + esc(x.receivedBy) : ''}${isAdmin() && ((S.costDocs[p.id] || {}).units || {})[x.id] ? ' · ' + tl('Bought at') + ' ' + n0(S.costDocs[p.id].units[x.id]) : ''}${x.returnedAt ? ' · came back on a return' : ''}</div></div>
                 <button class="tiny-btn" data-sn="${esc(x.serial)}" onclick="const v=this.dataset.sn;closeModals();serialLookup();$('serialQ').value=v;runSerialLookup();">🔍</button>
                 ${isAdmin() ? `<button class="tiny-btn red" title="Remove a wrong entry" data-sid="${esc(x.id)}" onclick="removeSerial(this.dataset.sid)">✕</button>` : ''}
             </div>`).join('') : '<div class="empty-state" style="padding:12px;">No serials on the shelf.</div>'}`;
@@ -153,7 +153,7 @@ async function saveDelivery() {
         b.set(col('movements').doc(), { productId: i.productId, name: i.name, type: 'restock', qty: i.qty, unitCost: confirmed ? i.unitCost : null, deliveryId: ref.id, day, staffUid: S.me.uid, staffName: S.me.name, createdAt: now() });
         i.serials.forEach(sn => b.set(col('serials').doc(serialId(sn)), { serial: sn, productId: i.productId, name: i.name, status: 'in', receivedAt: now(), receivedBy: S.me.name,
             saleId: null, soldAt: null, soldBy: null, customerName: null, updatedAt: now() }, { merge: true }));
-        if (confirmed && i.unitCost != null) b.set(col('costs').doc(i.productId), { costPrice: i.unitCost, updatedAt: now() }, { merge: true });
+        if (confirmed && i.unitCost != null) costIn(b, i.productId, i.qty, i.unitCost, Number((productById(i.productId) || {}).stock) || 0, i.serials || []);
     });
     if (confirmed && ['cash', 'mobile', 'bank'].includes(paidFrom) && total) writeEntries(b, [{ type: 'expense', category: 'Supplier', from: paidFrom, to: null, amount: total, note: `Delivery ${receiptNo}${supplier ? ' · ' + supplier : ''}`, day, deliveryId: ref.id }]);
     closeModals();
@@ -266,7 +266,8 @@ async function confirmReceipt(id) {
     const d = S.receiptCache[id]; if (!d) return;
     const upd = $('dvCosts') ? $('dvCosts').checked : false, from = $('dvFrom') ? $('dvFrom').value : '';
     const b = db.batch();
-    if (upd) d.items.forEach(i => { if (i.unitCost != null) b.set(col('costs').doc(i.productId), { costPrice: i.unitCost, updatedAt: now() }, { merge: true }); });
+    // the delivery's stock is already on the shelf, so the 'before' stock is today's minus what came in
+    if (upd) d.items.forEach(i => { if (i.unitCost != null) costIn(b, i.productId, i.qty, i.unitCost, (Number((productById(i.productId) || {}).stock) || 0) - (Number(i.qty) || 0), i.serials || []); });
     if (from && d.total) writeEntries(b, [{ type: 'expense', category: 'Supplier', from, to: null, amount: d.total, note: `Delivery ${d.receiptNo}${d.supplier ? ' · ' + d.supplier : ''}`, day: d.day, deliveryId: d.id }]);
     b.update(col('receipts').doc(id), { status: 'confirmed', costsUpdated: upd, paymentRecorded: !!from, paymentFrom: from || null, reviewedBy: S.me.name, reviewedAt: now() });
     $('dvBtn').disabled = true;

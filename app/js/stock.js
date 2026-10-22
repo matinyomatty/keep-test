@@ -56,7 +56,7 @@ function renderInventory() {
             <span class="inv-emoji">${esc(p.emoji || '📦')}</span>
             <div class="inv-info">
                 <div class="inv-name">${esc(p.name)}</div>
-                <div class="inv-detail">${esc(p.category || 'General')} · Sell ${n0(p.sellPrice)}${perUnit(p)}${isAdmin() ? ' · Cost ' + n0(S.costs[p.id] || 0) : ''}${p.trackSerial ? ` · 🔢 ${inStockSerials(p.id).length} serials` : ''}${p.warrantyMonths ? ' · 🛡️ ' + p.warrantyMonths + 'm' : ''}${p.packSize > 1 ? ' · ' + p.packSize + '/pack' : ''}${(() => { const d = daysToExpiry(p); return d === null ? '' : ` · <span style="color:${d <= 0 ? 'var(--red)' : d <= EXPIRY_WARN_DAYS ? '#b45309' : 'inherit'};font-weight:${d <= EXPIRY_WARN_DAYS ? 800 : 400};">⏳ ${d <= EXPIRY_WARN_DAYS ? esc(expiryTxt(d)) : 'Exp ' + esc(p.expiry)}</span>`; })()}</div>
+                <div class="inv-detail">${esc(p.category || 'General')} · Sell ${n0(p.sellPrice)}${perUnit(p)}${isAdmin() ? ' · ' + (((S.costDocs[p.id] || {}).hist || []).length > 1 ? tl('Avg cost') : 'Cost') + ' ' + n0(S.costs[p.id] || 0) : ''}${p.trackSerial ? ` · 🔢 ${inStockSerials(p.id).length} serials` : ''}${p.warrantyMonths ? ' · 🛡️ ' + p.warrantyMonths + 'm' : ''}${p.packSize > 1 ? ' · ' + p.packSize + '/pack' : ''}${(() => { const d = daysToExpiry(p); return d === null ? '' : ` · <span style="color:${d <= 0 ? 'var(--red)' : d <= EXPIRY_WARN_DAYS ? '#b45309' : 'inherit'};font-weight:${d <= EXPIRY_WARN_DAYS ? 800 : 400};">⏳ ${d <= EXPIRY_WARN_DAYS ? esc(expiryTxt(d)) : 'Exp ' + esc(p.expiry)}</span>`; })()}</div>
             </div>
             <div class="inv-stock">${svc ? `<b style="font-size:1rem;">✂️</b><small>${tl('Service')}</small>` : `<b class="${isOut ? 'out' : isLow ? 'low' : ''}">${q3(st).toLocaleString('en-US')}</b><small>${unitOf(p) === 'pc' ? 'pcs' : unitShort(p)}</small>`}</div>
             <div class="inv-actions">
@@ -144,7 +144,7 @@ function saveItem() {
         unit: $('itemUnit').value, partQty: part, packSize: Math.max(0, Math.round(num($('itemPack').value))) || 0,
         warrantyMonths: Math.max(0, Math.round(num($('itemWarranty').value))) || 0, trackSerial: serial, expiry: $('itemExpiry').value || '',
         service: svc, staffPay: svc ? Math.max(0, Math.round(num($('itemStaffPay').value))) || 0 : 0, updatedAt: now() }, { merge: true });
-    b.set(col('costs').doc(ref.id), { costPrice: cost, updatedAt: now() }, { merge: true });
+    if (!id || cost !== (Number(S.costs[ref.id]) || 0)) costSet(b, ref.id, cost);
     if (!id) usageAdd(b, 'products', ref.id);
     if (!before || (Number(before.stock) || 0) !== stock) {
         b.set(col('movements').doc(), {
@@ -168,6 +168,63 @@ async function deleteItem() {
     commit(b, '🗑️ Item deleted');
 }
 
+// ════════════════════════════════════════════════
+//  BUYING PRICES OVER TIME (owner only: costs/{productId})
+//  costPrice – the average buying price of what is on the shelf now
+//  hist      – [{t, c}] every change of that average, so a sale is costed at the price that held when it was sold
+//  units     – {serial: price} for items with serial / IMEI numbers: each unit keeps its own buying price
+//  Restocking at a new price mixes it in (weighted average), e.g. 2 on the shelf at 1,000,000 + 3 new at 1,200,000
+//  → average 1,120,000. A phone with IMEI 3567… bought at 1,200,000 is costed at exactly that when it is sold.
+// ════════════════════════════════════════════════
+S.costDocs = {};
+function avgAt(pid, t) {
+    const d = S.costDocs[pid] || {}, h = d.hist || [];
+    if (!h.length) return Number(d.costPrice) || Number(S.costs[pid]) || 0;
+    let c = Number(h[0].c) || 0;
+    for (const x of h) { if (x.t <= t) c = Number(x.c) || 0; else break; }
+    return c;
+}
+// Cost of one sale line (qty × price), or null when no buying price is known
+function lineCost(i, t) {
+    const d = S.costDocs[i.productId] || {}, units = d.units || {}, q = Number(i.qty) || 0;
+    const avg = avgAt(i.productId, t);
+    const sns = (i.serials || []).filter(Boolean);
+    if (sns.length) {
+        let sum = 0, known = 0;
+        sns.forEach(sn => { const c = Number(units[serialId(sn)]); if (c > 0) { sum += c; known++; } else if (avg > 0) { sum += avg; known++; } });
+        const rest = Math.max(0, q - sns.length);
+        if (!known && !avg) return null;
+        return sum + rest * avg;
+    }
+    return avg > 0 ? q * avg : null;
+}
+// New stock came in at `cost` each: mix it into the average and remember serial prices
+function costIn(b, pid, qty, cost, stockBefore, serials = []) {
+    cost = Number(cost) || 0; qty = Number(qty) || 0;
+    if (!(cost > 0) || !(qty > 0)) return;
+    const d = S.costDocs[pid] || {}, old = Number(d.costPrice) || 0, sb = Math.max(0, Number(stockBefore) || 0);
+    const avg = old > 0 && sb > 0 ? Math.round((sb * old + qty * cost) / (sb + qty)) : Math.round(cost);
+    let units = null;
+    if (serials.length) {
+        units = {};
+        // units already on the shelf without their own price keep the old average they were bought at
+        if (old > 0) Object.values(S.serialsIn || {}).forEach(x => { if (x.productId === pid && !((d.units || {})[x.id] > 0)) units[x.id] = old; });
+        serials.forEach(sn => units[serialId(sn)] = Math.round(cost));
+    }
+    costSet(b, pid, avg, units);
+}
+// Owner sets the price by hand (item form, Excel): applies from now on
+function costSet(b, pid, price, units) {
+    const d = S.costDocs[pid] || {}, old = Number(d.costPrice) || 0, hist = (d.hist || []).slice(-199);
+    price = Math.round(Number(price) || 0);
+    if (!hist.length && old > 0) hist.push({ t: 0, c: old });          // sales before today keep the old price
+    if (price !== old || !hist.length) hist.push({ t: Date.now(), c: price });
+    const doc = { costPrice: price, hist, updatedAt: now() };
+    if (units) doc.units = units;
+    b.set(col('costs').doc(pid), doc, { merge: true });
+    S.costDocs[pid] = { ...d, costPrice: price, hist, units: { ...(d.units || {}), ...(units || {}) } }; S.costs[pid] = price;
+}
+
 function openRestock(id) {
     const p = productById(id); if (!p) return;
     $('restockId').value = id;
@@ -177,6 +234,7 @@ function openRestock(id) {
     $('restockIn').innerHTML = `<option value="1">${un}</option>` + (p.packSize > 1 ? `<option value="${p.packSize}">packs of ${p.packSize}</option>` : '');
     $('lblRestockCost').textContent = `Cost per ${unitOf(p) === 'pc' ? 'piece' : unitName(p)} (TZS)`;
     $('restockCost').value = S.costs[id] || '';
+    if ($('restockCostNow')) $('restockCostNow').textContent = S.costs[id] ? `${tl('Average buying price now')}: ${n0(S.costs[id])} · ${tl('type what you paid this time — Keep mixes it in')}` : '';
     $('restockPaid').value = '';
     $('restockExpiry').value = '';
     const ser = !!p.trackSerial;
@@ -217,7 +275,7 @@ function confirmRestock() {
         productId: id, name: p.name, type: 'restock', qty, unitCost: isAdmin() ? cost : null, expiry: exp || null,
         day, staffUid: S.me.uid, staffName: S.me.name, createdAt: now()
     });
-    if (isAdmin() && cost > 0) b.set(col('costs').doc(id), { costPrice: cost, updatedAt: now() }, { merge: true });
+    if (isAdmin() && cost > 0) costIn(b, id, qty, cost, Number(p.stock) || 0, serials);
     serials.forEach(sn => b.set(col('serials').doc(serialId(sn)), { serial: sn, productId: id, name: p.name, status: 'in', receivedAt: now(), receivedBy: S.me.name,
         saleId: null, soldAt: null, soldBy: null, customerName: null, updatedAt: now() }, { merge: true }));
     if (paid) writeEntries(b, [{ type: 'expense', category: 'Supplier', from: paid, to: null, amount: Math.round(qty * cost), note: `Restock ${qtyTxt(qty, p)} × ${p.name}`, day }]);
