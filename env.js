@@ -22,7 +22,8 @@
     appId: '1:260455775669:web:a6b9db9e95bb3cbc896dfc'
   };
   // WhatsApp sending server (Cloudflare Worker holding the Twilio key). Empty = not set up: Keep opens WhatsApp instead.
-  const WA_WORKER = '';
+  // Test site only for now; the live site stays on the WhatsApp button until we publish.
+  const WA_WORKER = test ? 'https://keep-whatsapp.flat-violet-e940.workers.dev' : '';
   window.KEEP_ENV = { test, firebaseConfig: test ? TEST : LIVE, site: location.origin + '/', waWorker: WA_WORKER };
 
   // A yellow strip on every page of the test copy, so nobody mistakes it for the real shop.
