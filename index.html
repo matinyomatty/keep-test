@@ -270,9 +270,15 @@ a.btn{display:grid;place-items:center;text-decoration:none}
             <select id="n-type"><option>Shop / minimarket</option><option>Hardware &amp; tools</option><option>Electronics</option><option>Barbershop / salon</option><option>Other</option></select></div>
           <div class="field"><label for="n-town">Town</label><input id="n-town" placeholder="Zanzibar"></div>
         </div>
+        <input type="checkbox" name="botcheck" id="n-bot" tabindex="-1" autocomplete="off" style="position:absolute;left:-9999px;" aria-hidden="true">
         <p class="msg" id="n-msg" role="alert"></p>
-        <button class="btn dark" type="submit">Continue</button>
+        <button class="btn dark" type="submit" id="n-send">Send request</button>
       </form>
+    </div>
+    <div class="sent" id="t-done" hidden>
+      <p><b>Thank you! Your request has been sent.</b></p>
+      <p>We'll contact you on WhatsApp within one working day.</p>
+      <p>Questions? Call <span class="contact">+255 740 116 251</span> or email <span class="contact">info@keep.co.tz</span></p>
     </div>
     <div class="sent" id="t-sent" hidden>
       <p>Tap below to send your request to Keep on WhatsApp. We reply within one working day.</p>
@@ -532,14 +538,17 @@ a.btn{display:grid;place-items:center;text-decoration:none}
 
   // ── Request free trial ───────────────────────────────────
   const sheet = $('trial');
-  function openTrial() { $('t-form-wrap').hidden = false; $('t-sent').hidden = true; sheet.hidden = false; setTimeout(() => $('n-name').focus(), 50); }
+  function openTrial() { $('t-form-wrap').hidden = false; $('t-sent').hidden = true; $('t-done').hidden = true; sheet.hidden = false; setTimeout(() => $('n-name').focus(), 50); }
   function closeTrial() { sheet.hidden = true; $('open-trial').focus(); }
   $('open-trial').onclick = openTrial;
   $('close-trial').onclick = closeTrial;
   sheet.addEventListener('click', e => { if (e.target === sheet) closeTrial(); });
   document.addEventListener('keydown', e => { if (e.key === 'Escape' && !sheet.hidden) closeTrial(); });
   if (['#trial', '#free-trial'].includes(location.hash)) openTrial();
-  $('f-trial').addEventListener('submit', e => {
+  // Requests go straight to Keep's inbox (Web3Forms). The access key below is meant to be public:
+  // it can only send form messages to Keep's own email. Empty key = the old WhatsApp step.
+  const TRIAL_KEY = '';
+  $('f-trial').addEventListener('submit', async e => {
     e.preventDefault();
     const msg = $('n-msg'), name = $('n-name').value.trim(), phone = $('n-phone').value.trim(), biz = $('n-biz').value.trim();
     if (!name) { say(msg, 'Enter your name.'); $('n-name').focus(); return; }
@@ -548,6 +557,17 @@ a.btn{display:grid;place-items:center;text-decoration:none}
     say(msg, '');
     const text = `Hello Keep, I'd like a free trial.\nName: ${name}\nWhatsApp: ${phone}\nBusiness: ${biz}\nType: ${$('n-type').value}\nTown: ${$('n-town').value.trim() || '-'}`;
     $('wa-link').href = 'https://wa.me/255740116251?text=' + encodeURIComponent(text);
+    if (TRIAL_KEY && !$('n-bot').checked) {
+      const btn = $('n-send'); btn.disabled = true; const label = btn.textContent; btn.textContent = (window.KeepLang ? KeepLang.tl('Sending…') : 'Sending…');
+      try {
+        const r = await fetch('https://api.web3forms.com/submit', { method: 'POST', headers: { 'content-type': 'application/json', accept: 'application/json' },
+          body: JSON.stringify({ access_key: TRIAL_KEY, subject: `Keep free trial request: ${biz}`, from_name: 'Keep website', botcheck: false,
+            Name: name, WhatsApp: phone, Business: biz, Type: $('n-type').value, Town: $('n-town').value.trim() || '-', Language: (window.KeepLang && KeepLang.lang) || 'en' }) });
+        const j = await r.json().catch(() => ({}));
+        if (r.ok && j.success) { $('t-form-wrap').hidden = true; $('t-done').hidden = false; $('f-trial').reset(); return; }
+      } catch (err) { /* falls back to WhatsApp below */ }
+      finally { btn.disabled = false; btn.textContent = label; }
+    }
     $('t-form-wrap').hidden = true; $('t-sent').hidden = false;
   });
 
