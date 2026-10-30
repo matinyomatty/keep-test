@@ -23,8 +23,9 @@
   };
   // WhatsApp sending server (Cloudflare Worker holding the Twilio key). Empty = not set up: Keep opens WhatsApp instead.
   // Test site only for now; the live site stays on the WhatsApp button until we publish.
-  const WA_WORKER = test ? 'https://keep-whatsapp.flat-violet-e940.workers.dev' : '';
-  window.KEEP_ENV = { test, firebaseConfig: test ? TEST : LIVE, site: location.origin + '/', waWorker: WA_WORKER };
+  const API = 'https://keep-whatsapp.flat-violet-e940.workers.dev';   // Keep server: free trial requests, WhatsApp sending
+  const WA_WORKER = test ? API : '';
+  window.KEEP_ENV = { test, firebaseConfig: test ? TEST : LIVE, site: location.origin + '/', api: API, waWorker: WA_WORKER };
 
   // A yellow strip on every page of the test copy, so nobody mistakes it for the real shop.
   if (test) {

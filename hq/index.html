@@ -176,6 +176,10 @@
             <button class="primary" onclick="openNewShop()">➕ New shop</button>
             <button class="primary green" onclick="openPay()">💳 Record payment</button>
         </div>
+        <div id="trialWrap" class="hidden">
+            <span class="section-label">Free trial requests <button class="tiny" style="margin-left:6px;" onclick="loadTrials()">🔄</button></span>
+            <div class="card" id="trialBox"></div>
+        </div>
         <div class="two-col">
             <div>
                 <span class="section-label">Needs attention</span>
@@ -525,6 +529,7 @@ auth.onAuthStateChanged(async user => {
     $('loginPage').style.display = 'none'; $('app').style.display = 'block'; document.body.classList.add('unlocked');
     $('payMonth').value = dstr(new Date()).slice(0, 7);
     start();
+    loadTrials(); clearInterval(V.trialTimer); V.trialTimer = setInterval(loadTrials, 120000);
 });
 
 // Plan usage list: every shop gets one, listing its switched-on staff and its items.
@@ -802,8 +807,48 @@ async function addFreeDays(id) {
 // ════════════════════════════════════════════════
 //  NEW SHOP
 // ════════════════════════════════════════════════
+// ── Free trial requests (sent from the sign-in page, kept on the Keep server) ──
+V.trials = [];
+async function trialApi(method, body) {
+    const api = window.KEEP_ENV.api; if (!api || !auth.currentUser) return null;
+    const r = await fetch(api.replace(/\/$/, '') + '/admin/trials', { method, headers: { authorization: 'Bearer ' + await auth.currentUser.getIdToken(), 'content-type': 'application/json' }, ...(body ? { body: JSON.stringify(body) } : {}) });
+    return r.json();
+}
+async function loadTrials() {
+    try { const j = await trialApi('GET'); if (j && j.ok) V.trials = j.items; } catch (e) {}
+    renderTrials();
+}
+function renderTrials() {
+    const box = $('trialBox'); if (!box) return;
+    const open = V.trials.filter(t => t.status === 'new'), done = V.trials.filter(t => t.status !== 'new').slice(0, 5);
+    $('trialWrap').classList.toggle('hidden', !V.trials.length);
+    const when = t => new Date(t.at).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+    box.innerHTML = (open.length ? open.map(t => `<div class="line"><div class="l"><div style="font-weight:800;">${esc(t.business)}</div>
+            <div class="meta">${esc(t.name)} · 0${esc(String(t.phone).slice(-9))} · ${esc(t.type || '')} · ${esc(t.town || '')}${t.email ? ' · ' + esc(t.email) : ''} · ${when(t)}</div></div>
+            <div style="display:flex;gap:4px;flex-shrink:0;"><button class="tiny" style="background:var(--green);color:#fff;" onclick="approveTrial('${esc(t.id)}')">✅ Approve</button>
+            <button class="tiny" onclick="declineTrial('${esc(t.id)}')">✕</button></div></div>`).join('') : '<div class="empty">No new requests.</div>')
+        + (done.length ? `<div class="meta" style="margin-top:8px;">Recent: ${done.map(t => `${esc(t.business)} — ${t.status === 'approved' ? '✅ ' + esc(t.shop || '') : '✕ declined'}`).join(' · ')}</div>` : '');
+}
+const slug = s => String(s || '').toLowerCase().normalize('NFKD').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 30) || 'shop';
+function approveTrial(id) {
+    const t = V.trials.find(x => x.id === id); if (!t) return;
+    openNewShop();
+    let code = slug(t.business), k = 2; while (V.tenants.some(x => x.id === code)) code = slug(t.business).slice(0, 27) + '-' + k++;
+    $('nCode').value = code; $('nName').value = t.business; $('nOwner').value = t.name;
+    $('nPhone').value = '0' + String(t.phone).slice(-9);
+    $('nEmail').value = t.email || `${t.phone}@owners.keep.co.tz`;
+    if ($('nType')) $('nType').value = /barber|salon/i.test(t.type || '') ? 'barbershop' : 'shop';
+    V.trialPending = id;
+    toast(t.email ? 'Check the details, then tap Create shop' : 'No email given — a placeholder is filled in; they sign in with their phone and PIN');
+}
+async function declineTrial(id) {
+    const t = V.trials.find(x => x.id === id); if (!t) return;
+    if (!await dialog(`Decline the request from <b>${esc(t.business)}</b>?`, { yes: 'Decline', color: 'var(--red)' })) return;
+    await trialApi('POST', { id, status: 'declined' }).catch(() => {}); loadTrials();
+}
 function planOptions(sel) { return plans().map(p => `<option value="${esc(p.id)}" ${p.id === sel ? 'selected' : ''}>${esc(p.name)} — ${n0(p.price)} · ${p.maxStaff ? p.maxStaff + ' staff' : 'unlimited staff'}</option>`).join(''); }
 function openNewShop() {
+    V.trialPending = null;
     ['nCode', 'nName', 'nOwner', 'nPhone', 'nEmail'].forEach(i => { $(i).value = ''; $(i).readOnly = false; });
     $('nBranch').checked = false; $('nBranchWrap').classList.add('hidden');
     $('nPlan').innerHTML = planOptions(plans()[0].id); nPlanChanged();
@@ -865,6 +910,7 @@ async function createShop() {
         b.set(tr.collection('plan').doc('usage'), { staff: { [ownerUid]: true }, products: {}, updatedAt: FV.serverTimestamp() });
         if (ownerPhone && !branchOf) b.set(db.collection('logins').doc(ownerPhone), { email: ownerEmail, shop: code, uid: ownerUid });
         await b.commit();
+        if (V.trialPending) { trialApi('POST', { id: V.trialPending, status: 'approved', shop: code }).then(loadTrials).catch(() => {}); V.trialPending = null; }
         if (branchOf) {
             closeSheets();
             const t = { id: code, name, ownerName, ownerEmail, ownerPhone };

@@ -265,6 +265,7 @@ a.btn{display:grid;place-items:center;text-decoration:none}
           <div class="field"><label for="n-phone">WhatsApp number</label><input id="n-phone" type="tel" inputmode="tel" autocomplete="tel" placeholder="07XX XXX XXX"></div>
         </div>
         <div class="field"><label for="n-biz">Business name</label><input id="n-biz" autocomplete="organization"></div>
+        <div class="field"><label for="n-email">Email (optional)</label><input id="n-email" type="email" autocomplete="email" autocapitalize="none" placeholder="you@example.com"></div>
         <div class="two">
           <div class="field"><label for="n-type">Type of business</label>
             <select id="n-type"><option>Shop / minimarket</option><option>Hardware &amp; tools</option><option>Electronics</option><option>Barbershop / salon</option><option>Other</option></select></div>
@@ -557,16 +558,21 @@ a.btn{display:grid;place-items:center;text-decoration:none}
     say(msg, '');
     const text = `Hello Keep, I'd like a free trial.\nName: ${name}\nWhatsApp: ${phone}\nBusiness: ${biz}\nType: ${$('n-type').value}\nTown: ${$('n-town').value.trim() || '-'}`;
     $('wa-link').href = 'https://wa.me/255740116251?text=' + encodeURIComponent(text);
-    if (TRIAL_KEY && !$('n-bot').checked) {
+    const api = window.KEEP_ENV && KEEP_ENV.api;
+    if ((TRIAL_KEY || api) && !$('n-bot').checked) {
       const btn = $('n-send'); btn.disabled = true; const label = btn.textContent; btn.textContent = (window.KeepLang ? KeepLang.tl('Sending…') : 'Sending…');
-      try {
-        const r = await fetch('https://api.web3forms.com/submit', { method: 'POST', headers: { 'content-type': 'application/json', accept: 'application/json' },
+      const email = $('n-email').value.trim(), lang = (window.KeepLang && KeepLang.lang) || 'en', town = $('n-town').value.trim() || '-', type = $('n-type').value;
+      // 1) into Keep HQ, ready to approve   2) an email to info@keep.co.tz as a heads-up
+      const toHQ = api ? fetch(api.replace(/\/$/, '') + '/trial', { method: 'POST', headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ project: KEEP_ENV.firebaseConfig.projectId, name, phone, business: biz, type, town, email, lang }) })
+          .then(r => r.json()).then(j => !!j.ok).catch(() => false) : Promise.resolve(false);
+      const toMail = TRIAL_KEY ? fetch('https://api.web3forms.com/submit', { method: 'POST', headers: { 'content-type': 'application/json', accept: 'application/json' },
           body: JSON.stringify({ access_key: TRIAL_KEY, subject: `Keep free trial request: ${biz}`, from_name: 'Keep website', botcheck: false,
-            Name: name, WhatsApp: phone, Business: biz, Type: $('n-type').value, Town: $('n-town').value.trim() || '-', Language: (window.KeepLang && KeepLang.lang) || 'en' }) });
-        const j = await r.json().catch(() => ({}));
-        if (r.ok && j.success) { $('t-form-wrap').hidden = true; $('t-done').hidden = false; $('f-trial').reset(); return; }
-      } catch (err) { /* falls back to WhatsApp below */ }
-      finally { btn.disabled = false; btn.textContent = label; }
+            Name: name, WhatsApp: phone, Business: biz, Type: type, Town: town, Email: email || '-', Language: lang, Note: 'Approve it in Keep HQ → Overview → Free trial requests' }) })
+          .then(r => r.json()).then(j => !!j.success).catch(() => false) : Promise.resolve(false);
+      const [a, b] = await Promise.all([toHQ, toMail]);
+      btn.disabled = false; btn.textContent = label;
+      if (a || b) { $('t-form-wrap').hidden = true; $('t-done').hidden = false; $('f-trial').reset(); return; }
     }
     $('t-form-wrap').hidden = true; $('t-sent').hidden = false;
   });
