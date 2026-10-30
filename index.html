@@ -547,7 +547,7 @@ a.btn{display:grid;place-items:center;text-decoration:none}
   if (['#trial', '#free-trial'].includes(location.hash)) openTrial();
   // Requests go straight to Keep's inbox (Web3Forms). The access key below is meant to be public:
   // it can only send form messages to Keep's own email. Empty key = the old WhatsApp step.
-  const TRIAL_KEY = '';
+  const TRIAL_KEY = '5dd410b5-ba38-44ca-9a03-b433c979a366';
   $('f-trial').addEventListener('submit', async e => {
     e.preventDefault();
     const msg = $('n-msg'), name = $('n-name').value.trim(), phone = $('n-phone').value.trim(), biz = $('n-biz').value.trim();
