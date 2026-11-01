@@ -410,7 +410,9 @@ async function renderMonthClose() {
             ${row('🏦 Banked (net)', fmt(f.bankIn - f.bankOut), 'var(--blue)')}
             ${row('💰 Put in savings', fmt(f.toSavings), '#a16207')}
         </div>${f.missing && f.missing.length ? `<div class="hint amber">⚠️ ${esc(missingCostNote(f.missing))}</div>` : ''}`;
-    if (closed) html += `<div class="hint green" style="text-align:center;">✅ <b>${monthName(m)} is closed</b> · saved ${fmt(info.saved)} · by ${esc(info.closedBy || '')}</div>`;
+    if (closed) html += `<div class="hint green" style="text-align:center;">✅ <b>${monthName(m)} is closed</b> · saved ${fmt(info.saved)} · by ${esc(info.closedBy || '')}</div>`
+        + (isAdmin() ? `<button class="btn-sec wide" style="margin-bottom:12px;" onclick="reopenMonth()">↩️ ${tl('Reopen')} ${monthName(m)} — ${tl('undo the closing and close it again')}</button>` : '');
+    else if (info.reopenedBy) html += `<div class="hint amber" style="text-align:center;">↩️ ${tl('Reopened by')} ${esc(info.reopenedBy)} — ${tl('close it again below')}</div>`;
     if (cur && !closed) {
         html += `<div style="font-size:0.75rem;color:var(--gray);text-align:center;padding:6px 0 12px;">You can close ${monthName(m)} once the month has ended.</div>`;
     } else {
@@ -449,14 +451,40 @@ async function closeMonth() {
     if (!await showConfirm(msg, already ? 'Move' : 'Close month', 'var(--blue)')) return;
     const figs = already ? null : await monthFigFull(m);
     const day = dayStr(), note = `Month close – ${monthName(m)}`, entries = [];
-    if (bankAmt) entries.push({ type: 'savings', category: 'Savings', from: 'bank', to: 'savings', amount: bankAmt, note, day });
-    if (extra) entries.push({ type: 'savings', category: 'Savings', from, to: 'savings', amount: extra, note, day });
+    if (bankAmt) entries.push({ type: 'savings', category: 'Savings', from: 'bank', to: 'savings', amount: bankAmt, note, day, closeOf: m });
+    if (extra) entries.push({ type: 'savings', category: 'Savings', from, to: 'savings', amount: extra, note, day, closeOf: m });
     const b = db.batch();
     if (entries.length) writeEntries(b, entries);
     b.set(col('months').doc(m), already
         ? { saved: inc(total), updatedAt: now() }
         : { month: m, closed: true, saved: total, closedBy: S.me.name, closedAt: now(), figures: figs }, { merge: true });
     commit(b, total ? `💰 ${fmt(total)} moved to savings` : `🔒 ${monthName(m)} closed — tap Send month summary to share`);
+    setTimeout(() => { renderMonthHistory(); renderMonthClose(); }, 400);
+}
+// Reopen a closed month: the savings moved when it was closed (and any "move more") go back to
+// where they came from, so the owner can close it again with the right figures.
+async function reopenMonth() {
+    if (!isAdmin()) return;
+    const { m } = S.mc, info = S.months[m] || {}; if (!info.closed) return;
+    const note = `Month close – ${monthName(m)}`;
+    let list = [];
+    try {
+        const qs = await col('entries').where('type', '==', 'savings').get();
+        list = qs.docs.map(d => ({ id: d.id, ...d.data() })).filter(e => e.type === 'savings' && (e.closeOf === m || e.note === note));
+    } catch (e) { return toast('⚠️ ' + friendlyErr(e), 'err'); }
+    const total = list.reduce((a, e) => a + (Number(e.amount) || 0), 0);
+    const lines = list.map(e => `${ACCT[e.from] || e.from} ← ${tl('Savings')}: ${fmt(e.amount)} <span style="color:#6b7280;">(${prettyDay(e.day)})</span>`);
+    const short = total > (Number(S.balances.savings) || 0) + 1;
+    const msg = `${tl('Reopen')} <b>${monthName(m)}</b>?<br><br>`
+        + (list.length ? `${tl('The money moved to savings when it was closed goes back')}:<br>${lines.join('<br>')}<br><b>${tl('Total')}: ${fmt(total)}</b>` : tl('No savings from this closing are left — nothing is moved back.'))
+        + (short ? `<br><br>⚠️ ${tl('Savings only holds')} ${fmt(S.balances.savings)} ${tl('now, so it will show less than zero until you correct it.')}` : '')
+        + `<br><br>${tl('Then close it again with the right amounts.')}`;
+    if (!await showConfirm(msg, tl('Reopen'), 'var(--blue)')) return;
+    const b = db.batch();
+    if (list.length) writeEntries(b, list, -1, list.map(e => e.id));
+    b.set(col('months').doc(m), { closed: false, saved: 0, figures: firebase.firestore.FieldValue.delete(),
+        reopenedBy: S.me.name, reopenedAt: now(), closedBefore: { by: info.closedBy || '', saved: info.saved || 0 } }, { merge: true });
+    commit(b, `↩️ ${monthName(m)} ${tl('reopened')}${total ? ' · ' + fmt(total) + ' ' + tl('back from savings') : ''}`);
     setTimeout(() => { renderMonthHistory(); renderMonthClose(); }, 400);
 }
 function monthMessage() {

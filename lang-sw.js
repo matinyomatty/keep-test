@@ -727,3 +727,9 @@ KeepLang.add({ 'Each unit has an IMEI / serial (phones, laptops…)': 'Kila kipa
   'on the shelf': 'kwenye rafu', 'new unit': 'kipande kipya', 'new units': 'vipande vipya', 'bought at': 'vimenunuliwa kwa', 'each': 'kila kimoja',
   'For items with IMEI / serial, the stock is the number of IMEIs. Type or scan each one.': 'Kwa bidhaa zenye IMEI / serial, stoo ni idadi ya IMEI. Andika au skani kila moja.', 'Enter what you paid for each unit (buying price).': 'Weka ulicholipa kwa kila kipande (bei ya kununulia).' });
 KeepLang.add({ 'Send request': 'Tuma ombi', 'Email (optional)': 'Barua pepe (si lazima)', 'Sending…': 'Inatuma…', 'Thank you! Your request has been sent.': 'Asante! Ombi lako limetumwa.', "We'll contact you on WhatsApp within one working day.": 'Tutawasiliana nawe kwa WhatsApp ndani ya siku moja ya kazi.', 'Questions? Call': 'Maswali? Piga', 'or email': 'au barua pepe' });
+
+KeepLang.add({ 'Reopen': 'Fungua tena', 'undo the closing and close it again': 'tengua ufungaji na ufunge upya', 'Reopened by': 'Imefunguliwa tena na', 'close it again below': 'ifunge upya hapa chini',
+  'The money moved to savings when it was closed goes back': 'Pesa zilizowekwa akiba wakati wa kufunga zinarudishwa', 'Total': 'Jumla',
+  'No savings from this closing are left — nothing is moved back.': 'Hakuna akiba iliyobaki kutoka ufungaji huu — hakuna kinachorudishwa.',
+  'Savings only holds': 'Akiba ina', 'now, so it will show less than zero until you correct it.': 'tu sasa, kwa hiyo itaonyesha chini ya sifuri hadi uirekebishe.',
+  'Then close it again with the right amounts.': 'Kisha ifunge upya kwa kiasi sahihi.', 'reopened': 'imefunguliwa tena', 'back from savings': 'imerudi kutoka akiba' });

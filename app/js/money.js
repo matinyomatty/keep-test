@@ -120,6 +120,9 @@ async function deleteEntry(id) {
     if (!await showConfirm(`Delete this entry?<br><b>${entryLabel(e)} · ${fmt(e.amount)}</b><br><span style="font-size:0.75rem;color:#6b7280;">Balances will be corrected.</span>`)) return;
     const b = db.batch();
     writeEntries(b, [e], -1, [id]);
+    // savings made when a month was closed: the month's "saved" figure goes down too
+    const cm = e.type === 'savings' && (e.closeOf || Object.keys(S.months || {}).find(k => e.note === `Month close – ${monthName(k)}`));
+    if (cm && S.months[cm]) b.set(col('months').doc(cm), { saved: inc(-(Number(e.amount) || 0)), updatedAt: now() }, { merge: true });
     commit(b, '🗑️ Entry deleted');
 }
 
