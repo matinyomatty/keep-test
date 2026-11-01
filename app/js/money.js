@@ -50,6 +50,14 @@ function entryTab(t) {
     document.querySelectorAll('#sheetEntry .ef').forEach(el => el.classList.toggle('hidden', el.dataset.for !== t));
     $('entryAmtLbl').textContent = t === 'adjust' ? 'Real balance now (TZS)' : 'Amount (TZS)';
     if (t === 'adjust') adjHint();
+    if (t === 'savings') savDir('in');
+}
+function savDir(d) {
+    S.savDir = d;
+    document.querySelectorAll('#savDirs button').forEach(b => { const on = b.dataset.d === d; b.classList.toggle('on', on); b.style.background = on ? '#a16207' : ''; b.style.color = on ? '#fff' : ''; });
+    $('savFromLbl').textContent = tl(d === 'out' ? 'Into' : 'From');
+    $('savHint').textContent = d === 'out' ? `💡 ${tl('Take money out of savings back into working money.')} ${tl('Savings holds')} ${fmt(S.balances.savings || 0)}.`
+        : '💡 ' + tl('Put money aside as savings. It stops counting as working money') + '.';
 }
 function adjHint() { const a = $('adjAcct').value; $('adjNow').textContent = `System says ${ACCT[a]} holds ${fmt(S.balances[a] || 0)}.`; }
 
@@ -72,6 +80,10 @@ function saveEntry() {
         } else if (t === 'banking') e = { type: 'banking', category: 'Bank In', from: $('bankFrom').value, to: 'bank' };
         else if (t === 'withdrawal') e = { type: 'withdrawal', category: 'Bank Out', from: 'bank', to: $('wdTo').value };
         else if (t === 'transfer') { const [f, to] = $('trDir').value.split('>'); e = { type: 'transfer', category: 'Transfer', from: f, to }; }
+        else if (t === 'savings' && S.savDir === 'out') {
+            if (amt > (Number(S.balances.savings) || 0) + 1) return toast(`⚠️ ${tl('Savings only holds')} ${fmt(S.balances.savings || 0)}.`, 'err');
+            e = { type: 'transfer', category: 'From savings', from: 'savings', to: $('savFrom').value };
+        }
         else if (t === 'savings') e = { type: 'savings', category: 'Savings', from: $('savFrom').value, to: 'savings' };
         Object.assign(e, { amount: amt, note, day });
     }

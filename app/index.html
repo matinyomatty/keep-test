@@ -555,7 +555,7 @@
             <button data-t="banking" onclick="entryTab('banking')">🏦 Bank In</button>
             <button data-t="withdrawal" onclick="entryTab('withdrawal')">💳 Bank Out</button>
             <button data-t="transfer" onclick="entryTab('transfer')">🔄 Transfer</button>
-            <button data-t="savings" onclick="entryTab('savings')">💰 To Savings</button>
+            <button data-t="savings" onclick="entryTab('savings')">💰 Savings</button>
             <button data-t="adjust" onclick="entryTab('adjust')">⚖️ Set Balance</button>
         </div>
         <div class="field-group"><span class="field-label">📅 Date</span><input type="date" id="entryDate" onchange="watchEntryDay()"></div>
@@ -581,8 +581,11 @@
                 <select id="trDir"><option value="cash>mobile">💵 Cash → 📱 Lipa kwa Simu</option><option value="mobile>cash">📱 Lipa kwa Simu → 💵 Cash</option></select></div>
         </div>
         <div class="ef" data-for="savings">
-            <div class="hint green">💡 Put money aside as savings. It stops counting as working money.</div>
-            <div class="field-group"><span class="field-label">From</span>
+            <div class="seg" id="savDirs" style="display:flex;gap:6px;margin-bottom:10px;">
+                <button type="button" class="btn-sec on" data-d="in" style="flex:1;" onclick="savDir('in')">⬇️ Put in</button>
+                <button type="button" class="btn-sec" data-d="out" style="flex:1;" onclick="savDir('out')">⬆️ Take out</button></div>
+            <div class="hint green" id="savHint">💡 Put money aside as savings. It stops counting as working money.</div>
+            <div class="field-group"><span class="field-label" id="savFromLbl">From</span>
                 <select id="savFrom"><option value="bank">🏦 Bank</option><option value="cash">💵 Cash</option><option value="mobile">📱 Lipa kwa Simu</option></select></div>
         </div>
         <div class="ef" data-for="adjust">

@@ -733,3 +733,4 @@ KeepLang.add({ 'Reopen': 'Fungua tena', 'undo the closing and close it again': '
   'No savings from this closing are left — nothing is moved back.': 'Hakuna akiba iliyobaki kutoka ufungaji huu — hakuna kinachorudishwa.',
   'Savings only holds': 'Akiba ina', 'now, so it will show less than zero until you correct it.': 'tu sasa, kwa hiyo itaonyesha chini ya sifuri hadi uirekebishe.',
   'Then close it again with the right amounts.': 'Kisha ifunge upya kwa kiasi sahihi.', 'reopened': 'imefunguliwa tena', 'back from savings': 'imerudi kutoka akiba' });
+KeepLang.add({ '💰 Savings': '💰 Akiba', '⬇️ Put in': '⬇️ Weka', '⬆️ Take out': '⬆️ Toa', 'Into': 'Kwenda', 'Take money out of savings back into working money.': 'Toa pesa kutoka akiba kurudi kwenye pesa za kazi.', 'Savings holds': 'Akiba ina' });
