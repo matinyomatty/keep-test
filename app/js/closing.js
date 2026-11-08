@@ -362,8 +362,64 @@ ${isBarberMode() ? `💈 Barbers earned: ${n0(dcut.cost)}\n💸 Other expenses: 
 🧾 ${x.tx} ${isBarberMode() ? 'clients' : 'POS sales'}${outItems.length ? `\n🚨 Out of stock: ${outItems.length} items` : ''}${lowItems.length ? `\n⚠️ Low stock: ${lowItems.length} items` : ''}${expItems.length ? `\n⏳ Expiring soon: ${expItems.length} items` : ''}
 Closed by ${S.me.name}`;
 
+    S.closeDayDay = d;
     $('cdStep1').classList.add('hidden'); $('cdStep2').classList.remove('hidden');
-    shareText(S.closeDayMsg);
+    sendDayReport();
+}
+// Daily report: text, or PDF when the owner chose PDF (Account → WhatsApp) and the plan allows it.
+async function sendDayReport() {
+    if (!S.closeDayMsg) return;
+    const st = S.tenantInfo.settings || {}, wantPdf = st.waReport === 'pdf' && shopServices().dailyReport === 'both';
+    if (!wantPdf) return shareText(S.closeDayMsg);
+    if (!window.jspdf) { toast(tl('PDF is not available right now (check the internet). Sending as text.'), 'err'); return shareText(S.closeDayMsg); }
+    const d = S.closeDayDay || dayStr(), doc = dayReportPdf(d), name = `${S.tenant}_${d}_day-report.pdf`;
+    const file = new File([doc.output('blob')], name, { type: 'application/pdf' });
+    const canFile = !!(navigator.canShare && navigator.canShare({ files: [file] }));
+    const wa = String(st.whatsapp || '').replace(/\D/g, '');
+    openWa(wa, `🏪 *${(S.tenantInfo.name || S.tenant).toUpperCase()}* — ${prettyDay(d)}\n${tl('Day report')} 📄 ${tl('PDF coming next')}`);
+    if (!canFile) { doc.save(name); return toast(tl('PDF saved. Attach it in the WhatsApp chat that opened.')); }
+    const go = await choose(`📄 <b>${tl('Now send the PDF')}</b><br><span style="font-weight:500;">${tl('Tap below, choose WhatsApp, then pick the same chat (at the top of the list).')}</span>`,
+        [['share', '📎 ' + tl('Send the PDF'), 'var(--pos)']], tl('Done'));
+    if (go !== 'share') return;
+    try { await navigator.share({ files: [file], title: name }); }
+    catch (e) { if (e && e.name !== 'AbortError') toast(tl('Could not open sharing on this phone.'), 'err'); }
+}
+function dayReportPdf(d) {
+    const { jsPDF } = window.jspdf, doc = new jsPDF({ unit: 'mm', format: 'a5' }), W = 148, M = 12;
+    // the PDF fonts have no emoji or arrows: keep the words, drop the pictures
+    const clean = s => String(s).replace(/\*/g, '').replace(/→/g, '->').replace(/[✓✔]/g, 'OK')
+        .replace(/[\u{1F000}-\u{1FFFF}\u{2600}-\u{27BF}\u{2B00}-\u{2BFF}\u{FE0F}\u{200D}\u{20E3}]/gu, '').replace(/\s+/g, ' ').trim();
+    const lines = msgTl(S.closeDayMsg).split('\n');
+    let y = 16;
+    doc.setFillColor(11, 13, 18); doc.rect(0, 0, W, 26, 'F');
+    doc.setTextColor(255, 198, 41); doc.setFont('helvetica', 'bold'); doc.setFontSize(14);
+    doc.text(clean(S.tenantInfo.name || S.tenant), M, 12);
+    doc.setTextColor(255, 255, 255); doc.setFont('helvetica', 'normal'); doc.setFontSize(9.5);
+    doc.text(`${clean(tl("Day report"))} · ${clean(msgTl(prettyDay(d)))}`, M, 19);
+    y = 34; doc.setTextColor(17, 24, 39);
+    const row = (label, value, bold) => {
+        if (y > 196) { doc.addPage(); y = 16; }
+        doc.setFont('helvetica', bold ? 'bold' : 'normal'); doc.setFontSize(bold ? 11 : 9.5);
+        const lw = doc.splitTextToSize(label, value ? 80 : W - 2 * M);
+        doc.text(lw, M, y);
+        if (value) doc.text(value, W - M, y, { align: 'right' });
+        y += lw.length * (bold ? 5.2 : 4.6) + 1.2;
+    };
+    lines.slice(1).forEach(raw => {
+        const t = clean(raw);
+        if (!t) { y += 2.5; return; }
+        if (/^━+$/.test(raw.trim())) { doc.setDrawColor(200); doc.line(M, y - 2.5, W - M, y - 2.5); y += 2; return; }
+        const parts = t.split(/ [·|] /);
+        parts.forEach(p => {
+            const i = p.lastIndexOf(': ');
+            const bold = /profit|faida/i.test(p);
+            if (i > 0 && !/ vs | dhidi ya /i.test(p)) row(p.slice(0, i), p.slice(i + 2), bold);
+            else row(p, '', bold);
+        });
+    });
+    doc.setFontSize(7.5); doc.setTextColor(120);
+    doc.text('Keep · keep.co.tz', W / 2, 204, { align: 'center' });
+    return doc;
 }
 function shareText(text) {
     if (!text) return;

@@ -734,3 +734,4 @@ KeepLang.add({ 'Reopen': 'Fungua tena', 'undo the closing and close it again': '
   'Savings only holds': 'Akiba ina', 'now, so it will show less than zero until you correct it.': 'tu sasa, kwa hiyo itaonyesha chini ya sifuri hadi uirekebishe.',
   'Then close it again with the right amounts.': 'Kisha ifunge upya kwa kiasi sahihi.', 'reopened': 'imefunguliwa tena', 'back from savings': 'imerudi kutoka akiba' });
 KeepLang.add({ '💰 Savings': '💰 Akiba', '⬇️ Put in': '⬇️ Weka', '⬆️ Take out': '⬆️ Toa', 'Into': 'Kwenda', 'Take money out of savings back into working money.': 'Toa pesa kutoka akiba kurudi kwenye pesa za kazi.', 'Savings holds': 'Akiba ina' });
+KeepLang.add({ 'Day report': 'Ripoti ya siku', 'Tap below, choose WhatsApp, then pick the same chat (at the top of the list).': 'Gusa hapa chini, chagua WhatsApp, kisha chagua mazungumzo yaleyale (juu kabisa ya orodha).' });
