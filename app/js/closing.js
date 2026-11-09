@@ -374,15 +374,21 @@ async function sendDayReport() {
     if (!window.jspdf) { toast(tl('PDF is not available right now (check the internet). Sending as text.'), 'err'); return shareText(S.closeDayMsg); }
     const d = S.closeDayDay || dayStr(), doc = dayReportPdf(d), name = `${S.tenant}_${d}_day-report.pdf`;
     const file = new File([doc.output('blob')], name, { type: 'application/pdf' });
-    const canFile = !!(navigator.canShare && navigator.canShare({ files: [file] }));
-    const wa = String(st.whatsapp || '').replace(/\D/g, '');
-    openWa(wa, `🏪 *${(S.tenantInfo.name || S.tenant).toUpperCase()}* — ${prettyDay(d)}\n${tl('Day report')} 📄 ${tl('PDF coming next')}`);
-    if (!canFile) { doc.save(name); return toast(tl('PDF saved. Attach it in the WhatsApp chat that opened.')); }
-    const go = await choose(`📄 <b>${tl('Now send the PDF')}</b><br><span style="font-weight:500;">${tl('Tap below, choose WhatsApp, then pick the same chat (at the top of the list).')}</span>`,
-        [['share', '📎 ' + tl('Send the PDF'), 'var(--pos)']], tl('Done'));
-    if (go !== 'share') return;
-    try { await navigator.share({ files: [file], title: name }); }
-    catch (e) { if (e && e.name !== 'AbortError') toast(tl('Could not open sharing on this phone.'), 'err'); }
+    const caption = `🏪 *${(S.tenantInfo.name || S.tenant).toUpperCase()}* — ${prettyDay(d)}\n📄 ${tl('Day report')}`;
+    // Computer or a phone that can't share files: save the PDF and open WhatsApp to attach it
+    if (!(navigator.canShare && navigator.canShare({ files: [file] }))) {
+        doc.save(name); openWa(String((S.tenantInfo.settings || {}).whatsapp || '').replace(/\D/g, ''), caption);
+        return toast(tl('PDF saved. Attach it in the WhatsApp chat that opened.'));
+    }
+    // One step: the PDF and its note go together — pick WhatsApp and the chat
+    const share = () => navigator.share({ files: [file], text: msgTl(caption), title: name });
+    try { await share(); }
+    catch (e) {
+        if (e && e.name === 'AbortError') return;
+        // the phone wants a fresh tap before sharing (e.g. closing took a while)
+        if (await choose(`📄 <b>${tl('Day report')}</b>`, [['share', '📲 ' + tl('Send the PDF'), 'var(--pos)']], tl('Done')) !== 'share') return;
+        try { await share(); } catch (e2) { if (e2 && e2.name !== 'AbortError') toast(tl('Could not open sharing on this phone.'), 'err'); }
+    }
 }
 function dayReportPdf(d) {
     const { jsPDF } = window.jspdf, doc = new jsPDF({ unit: 'mm', format: 'a5' }), W = 148, M = 12;
