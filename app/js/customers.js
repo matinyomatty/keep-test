@@ -379,13 +379,11 @@ async function receiptMenu(s, afterSale) {
         [['text', '💬 ' + tl('WhatsApp · text'), 'var(--pos)'], ['pdf', '📄 ' + tl('WhatsApp · PDF'), 'var(--blue)']], afterSale ? tl('No receipt') : undefined);
     if (how !== 'text' && how !== 'pdf') return;
     if (how === 'pdf' && !window.jspdf) { toast(tl('PDF is not available right now (check the internet). Sending as text.'), 'err'); how = 'text'; }
-    // PDF: upload it while the number is being typed, so the chat opens straight away with the receipt link
-    const doc = how === 'pdf' ? receiptPdf(s, { returnDoc: true }) : null;
-    const linkP = doc ? pdfLink(doc, `${s.receiptNo || 'receipt'}.pdf`) : null;
+    // PDF: straight to the share menu with the PDF attached — pick WhatsApp and the customer's chat
+    if (how === 'pdf') { const doc = receiptPdf(s, { returnDoc: true }); if (doc) return sendReceiptPdf(s, null, doc); how = 'text'; }
     const to = await askReceiptNumber(s);
     if (!to) return;
-    if (how === 'text' || !doc) return openWa(to, receiptText(s));
-    sendReceiptPdf(s, to, doc, linkP);
+    openWa(to, receiptText(s));
 }
 // Values for the WhatsApp receipt template: customer, shop, receipt no., total, items
 function receiptVars(s) {
@@ -404,32 +402,26 @@ async function askReceiptNumber(s) {
     }
     return null;
 }
-// PDF receipt in one step: the PDF is kept on the Keep server and the customer's chat opens
-// with a message carrying the receipt link (works for numbers the phone has never saved).
-async function pdfLink(doc, name) {
-    const api = window.KEEP_ENV && KEEP_ENV.api;
-    if (!api || !auth.currentUser) return null;
-    try {
-        const r = await fetch(api.replace(/\/$/, '') + '/pdf', { method: 'POST',
-            headers: { authorization: 'Bearer ' + await auth.currentUser.getIdToken(), 'content-type': 'application/json' },
-            body: JSON.stringify({ project: KEEP_ENV.firebaseConfig.projectId, tenant: S.tenant, fileName: name, pdf: doc.output('datauristring').split(',')[1] }) });
-        const j = await r.json(); return j.ok ? j.url : null;
-    } catch (e) { return null; }
-}
-const within = (p, ms) => Promise.race([p, new Promise(r => setTimeout(() => r(null), ms))]);
-async function sendReceiptPdf(s, to, doc, linkP) {
+// PDF receipt in one step: the phone's share menu opens with the PDF and a short note attached;
+// pick WhatsApp and the customer's chat. (A web app can't give WhatsApp a number and a file together.)
+async function sendReceiptPdf(s, to, doc) {
     doc = doc || receiptPdf(s, { returnDoc: true }); if (!doc) return;
     const name = `${s.receiptNo || 'receipt'}.pdf`;
-    const hello = `${tl('Hello')}${s.customer && s.customer.name ? ' ' + s.customer.name.split(' ')[0] : ''}, ${tl('your receipt')} ${s.receiptNo || ''} · ${fmt(s.kind === 'return' ? -Math.abs(s.total || 0) : s.total || 0)} — ${S.tenantInfo.name || ''}.`;
-    const url = await within(linkP || pdfLink(doc, name), 8000);
-    if (url) return openWa(to, `${hello}\n📄 ${url}`);
-    // No internet to the Keep server: share the PDF file itself (pick the customer's chat)
+    const note = `${tl('Hello')}${s.customer && s.customer.name ? ' ' + s.customer.name.split(' ')[0] : ''}, ${tl('your receipt')} ${s.receiptNo || ''} · ${fmt(s.kind === 'return' ? -Math.abs(s.total || 0) : s.total || 0)} — ${S.tenantInfo.name || ''}.`;
     const file = new File([doc.output('blob')], name, { type: 'application/pdf' });
-    if (navigator.canShare && navigator.canShare({ files: [file] })) {
-        try { await navigator.share({ files: [file], text: msgTl(hello), title: name }); return; }
-        catch (e) { if (e && e.name === 'AbortError') return; }
+    if (!(navigator.canShare && navigator.canShare({ files: [file] }))) {
+        // computer: save the PDF and open WhatsApp to attach it
+        doc.save(name); openWa(to || '', note);
+        return toast(tl('PDF saved. Attach it in the WhatsApp chat that opened.'));
     }
-    doc.save(name); openWa(to, receiptText(s));
+    const share = () => navigator.share({ files: [file], text: msgTl(note), title: name });
+    try { await share(); }
+    catch (e) {
+        if (e && e.name === 'AbortError') return;
+        // the phone wants a fresh tap before sharing
+        if (await choose(`📄 <b>${tl('Receipt')}</b> <span class="notr">${esc(s.receiptNo || '')}</span>`, [['share', '📲 ' + tl('Send the PDF'), 'var(--pos)']], tl('Done')) !== 'share') return;
+        try { await share(); } catch (e2) { if (e2 && e2.name !== 'AbortError') toast(tl('Could not open sharing on this phone.'), 'err'); }
+    }
 }
 
 // ════════════════════════════════════════════════
