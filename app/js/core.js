@@ -22,7 +22,7 @@ const ENTRY_COLORS = {
 
 firebase.initializeApp(firebaseConfig);
 // App version — shown on the sign-in screen and saved on each sale, so you can tell when every till has updated.
-const APP_VERSION = 67;
+const APP_VERSION = 68;
 // App Check: proves requests come from the real Keep app, not a script. Paste your reCAPTCHA v3 SITE key
 // between the quotes to switch it on (see the setup guide). Empty = off.
 const APP_CHECK_SITE_KEY = '';
@@ -98,7 +98,20 @@ function loader(on, text) {
     $('loadingOverlay').style.display = on ? 'flex' : 'none';
     $('loadingText').textContent = text || 'LOADING...';
 }
+// iPhones sometimes shut down the phone's offline database when Keep is put to sleep and woken up.
+// After that every read and save fails until the page is reloaded — so reload once, by ourselves.
+function dbDead(e) { return /client has already been terminated|in-progress transaction|IndexedDB|INTERNAL ASSERTION FAILED/i.test(String((e && e.message) || e || '')); }
+function recoverDb(e) {
+    if (S.recovering) return; S.recovering = true;
+    let last = 0; try { last = Number(sessionStorage.getItem('keep.dbReload')) || 0; } catch (x) {}
+    if (Date.now() - last < 60e3) { toast(tl('Keep needs a restart: close it fully and open it again.'), 'err'); return; }
+    try { sessionStorage.setItem('keep.dbReload', String(Date.now())); } catch (x) {}
+    reportProblem('dbreload', e);
+    toast('🔄 ' + tl('Reconnecting…'));
+    setTimeout(() => location.reload(), 1500);
+}
 function friendlyErr(e) {
+    if (dbDead(e)) { recoverDb(e); return tl('reconnecting, please wait'); }
     const c = (e && e.code) || '';
     if (c.includes('permission-denied')) return 'your account is not allowed to do this';
     if (c.includes('unavailable')) return 'no connection to the server';
@@ -139,8 +152,8 @@ function reportProblem(kind, err, note) {
         }).catch(() => {});
     } catch (e) {}
 }
-window.addEventListener('error', e => { if (e && e.message && !/ResizeObserver|Script error/.test(e.message)) reportProblem('crash', e.error || e.message, (e.filename || '').split('/').pop() + ':' + e.lineno); });
-window.addEventListener('unhandledrejection', e => reportProblem('promise', e.reason));
+window.addEventListener('error', e => { if (e && dbDead(e.error || e.message)) return recoverDb(e.error || e.message); if (e && e.message && !/ResizeObserver|Script error/.test(e.message)) reportProblem('crash', e.error || e.message, (e.filename || '').split('/').pop() + ':' + e.lineno); });
+window.addEventListener('unhandledrejection', e => { if (dbDead(e.reason)) return recoverDb(e.reason); reportProblem('promise', e.reason); });
 // One small record per person per device: which version they run and when they were last seen.
 function pingHealth() {
     try {
